@@ -67,6 +67,7 @@ The project is currently setting up its repository structure, documentation rule
 - Added validation tests for model creation.
 - Added validation tests for invalid severity and invalid score.
 - Updated data model documentation.
+- Normalized test import configuration for the `src/` layout.
 
 ### Changed Files
 
@@ -90,4 +91,4 @@ TASK-0003: Add Markdown reader and profile loading.
 ### Notes
 
 No CLI, MCP, Skill, API, database, frontend, PydanticAI, Markdown parser, or review rule code was added.
-`tests/test_models.py` adds `src/` to `sys.path` so the package can be imported under the current project layout.
+`tests/test_models.py` now imports `content_review_engine` normally, with pytest configured to include `src/` on the import path.

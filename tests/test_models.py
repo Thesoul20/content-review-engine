@@ -1,10 +1,5 @@
-from pathlib import Path
-import sys
-
 import pytest
 from pydantic import ValidationError
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from content_review_engine.core.models import ReviewIssue, ReviewProfile, ReviewResult
 

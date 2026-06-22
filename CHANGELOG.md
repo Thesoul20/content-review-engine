@@ -22,10 +22,11 @@ This project follows a staged development process.
 ### Changed
 
 - Updated project state for the core data model foundation.
+- Configured pytest to resolve the `src/` layout without manual `sys.path` edits.
 
 ### Fixed
 
-- Nothing yet.
+- Removed manual `sys.path` mutation from `tests/test_models.py`.
 
 ### Removed
 
