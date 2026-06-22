@@ -30,6 +30,14 @@ The project currently has Markdown input handling, profile loading, deterministi
 
 - No active implementation task.
 
+## Recent Completion
+
+- TASK-0006 is complete.
+- Added a minimal `content-review review` CLI command.
+- The CLI can review one Markdown file with one YAML profile.
+- The CLI uses the existing in-memory review pipeline and deterministic forbidden terms rule.
+- The project still does not have LLM review, API, MCP, persistence, frontend, or JSON/HTML report export.
+
 ---
 
 ## Next Tasks
@@ -77,6 +85,9 @@ The project currently has Markdown input handling, profile loading, deterministi
 - Added tests for the forbidden terms rule.
 - Added a minimal review pipeline that runs `forbidden_terms` in memory.
 - Added tests for the review pipeline.
+- Added a minimal CLI entrypoint with a `review` subcommand.
+- Added CLI tests for success, missing files, and help output.
+- Updated architecture documentation, project state, and changelog for the CLI task.
 
 ### Changed Files
 
@@ -103,10 +114,9 @@ The project currently has Markdown input handling, profile loading, deterministi
 
 ### Next Recommended Task
 
-TASK-0005: Add Minimal Review Pipeline.
+TASK-0007: Add JSON Output Format.
 
 ### Notes
 
-No CLI, MCP, Skill, API, database, frontend, PydanticAI, Markdown parser, or review rule code was added.
 `tests/test_models.py` now imports `content_review_engine` normally, with pytest configured to include `src/` on the import path.
 The core package now includes one deterministic rule: `forbidden_terms`.

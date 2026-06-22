@@ -32,6 +32,7 @@ Current phase only includes:
 
 ```text
 Python Core Package
+CLI
 Docs
 Tasks
 Tests
@@ -71,6 +72,31 @@ Current implemented input helpers:
 - `content_review_engine.rules.check_forbidden_terms`
 - `content_review_engine.review.review_document`
 
+Current CLI adapter:
+
+```text
+content-review review <markdown_file> --profile <profile_file>
+```
+
+Current CLI flow:
+
+```text
+CLI
+ ↓
+Markdown Reader
+ ↓
+Profile Loader
+ ↓
+Review Pipeline
+ ↓
+Deterministic Rules
+ ↓
+Review Result
+```
+
+The CLI currently supports reviewing one Markdown file with one YAML profile.
+It prints a simple human-readable summary and does not yet support JSON, HTML, batch review, or report persistence.
+
 Current deterministic rules:
 
 - `forbidden_terms`
@@ -96,6 +122,8 @@ Adapters include:
 - Frontend
 
 Adapters must not duplicate core review logic.
+
+The CLI adapter only orchestrates existing helpers. It does not implement parsing, profile loading, or review rules itself.
 
 ---
 
@@ -132,4 +160,4 @@ CLI / MCP / API / Skill
 content_review_engine core package
 ```
 
-The current implementation does not include CLI, API, MCP, LLM review, persistence, or frontend layers yet.
+The current implementation includes a minimal CLI adapter, but still does not include LLM review, API, MCP, persistence, or frontend layers.

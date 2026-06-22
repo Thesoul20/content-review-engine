@@ -28,6 +28,8 @@ This project follows a staged development process.
 - Added minimal in-memory review pipeline support.
 - Added `review_document()` as the core review pipeline entrypoint.
 - Added tests for the review pipeline.
+- Added a minimal CLI entrypoint with `content-review review`.
+- Added CLI tests for successful reviews, missing files, and help output.
 
 ### Changed
 
@@ -39,6 +41,9 @@ This project follows a staged development process.
 - Updated review rule docs to include `forbidden_terms`.
 - Extended review profile configuration with `forbidden_terms`.
 - Added `pyyaml` as a project dependency.
+- Updated architecture docs to include the CLI adapter and its current limits.
+- Updated project state for TASK-0006 completion.
+- Updated changelog for the CLI task.
 
 ### Fixed
 
