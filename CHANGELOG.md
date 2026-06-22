@@ -25,6 +25,9 @@ This project follows a staged development process.
 - Added tests for Markdown parsing and profile loading.
 - Added deterministic forbidden terms rule support.
 - Added tests for the forbidden terms rule.
+- Added minimal in-memory review pipeline support.
+- Added `review_document()` as the core review pipeline entrypoint.
+- Added tests for the review pipeline.
 
 ### Changed
 
@@ -32,6 +35,7 @@ This project follows a staged development process.
 - Configured pytest to resolve the `src/` layout without manual `sys.path` edits.
 - Updated architecture docs to describe the input layer.
 - Updated architecture docs to include deterministic rules.
+- Updated architecture docs to include the review pipeline layer.
 - Updated review rule docs to include `forbidden_terms`.
 - Extended review profile configuration with `forbidden_terms`.
 - Added `pyyaml` as a project dependency.

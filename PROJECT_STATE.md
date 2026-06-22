@@ -2,9 +2,9 @@
 
 ## Current Phase
 
-M1: Core input layer and first deterministic rule.
+M1: Core input layer and minimal review pipeline.
 
-The project is currently adding Markdown input handling, profile loading, and deterministic review rules on top of the initial data models.
+The project currently has Markdown input handling, profile loading, deterministic review rules, and a minimal in-memory review pipeline on top of the initial data models.
 
 ---
 
@@ -22,19 +22,20 @@ The project is currently adding Markdown input handling, profile loading, and de
 - Initial core data models are in place.
 - Markdown reader and YAML profile loading have been implemented.
 - The first deterministic review rule has been implemented.
+- A minimal review pipeline has been implemented.
 
 ---
 
 ## In Progress
 
-- Add basic tests and documentation for deterministic review rules.
+- No active implementation task.
 
 ---
 
 ## Next Tasks
 
 1. Add additional deterministic review rules.
-2. Add a basic end-to-end review flow.
+2. Extend the review pipeline with more deterministic rules.
 
 ---
 
@@ -74,6 +75,8 @@ The project is currently adding Markdown input handling, profile loading, and de
 - Added tests for Markdown parsing and profile loading.
 - Added the first deterministic forbidden terms review rule.
 - Added tests for the forbidden terms rule.
+- Added a minimal review pipeline that runs `forbidden_terms` in memory.
+- Added tests for the review pipeline.
 
 ### Changed Files
 
@@ -100,7 +103,7 @@ The project is currently adding Markdown input handling, profile loading, and de
 
 ### Next Recommended Task
 
-TASK-0004: Add Forbidden Terms Rule.
+TASK-0005: Add Minimal Review Pipeline.
 
 ### Notes
 

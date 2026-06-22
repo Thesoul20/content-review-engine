@@ -44,6 +44,7 @@ The current core package input layer includes:
 ```text
 src/content_review_engine/parser/
 src/content_review_engine/config/
+src/content_review_engine/review/
 src/content_review_engine/rules/
 profiles/
 ```
@@ -56,8 +57,9 @@ The core package should handle:
 
 - Markdown input processing
 - Review profile loading
+- Review pipeline coordination
 - Rule execution
-- Structured review results
+- Structured review findings and results
 - Report generation
 - Diff generation
 - AI review adapter in later versions
@@ -67,10 +69,17 @@ Current implemented input helpers:
 - `content_review_engine.parser.read_markdown`
 - `content_review_engine.config.load_profile`
 - `content_review_engine.rules.check_forbidden_terms`
+- `content_review_engine.review.review_document`
 
 Current deterministic rules:
 
 - `forbidden_terms`
+
+Current review pipeline:
+
+- `review_document()` accepts already-loaded Markdown text and a loaded `ReviewProfile`.
+- The pipeline runs deterministic rules in memory.
+- The pipeline currently calls `forbidden_terms` directly and returns collected findings.
 
 ---
 
@@ -104,7 +113,23 @@ Skill contains business logic
 Correct design:
 
 ```text
+Markdown Reader
+    ↓
+Profile Loader
+    ↓
+Review Pipeline
+    ↓
+Deterministic Rules
+    ↓
+Review Result / Findings
+```
+
+Current adapter boundary:
+
+```text
 CLI / MCP / API / Skill
         ↓
 content_review_engine core package
 ```
+
+The current implementation does not include CLI, API, MCP, LLM review, persistence, or frontend layers yet.
