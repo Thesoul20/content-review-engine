@@ -26,6 +26,20 @@ The implementation source of truth is `src/content_review_engine/core/models.py`
 
 ---
 
+## ReviewFinding
+
+`ReviewFinding` represents a deterministic rule match.
+
+| Field | Required | Description |
+|---|---|---|
+| `rule_id` | Yes | Stable rule identifier |
+| `severity` | Yes | `warning` |
+| `message` | Yes | Human-readable finding summary |
+| `matched_term` | Yes | Term that triggered the finding |
+| `matched_text` | No | Original matched text |
+
+---
+
 ## ReviewResult
 
 `ReviewResult` represents the full review result of a document.
@@ -53,6 +67,7 @@ The implementation source of truth is `src/content_review_engine/core/models.py`
 | `tone` | No | Expected writing tone |
 | `max_title_length` | No | Maximum suggested title length |
 | `max_paragraph_length` | No | Maximum suggested paragraph length |
+| `forbidden_terms` | No | List of forbidden terms to detect |
 
 ---
 

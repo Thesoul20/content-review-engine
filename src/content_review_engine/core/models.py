@@ -5,6 +5,7 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 Severity = Literal["low", "medium", "high", "critical"]
+FindingSeverity = Literal["warning"]
 
 
 class ReviewIssue(BaseModel):
@@ -17,6 +18,14 @@ class ReviewIssue(BaseModel):
     original_text: str | None = None
     start_line: int | None = None
     end_line: int | None = None
+
+
+class ReviewFinding(BaseModel):
+    rule_id: str
+    severity: FindingSeverity
+    message: str
+    matched_term: str
+    matched_text: str | None = None
 
 
 class ReviewResult(BaseModel):
@@ -35,9 +44,12 @@ class ReviewProfile(BaseModel):
     tone: str = "clear and professional"
     max_title_length: int = 32
     max_paragraph_length: int = 220
+    forbidden_terms: list[str] = Field(default_factory=list)
 
 
 __all__ = [
+    "FindingSeverity",
+    "ReviewFinding",
     "ReviewIssue",
     "ReviewProfile",
     "ReviewResult",

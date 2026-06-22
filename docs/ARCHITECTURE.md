@@ -44,6 +44,7 @@ The current core package input layer includes:
 ```text
 src/content_review_engine/parser/
 src/content_review_engine/config/
+src/content_review_engine/rules/
 profiles/
 ```
 
@@ -65,6 +66,11 @@ Current implemented input helpers:
 
 - `content_review_engine.parser.read_markdown`
 - `content_review_engine.config.load_profile`
+- `content_review_engine.rules.check_forbidden_terms`
+
+Current deterministic rules:
+
+- `forbidden_terms`
 
 ---
 

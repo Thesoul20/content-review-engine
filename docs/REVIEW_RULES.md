@@ -37,7 +37,15 @@ STYLE_TONE_001
 
 ## Current Rules
 
-No rules implemented yet.
+### forbidden_terms
+
+Purpose:
+
+Detect forbidden terms configured in the review profile.
+
+Status:
+
+Implemented.
 
 ---
 

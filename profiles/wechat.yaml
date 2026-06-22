@@ -3,3 +3,7 @@ target_platform: wechat
 tone: clear and professional
 max_title_length: 32
 max_paragraph_length: 220
+forbidden_terms:
+  - 绝对安全
+  - 保证赚钱
+  - 100%有效

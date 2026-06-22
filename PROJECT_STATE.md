@@ -2,9 +2,9 @@
 
 ## Current Phase
 
-M1: Core input layer.
+M1: Core input layer and first deterministic rule.
 
-The project is currently adding Markdown input handling and profile loading on top of the initial data models.
+The project is currently adding Markdown input handling, profile loading, and deterministic review rules on top of the initial data models.
 
 ---
 
@@ -21,19 +21,20 @@ The project is currently adding Markdown input handling and profile loading on t
 - Repository memory will be stored in project files, not in chat history.
 - Initial core data models are in place.
 - Markdown reader and YAML profile loading have been implemented.
+- The first deterministic review rule has been implemented.
 
 ---
 
 ## In Progress
 
-- Add the first deterministic review rule.
+- Add basic tests and documentation for deterministic review rules.
 
 ---
 
 ## Next Tasks
 
-1. Add first deterministic review rule.
-2. Add basic tests for review flow.
+1. Add additional deterministic review rules.
+2. Add a basic end-to-end review flow.
 
 ---
 
@@ -71,6 +72,8 @@ The project is currently adding Markdown input handling and profile loading on t
 - Added Markdown reader support.
 - Added YAML profile loading support.
 - Added tests for Markdown parsing and profile loading.
+- Added the first deterministic forbidden terms review rule.
+- Added tests for the forbidden terms rule.
 
 ### Changed Files
 
@@ -97,9 +100,10 @@ The project is currently adding Markdown input handling and profile loading on t
 
 ### Next Recommended Task
 
-TASK-0003: Add Markdown reader and profile loading.
+TASK-0004: Add Forbidden Terms Rule.
 
 ### Notes
 
 No CLI, MCP, Skill, API, database, frontend, PydanticAI, Markdown parser, or review rule code was added.
 `tests/test_models.py` now imports `content_review_engine` normally, with pytest configured to include `src/` on the import path.
+The core package now includes one deterministic rule: `forbidden_terms`.
