@@ -39,6 +39,14 @@ Tests
 
 MCP, Skill, API, and frontend are planned but not implemented yet.
 
+The current core package input layer includes:
+
+```text
+src/content_review_engine/parser/
+src/content_review_engine/config/
+profiles/
+```
+
 ---
 
 ## Core Package Responsibility
@@ -52,6 +60,11 @@ The core package should handle:
 - Report generation
 - Diff generation
 - AI review adapter in later versions
+
+Current implemented input helpers:
+
+- `content_review_engine.parser.read_markdown`
+- `content_review_engine.config.load_profile`
 
 ---
 

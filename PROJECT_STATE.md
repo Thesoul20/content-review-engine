@@ -2,9 +2,9 @@
 
 ## Current Phase
 
-M1: Core data model foundation.
+M1: Core input layer.
 
-The project is currently setting up its repository structure, documentation rules, and initial development workflow.
+The project is currently adding Markdown input handling and profile loading on top of the initial data models.
 
 ---
 
@@ -19,21 +19,21 @@ The project is currently setting up its repository structure, documentation rule
   - Frontend
 - Development will use task-based Agent workflow.
 - Repository memory will be stored in project files, not in chat history.
+- Initial core data models are in place.
+- Markdown reader and YAML profile loading have been implemented.
 
 ---
 
 ## In Progress
 
-- Define the initial core data models.
+- Add the first deterministic review rule.
 
 ---
 
 ## Next Tasks
 
-1. Add Markdown reader.
-2. Add profile loading.
-3. Add first deterministic review rule.
-4. Add basic tests for review flow.
+1. Add first deterministic review rule.
+2. Add basic tests for review flow.
 
 ---
 
@@ -68,6 +68,9 @@ The project is currently setting up its repository structure, documentation rule
 - Added validation tests for invalid severity and invalid score.
 - Updated data model documentation.
 - Normalized test import configuration for the `src/` layout.
+- Added Markdown reader support.
+- Added YAML profile loading support.
+- Added tests for Markdown parsing and profile loading.
 
 ### Changed Files
 
@@ -79,6 +82,14 @@ The project is currently setting up its repository structure, documentation rule
 - `CHANGELOG.md`
 - `pyproject.toml`
 - `uv.lock`
+- `src/content_review_engine/parser/__init__.py`
+- `src/content_review_engine/parser/markdown.py`
+- `src/content_review_engine/config/__init__.py`
+- `src/content_review_engine/config/profiles.py`
+- `profiles/wechat.yaml`
+- `tests/test_markdown_parser.py`
+- `tests/test_profile_loader.py`
+- `docs/ARCHITECTURE.md`
 
 ### Test Result
 
