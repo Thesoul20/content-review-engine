@@ -4,71 +4,61 @@
 
 This document records the core data models used by the content review engine.
 
-The implementation source of truth is the Python code in the core package.
-
-This document explains the purpose and contract of those models.
+The implementation source of truth is `src/content_review_engine/core/models.py`.
 
 ---
 
-## Planned Core Models
+## ReviewIssue
 
-### ReviewIssue
+`ReviewIssue` represents one review issue found in a document.
 
-Represents one review issue found in the document.
-
-Expected fields:
-
-```text
-id
-severity
-category
-title
-description
-suggestion
-original_text
-start_line
-end_line
-```
+| Field | Required | Description |
+|---|---|---|
+| `id` | Yes | Stable issue or rule identifier |
+| `severity` | Yes | `low`, `medium`, `high`, or `critical` |
+| `category` | Yes | Issue category |
+| `title` | Yes | Short issue title |
+| `description` | Yes | Explanation of the issue |
+| `suggestion` | Yes | Suggested fix |
+| `original_text` | No | Original text related to the issue |
+| `start_line` | No | Start line number |
+| `end_line` | No | End line number |
 
 ---
 
-### ReviewResult
+## ReviewResult
 
-Represents the full review result of a document.
+`ReviewResult` represents the full review result of a document.
 
-Expected fields:
-
-```text
-document_id
-profile_name
-overall_score
-summary
-issues
-rewritten_markdown
-diff
-```
+| Field | Required | Description |
+|---|---|---|
+| `document_id` | Yes | Identifier of the reviewed document |
+| `profile_name` | Yes | Review profile name |
+| `overall_score` | Yes | Score from 0 to 100 |
+| `summary` | Yes | Review summary |
+| `issues` | Yes | List of `ReviewIssue` |
+| `rewritten_markdown` | No | Optional rewritten Markdown |
+| `diff` | No | Optional diff |
 
 ---
 
-### ReviewProfile
+## ReviewProfile
 
-Represents a review configuration for a specific platform or writing scenario.
+`ReviewProfile` represents a review configuration.
 
-Expected fields:
-
-```text
-name
-target_platform
-tone
-rules
-platform-specific thresholds
-```
+| Field | Required | Description |
+|---|---|---|
+| `name` | Yes | Profile name |
+| `target_platform` | Yes | Target platform |
+| `tone` | No | Expected writing tone |
+| `max_title_length` | No | Maximum suggested title length |
+| `max_paragraph_length` | No | Maximum suggested paragraph length |
 
 ---
 
-## Rules
+## Change Rules
 
-1. Any change to ReviewIssue must update this document.
-2. Any change to ReviewResult must update this document.
-3. Any change to ReviewProfile must update this document.
-4. Frozen data model changes require an ADR after v0.1.0.
+1. Any change to `ReviewIssue` must update this document.
+2. Any change to `ReviewResult` must update this document.
+3. Any change to `ReviewProfile` must update this document.
+4. After v0.1.0, breaking changes to these models require an ADR.

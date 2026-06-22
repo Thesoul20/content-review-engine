@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-M0: Project initialization.
+M1: Core data model foundation.
 
 The project is currently setting up its repository structure, documentation rules, and initial development workflow.
 
@@ -24,22 +24,16 @@ The project is currently setting up its repository structure, documentation rule
 
 ## In Progress
 
-- Create the initial repository structure.
-- Create the first control documents.
-- Create the first task card.
+- Define the initial core data models.
 
 ---
 
 ## Next Tasks
 
-1. Initialize Python package structure.
-2. Define initial data models:
-   - ReviewIssue
-   - ReviewResult
-   - ReviewProfile
-3. Add Markdown reader.
-4. Add first deterministic review rule.
-5. Add basic tests.
+1. Add Markdown reader.
+2. Add profile loading.
+3. Add first deterministic review rule.
+4. Add basic tests for review flow.
 
 ---
 
@@ -66,31 +60,34 @@ The project is currently setting up its repository structure, documentation rule
 
 ### Completed
 
-Initial project skeleton and control documents have been created.
+- Defined initial core data models.
+- Added `ReviewIssue`.
+- Added `ReviewResult`.
+- Added `ReviewProfile`.
+- Added validation tests for model creation.
+- Added validation tests for invalid severity and invalid score.
+- Updated data model documentation.
 
 ### Changed Files
 
-- `AGENTS.md`
-- `PROJECT_STATE.md`
-- `ROADMAP.md`
-- `CHANGELOG.md`
-- `README.md`
-- `docs/ARCHITECTURE.md`
+- `src/content_review_engine/core/__init__.py`
+- `src/content_review_engine/core/models.py`
+- `tests/test_models.py`
 - `docs/DATA_MODELS.md`
-- `docs/REVIEW_RULES.md`
-- `tasks/TASK-0001-project-skeleton.md`
-- `decisions/ADR-0001-core-package-first.md`
-- `src/content_review_engine/__init__.py`
-- `tests/test_placeholder.py`
+- `PROJECT_STATE.md`
+- `CHANGELOG.md`
+- `pyproject.toml`
+- `uv.lock`
 
 ### Test Result
 
-`python3 -m pytest -q` passed: 1 test passed.
+`uv run pytest` passed.
 
 ### Next Recommended Task
 
-TASK-0002: Define core data models.
+TASK-0003: Add Markdown reader and profile loading.
 
 ### Notes
 
-No CLI, MCP, Skill, API, database, or frontend code was added.
+No CLI, MCP, Skill, API, database, frontend, PydanticAI, Markdown parser, or review rule code was added.
+`tests/test_models.py` adds `src/` to `sys.path` so the package can be imported under the current project layout.

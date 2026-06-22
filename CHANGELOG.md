@@ -10,18 +10,18 @@ This project follows a staged development process.
 
 ### Added
 
-- Added initial project control documents.
-- Added initial roadmap.
-- Added architecture documentation.
+- Added initial core data models:
+  - `ReviewIssue`
+  - `ReviewResult`
+  - `ReviewProfile`
+- Added validation tests for core data models.
 - Added data model documentation.
-- Added review rules documentation.
-- Added ADR-0001 for core-package-first architecture.
-- Added placeholder package.
-- Added placeholder test.
+- Added `pydantic` as a project dependency.
+- Added `pytest` as a dev dependency for the test run.
 
 ### Changed
 
-- Nothing yet.
+- Updated project state for the core data model foundation.
 
 ### Fixed
 
