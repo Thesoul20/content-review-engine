@@ -1,0 +1,520 @@
+# TASK-0003: Add Markdown Reader and Profile Loading
+
+## Goal
+
+Add the basic input layer for the content review engine.
+
+This task should implement:
+
+1. Markdown file reading.
+2. Review profile loading from YAML.
+3. Basic tests for both features.
+
+This task must not implement review rules, CLI, MCP, Skill, API, database, frontend, or PydanticAI integration.
+
+---
+
+## Background
+
+The project already has the initial core data models:
+
+* `ReviewIssue`
+* `ReviewResult`
+* `ReviewProfile`
+
+The next step is to make the project able to:
+
+```text
+Read Markdown content from a file
+→ Load a ReviewProfile from a YAML file
+→ Return validated Python objects
+```
+
+This prepares the project for the next task, where deterministic review rules will be added.
+
+---
+
+## Architecture Context
+
+The project follows a Python package-first architecture.
+
+Markdown reading should be implemented in:
+
+```text
+src/content_review_engine/parser/
+```
+
+Profile loading should be implemented in:
+
+```text
+src/content_review_engine/config/
+```
+
+Profile files should live in:
+
+```text
+profiles/
+```
+
+The core data model source of truth remains:
+
+```text
+src/content_review_engine/core/models.py
+```
+
+---
+
+## Scope
+
+Create or update the following files:
+
+```text
+src/content_review_engine/parser/__init__.py
+src/content_review_engine/parser/markdown.py
+
+src/content_review_engine/config/__init__.py
+src/content_review_engine/config/profiles.py
+
+profiles/wechat.yaml
+
+tests/test_markdown_parser.py
+tests/test_profile_loader.py
+
+docs/ARCHITECTURE.md
+PROJECT_STATE.md
+CHANGELOG.md
+```
+
+---
+
+## Do Not Modify
+
+Do not add or modify:
+
+```text
+CLI code
+MCP server code
+Skill files
+FastAPI code
+Supabase code
+Frontend code
+PydanticAI integration
+Review rules
+Prompt templates
+Database models
+ReviewIssue
+ReviewResult
+ReviewProfile
+```
+
+Do not implement a review pipeline in this task.
+
+Do not generate review results in this task.
+
+---
+
+## Required Dependencies
+
+This task needs YAML parsing.
+
+Use:
+
+```text
+pyyaml
+```
+
+If `pyyaml` is not already installed, add it using the project package manager.
+
+Do not add PydanticAI in this task.
+
+---
+
+## Markdown Reader Requirements
+
+Create:
+
+```text
+src/content_review_engine/parser/markdown.py
+```
+
+Implement:
+
+```python
+from pathlib import Path
+
+
+def read_markdown(path: str | Path) -> str:
+    ...
+```
+
+Requirements:
+
+1. Accept `str` or `Path`.
+2. Raise `FileNotFoundError` if the file does not exist.
+3. Raise `ValueError` if the file extension is not `.md` or `.markdown`.
+4. Read the file using UTF-8.
+5. Return the Markdown content as `str`.
+
+Suggested implementation:
+
+```python
+from pathlib import Path
+
+
+def read_markdown(path: str | Path) -> str:
+    file_path = Path(path)
+
+    if not file_path.exists():
+        raise FileNotFoundError(f"Markdown file not found: {file_path}")
+
+    if file_path.suffix.lower() not in {".md", ".markdown"}:
+        raise ValueError(f"Expected a Markdown file, got: {file_path.suffix}")
+
+    return file_path.read_text(encoding="utf-8")
+```
+
+Create or update:
+
+```text
+src/content_review_engine/parser/__init__.py
+```
+
+Suggested implementation:
+
+```python
+from content_review_engine.parser.markdown import read_markdown
+
+__all__ = ["read_markdown"]
+```
+
+---
+
+## Profile Loading Requirements
+
+Create:
+
+```text
+src/content_review_engine/config/profiles.py
+```
+
+Implement:
+
+```python
+from pathlib import Path
+
+from content_review_engine.core.models import ReviewProfile
+
+
+def load_profile(path: str | Path) -> ReviewProfile:
+    ...
+```
+
+Requirements:
+
+1. Accept `str` or `Path`.
+2. Raise `FileNotFoundError` if the YAML file does not exist.
+3. Raise `ValueError` if the file extension is not `.yaml` or `.yml`.
+4. Read the YAML file using UTF-8.
+5. Parse YAML using `yaml.safe_load`.
+6. Validate the parsed data using `ReviewProfile`.
+7. Return a `ReviewProfile` instance.
+8. If the YAML file is empty, raise `ValueError`.
+
+Suggested implementation:
+
+```python
+from pathlib import Path
+
+import yaml
+
+from content_review_engine.core.models import ReviewProfile
+
+
+def load_profile(path: str | Path) -> ReviewProfile:
+    profile_path = Path(path)
+
+    if not profile_path.exists():
+        raise FileNotFoundError(f"Profile file not found: {profile_path}")
+
+    if profile_path.suffix.lower() not in {".yaml", ".yml"}:
+        raise ValueError(f"Expected a YAML profile file, got: {profile_path.suffix}")
+
+    data = yaml.safe_load(profile_path.read_text(encoding="utf-8"))
+
+    if not data:
+        raise ValueError(f"Profile file is empty: {profile_path}")
+
+    return ReviewProfile(**data)
+```
+
+Create or update:
+
+```text
+src/content_review_engine/config/__init__.py
+```
+
+Suggested implementation:
+
+```python
+from content_review_engine.config.profiles import load_profile
+
+__all__ = ["load_profile"]
+```
+
+---
+
+## Profile File Requirements
+
+Create:
+
+```text
+profiles/wechat.yaml
+```
+
+Suggested content:
+
+```yaml
+name: wechat
+target_platform: wechat
+tone: clear and professional
+max_title_length: 32
+max_paragraph_length: 220
+```
+
+---
+
+## Test Requirements
+
+Create:
+
+```text
+tests/test_markdown_parser.py
+```
+
+Suggested tests:
+
+```python
+import pytest
+
+from content_review_engine.parser.markdown import read_markdown
+
+
+def test_read_markdown_file(tmp_path):
+    file_path = tmp_path / "article.md"
+    file_path.write_text("# Title\n\nContent", encoding="utf-8")
+
+    content = read_markdown(file_path)
+
+    assert content == "# Title\n\nContent"
+
+
+def test_read_markdown_file_with_markdown_extension(tmp_path):
+    file_path = tmp_path / "article.markdown"
+    file_path.write_text("# Title", encoding="utf-8")
+
+    content = read_markdown(file_path)
+
+    assert content == "# Title"
+
+
+def test_read_markdown_missing_file_should_fail(tmp_path):
+    file_path = tmp_path / "missing.md"
+
+    with pytest.raises(FileNotFoundError):
+        read_markdown(file_path)
+
+
+def test_read_markdown_invalid_extension_should_fail(tmp_path):
+    file_path = tmp_path / "article.txt"
+    file_path.write_text("Content", encoding="utf-8")
+
+    with pytest.raises(ValueError):
+        read_markdown(file_path)
+```
+
+Create:
+
+```text
+tests/test_profile_loader.py
+```
+
+Suggested tests:
+
+```python
+import pytest
+from pydantic import ValidationError
+
+from content_review_engine.config.profiles import load_profile
+
+
+def test_load_profile_from_yaml(tmp_path):
+    file_path = tmp_path / "wechat.yaml"
+    file_path.write_text(
+        """
+name: wechat
+target_platform: wechat
+tone: clear and professional
+max_title_length: 32
+max_paragraph_length: 220
+""".strip(),
+        encoding="utf-8",
+    )
+
+    profile = load_profile(file_path)
+
+    assert profile.name == "wechat"
+    assert profile.target_platform == "wechat"
+    assert profile.max_title_length == 32
+    assert profile.max_paragraph_length == 220
+
+
+def test_load_profile_missing_file_should_fail(tmp_path):
+    file_path = tmp_path / "missing.yaml"
+
+    with pytest.raises(FileNotFoundError):
+        load_profile(file_path)
+
+
+def test_load_profile_invalid_extension_should_fail(tmp_path):
+    file_path = tmp_path / "profile.txt"
+    file_path.write_text("name: wechat", encoding="utf-8")
+
+    with pytest.raises(ValueError):
+        load_profile(file_path)
+
+
+def test_load_profile_empty_file_should_fail(tmp_path):
+    file_path = tmp_path / "empty.yaml"
+    file_path.write_text("", encoding="utf-8")
+
+    with pytest.raises(ValueError):
+        load_profile(file_path)
+
+
+def test_load_profile_invalid_schema_should_fail(tmp_path):
+    file_path = tmp_path / "invalid.yaml"
+    file_path.write_text(
+        """
+name: wechat
+""".strip(),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValidationError):
+        load_profile(file_path)
+```
+
+---
+
+## Documentation Requirements
+
+Update:
+
+```text
+docs/ARCHITECTURE.md
+```
+
+Add a section like:
+
+```markdown
+## Input Layer
+
+The input layer currently contains:
+
+- `parser/markdown.py`
+- `config/profiles.py`
+
+Responsibilities:
+
+- `read_markdown()` reads Markdown files from disk.
+- `load_profile()` loads YAML review profiles and validates them as `ReviewProfile`.
+
+The input layer must not contain review rules, AI logic, CLI logic, MCP logic, or API logic.
+```
+
+---
+
+## PROJECT_STATE Update Requirements
+
+After completing this task, update `PROJECT_STATE.md`.
+
+Add or update the handoff section:
+
+```markdown
+## Last Handoff
+
+### Completed
+
+- Added Markdown file reader.
+- Added YAML review profile loader.
+- Added default `profiles/wechat.yaml`.
+- Added tests for Markdown reading.
+- Added tests for profile loading.
+- Updated architecture documentation for the input layer.
+
+### Changed Files
+
+- src/content_review_engine/parser/__init__.py
+- src/content_review_engine/parser/markdown.py
+- src/content_review_engine/config/__init__.py
+- src/content_review_engine/config/profiles.py
+- profiles/wechat.yaml
+- tests/test_markdown_parser.py
+- tests/test_profile_loader.py
+- docs/ARCHITECTURE.md
+- PROJECT_STATE.md
+- CHANGELOG.md
+
+### Test Result
+
+`uv run pytest` passed.
+
+### Next Recommended Task
+
+TASK-0004: Add basic deterministic WeChat review rules.
+
+### Notes
+
+No CLI, MCP, Skill, API, database, frontend, PydanticAI, review pipeline, or review rule code was added.
+```
+
+---
+
+## CHANGELOG Update Requirements
+
+Update `CHANGELOG.md` under `Unreleased`:
+
+```markdown
+### Added
+
+- Added Markdown file reader.
+- Added YAML review profile loader.
+- Added default WeChat review profile.
+- Added tests for Markdown reading and profile loading.
+```
+
+---
+
+## Acceptance Criteria
+
+This task is complete only if:
+
+* `read_markdown()` exists.
+* `read_markdown()` can read `.md` files.
+* `read_markdown()` can read `.markdown` files.
+* `read_markdown()` raises `FileNotFoundError` for missing files.
+* `read_markdown()` raises `ValueError` for invalid file extensions.
+* `load_profile()` exists.
+* `load_profile()` loads `.yaml` files.
+* `load_profile()` returns `ReviewProfile`.
+* `load_profile()` raises `FileNotFoundError` for missing files.
+* `load_profile()` raises `ValueError` for invalid file extensions.
+* `load_profile()` raises `ValueError` for empty files.
+* invalid profile schema fails validation.
+* `profiles/wechat.yaml` exists.
+* tests are added.
+* `uv run pytest` passes.
+* `docs/ARCHITECTURE.md` is updated.
+* `PROJECT_STATE.md` is updated with handoff.
+* `CHANGELOG.md` is updated.
+* No CLI, MCP, Skill, API, database, frontend, PydanticAI, review pipeline, or review rule code is added.
