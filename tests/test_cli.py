@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from importlib.metadata import entry_points
 from pathlib import Path
 
 import pytest
@@ -227,3 +228,15 @@ def test_cli_review_output_write_failure_returns_two(
 
     assert exit_code == 2
     assert "Error:" in captured.err
+
+
+def test_console_script_entrypoint_is_exposed() -> None:
+    console_scripts = entry_points(group="console_scripts")
+    content_review_entrypoints = [
+        entry_point
+        for entry_point in console_scripts
+        if entry_point.name == "content-review"
+    ]
+
+    assert content_review_entrypoints, "content-review console script is missing"
+    assert content_review_entrypoints[0].value == "content_review_engine.cli:main"

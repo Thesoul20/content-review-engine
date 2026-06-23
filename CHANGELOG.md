@@ -40,6 +40,8 @@ This project follows a staged development process.
 - Added CLI `--output` support for writing rendered review output to a file.
 - Added tests for the Markdown report renderer, CLI Markdown stdout, CLI Markdown output files, and output write failures.
 - Added `docs/REPORTS.md`.
+- Added packaging configuration so `uv run content-review` can install and expose the console script.
+- Added a console-script smoke test for the packaged `content-review` entrypoint.
 
 ### Changed
 
@@ -64,6 +66,8 @@ This project follows a staged development process.
 - Updated architecture docs for the report renderer.
 - Updated project state for TASK-0008 completion.
 - Updated changelog for TASK-0008.
+- Updated CLI and testing docs to prefer `uv run content-review`.
+- Updated project state for TASK-0010 completion.
 
 ### Fixed
 

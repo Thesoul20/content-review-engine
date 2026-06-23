@@ -8,6 +8,23 @@ Run the current validation suite with:
 uv run pytest
 ```
 
+## Manual CLI Smoke Validation
+
+After `uv sync`, validate the packaged console script directly:
+
+```bash
+uv run content-review --help
+```
+
+Then run the committed example file through the same entrypoint:
+
+```bash
+uv run content-review review examples/article.md --profile examples/profile.yml --format text
+uv run content-review review examples/article.md --profile examples/profile.yml --format json
+uv run content-review review examples/article.md --profile examples/profile.yml --format markdown
+uv run content-review review examples/article.md --profile examples/profile.yml --format markdown --output /tmp/content-review-example-report.md
+```
+
 ## Fixture Layout
 
 Automated tests use committed fixtures under `tests/fixtures/`.

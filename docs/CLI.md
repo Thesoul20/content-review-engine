@@ -3,7 +3,7 @@
 ## Current Command
 
 ```bash
-content-review review <markdown_file> --profile <profile_file> [--format text|json|markdown] [--output <file>]
+uv run content-review review <markdown_file> --profile <profile_file> [--format text|json|markdown] [--output <file>]
 ```
 
 The CLI is a thin adapter over the core review pipeline.

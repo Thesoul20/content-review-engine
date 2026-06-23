@@ -25,6 +25,7 @@ The project currently has Markdown input handling, profile loading, deterministi
 - A minimal review pipeline has been implemented.
 - A minimal Markdown report renderer has been implemented.
 - The CLI can export Markdown review reports.
+- The project is packaged so `uv run content-review` resolves the console script.
 
 ---
 
@@ -33,6 +34,11 @@ The project currently has Markdown input handling, profile loading, deterministi
 - No active implementation task.
 
 ## Recent Completion
+
+- TASK-0010 is complete.
+- Added packaging configuration so the existing `content-review` console script is installable through `uv sync`.
+- Updated CLI and testing docs to prefer `uv run content-review`.
+- Added a console-script smoke test that checks the packaged entrypoint metadata.
 
 - TASK-0009 is complete.
 - Added committed Markdown fixtures for clean, forbidden-term, multiline, and code-block scenarios.
