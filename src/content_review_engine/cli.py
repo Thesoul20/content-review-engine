@@ -3,10 +3,12 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from pathlib import Path
 
 from content_review_engine.config import load_profile
 from content_review_engine.core.models import ReviewFinding
 from content_review_engine.parser import read_markdown
+from content_review_engine.reports import render_markdown_report
 from content_review_engine.review import review_document
 from pydantic import ValidationError
 
@@ -30,9 +32,13 @@ def build_parser() -> argparse.ArgumentParser:
     )
     review_parser.add_argument(
         "--format",
-        choices=["text", "json"],
+        choices=["text", "json", "markdown"],
         default="text",
         help="Output format for the review result.",
+    )
+    review_parser.add_argument(
+        "--output",
+        help="Write the rendered review output to a file.",
     )
 
     return parser
@@ -47,31 +53,55 @@ def _build_json_payload(findings: list[ReviewFinding]) -> dict[str, object]:
     }
 
 
-def _print_text_findings(findings: list[ReviewFinding]) -> None:
-    print("Review completed.")
-    print()
-    print(f"Findings: {len(findings)}")
-    print()
+def _render_text_report(findings: list[ReviewFinding]) -> str:
+    lines = [
+        "Review completed.",
+        "",
+        f"Findings: {len(findings)}",
+        "",
+    ]
 
     if not findings:
-        print("No issues found.")
-        return
+        lines.append("No issues found.")
+        return "\n".join(lines)
 
     for finding in findings:
-        print(f"[{finding.severity}] {finding.rule_id}: {finding.message}")
+        lines.append(f"[{finding.severity}] {finding.rule_id}: {finding.message}")
         location = finding.location
         if location is not None:
-            print(f"Line: {location.start_line}")
-            print(f"Column: {location.start_column}")
-            print(f"Matched: {location.matched_text}")
+            lines.append(f"Line: {location.start_line}")
+            lines.append(f"Column: {location.start_column}")
+            lines.append(f"Matched: {location.matched_text}")
             if location.context is not None:
-                print(f"Context: {location.context}")
-        print()
+                lines.append(f"Context: {location.context}")
+        lines.append("")
+
+    return "\n".join(lines)
 
 
-def _print_json_findings(findings: list[ReviewFinding]) -> None:
+def _render_json_report(findings: list[ReviewFinding]) -> str:
     payload = _build_json_payload(findings)
-    print(json.dumps(payload, ensure_ascii=False, indent=2))
+    return json.dumps(payload, ensure_ascii=False, indent=2)
+
+
+def _render_output(
+    findings: list[ReviewFinding],
+    *,
+    output_format: str,
+    markdown_file: str,
+    profile_name: str,
+    profile_path: str,
+) -> str:
+    if output_format == "json":
+        return _render_json_report(findings)
+    if output_format == "markdown":
+        return render_markdown_report(
+            findings,
+            document_path=markdown_file,
+            profile_name=profile_name,
+            profile_path=profile_path,
+        )
+    return _render_text_report(findings)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -90,10 +120,21 @@ def main(argv: list[str] | None = None) -> int:
         markdown_text = read_markdown(args.markdown_file)
         profile = load_profile(args.profile)
         findings = review_document(markdown_text, profile)
-        if args.format == "json":
-            _print_json_findings(findings)
+        rendered_output = _render_output(
+            findings,
+            output_format=args.format,
+            markdown_file=args.markdown_file,
+            profile_name=profile.name,
+            profile_path=args.profile,
+        )
+        if args.output is not None:
+            try:
+                Path(args.output).write_text(rendered_output, encoding="utf-8")
+            except OSError as exc:
+                print(f"Error: {exc}", file=sys.stderr)
+                return 2
         else:
-            _print_text_findings(findings)
+            print(rendered_output)
         return 0
     except (FileNotFoundError, ValueError, ValidationError) as exc:
         print(f"Error: {exc}", file=sys.stderr)

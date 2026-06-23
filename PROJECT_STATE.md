@@ -23,6 +23,8 @@ The project currently has Markdown input handling, profile loading, deterministi
 - Markdown reader and YAML profile loading have been implemented.
 - The first deterministic review rule has been implemented.
 - A minimal review pipeline has been implemented.
+- A minimal Markdown report renderer has been implemented.
+- The CLI can export Markdown review reports.
 
 ---
 
@@ -32,6 +34,11 @@ The project currently has Markdown input handling, profile loading, deterministi
 
 ## Recent Completion
 
+- TASK-0008 is complete.
+- Added a Markdown review report renderer in `content_review_engine.reports`.
+- The CLI now supports `--format markdown`.
+- The CLI now supports `--output` for writing rendered reports to a file.
+- Added tests for the Markdown report renderer and CLI Markdown output paths.
 - TASK-0007 is complete.
 - Added source location metadata to review findings.
 - The forbidden terms rule now reports matched text, line, column, character offsets, and a context snippet.

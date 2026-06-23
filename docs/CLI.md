@@ -3,11 +3,11 @@
 ## Current Command
 
 ```bash
-content-review review <markdown_file> --profile <profile_file> [--format text|json]
+content-review review <markdown_file> --profile <profile_file> [--format text|json|markdown] [--output <file>]
 ```
 
 The CLI is a thin adapter over the core review pipeline.
-It reads Markdown, loads a YAML profile, runs deterministic rules, and prints the result.
+It reads Markdown, loads a YAML profile, runs deterministic rules, and prints or exports the result.
 
 ## Output Formats
 
@@ -69,7 +69,38 @@ Example shape:
 }
 ```
 
+### Markdown
+
+Markdown output is intended for human-readable review reports.
+It uses the existing review findings and renders a report with a summary section and per-finding details.
+
+When `--output` is provided, the CLI writes the rendered output to the given file instead of printing it to stdout.
+If the write fails, the command exits with code `2`.
+
+Example shape:
+
+```markdown
+# Content Review Report
+
+## Summary
+
+- Document: `article.md`
+- Profile: `profiles/wechat.yaml`
+- Findings: 1
+
+## Findings
+
+### forbidden_terms
+
+- Severity: warning
+- Message: 发现风险词：保证赚钱
+- Line: 3
+- Column: 5
+- Matched: `保证赚钱`
+- Context: 这篇文章承诺保证赚钱。
+```
+
 ## Notes
 
 - The CLI does not implement review logic itself.
-- The CLI does not add rewriting, diff tracking, batch review, watch mode, MCP, API, or GUI support.
+- The CLI does not add rewriting, diff tracking, batch review, watch mode, MCP, API, GUI, or report generation logic of its own.

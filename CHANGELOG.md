@@ -35,6 +35,11 @@ This project follows a staged development process.
 - Added CLI tests for successful reviews, missing files, and help output.
 - Added CLI JSON output support for review findings.
 - Added `docs/CLI.md`.
+- Added a Markdown report renderer in `content_review_engine.reports`.
+- Added CLI `--format markdown` support.
+- Added CLI `--output` support for writing rendered review output to a file.
+- Added tests for the Markdown report renderer, CLI Markdown stdout, CLI Markdown output files, and output write failures.
+- Added `docs/REPORTS.md`.
 
 ### Changed
 
@@ -55,6 +60,10 @@ This project follows a staged development process.
 - Updated CLI JSON output to include nested location objects.
 - Updated project state for TASK-0007 completion.
 - Updated changelog for TASK-0007.
+- Updated CLI docs for Markdown report export.
+- Updated architecture docs for the report renderer.
+- Updated project state for TASK-0008 completion.
+- Updated changelog for TASK-0008.
 
 ### Fixed
 

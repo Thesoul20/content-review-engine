@@ -47,6 +47,7 @@ src/content_review_engine/parser/
 src/content_review_engine/config/
 src/content_review_engine/review/
 src/content_review_engine/rules/
+src/content_review_engine/reports/
 profiles/
 ```
 
@@ -71,6 +72,7 @@ Current implemented input helpers:
 - `content_review_engine.config.load_profile`
 - `content_review_engine.rules.check_forbidden_terms`
 - `content_review_engine.review.review_document`
+- `content_review_engine.reports.render_markdown_report`
 
 Current CLI adapter:
 
@@ -95,7 +97,8 @@ Review Result
 ```
 
 The CLI currently supports reviewing one Markdown file with one YAML profile.
-It prints a simple human-readable summary and supports JSON output, but does not yet support HTML, batch review, or report persistence.
+It prints a simple human-readable summary, supports JSON output, and can export Markdown review reports.
+It does not yet support HTML, batch review, or report persistence beyond the optional Markdown output file.
 
 Current deterministic rules:
 
@@ -106,6 +109,11 @@ Current review pipeline:
 - `review_document()` accepts already-loaded Markdown text and a loaded `ReviewProfile`.
 - The pipeline runs deterministic rules in memory.
 - The pipeline currently calls `forbidden_terms` directly and returns collected findings.
+
+Current report generation:
+
+- `render_markdown_report()` accepts existing `ReviewFinding` objects and renders a Markdown report.
+- The report renderer does not run rules, read Markdown files, or write output files.
 
 ---
 
