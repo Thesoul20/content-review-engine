@@ -8,7 +8,7 @@ from content_review_engine.core.models import (
     ReviewProfileMetadata,
     ReviewResult,
 )
-from content_review_engine.rules import check_forbidden_terms
+from content_review_engine.rules import run_rules
 
 
 def review_document(
@@ -18,7 +18,7 @@ def review_document(
     document_path: str | Path | None = None,
     profile_path: str | Path | None = None,
 ) -> ReviewResult:
-    findings = check_forbidden_terms(markdown_text, profile)
+    findings = run_rules(markdown_text, profile)
     document = (
         ReviewDocumentMetadata(path=str(document_path))
         if document_path is not None

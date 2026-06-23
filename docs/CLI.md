@@ -123,7 +123,9 @@ Example shape:
 ## Notes
 
 - The CLI does not implement review logic itself.
+- The CLI runs the default internal rule registry through the review pipeline.
 - The CLI does not add rewriting, diff tracking, batch review, watch mode, MCP, API, GUI, or report generation logic of its own.
+- If a profile references an unknown rule ID, the CLI prints a readable error and exits with code `2`.
 
 ## Example Files
 

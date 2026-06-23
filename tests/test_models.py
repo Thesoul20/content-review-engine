@@ -110,6 +110,17 @@ def test_create_review_profile() -> None:
     assert profile.tone == "clear and professional"
     assert profile.max_title_length == 32
     assert profile.max_paragraph_length == 220
+    assert profile.enabled_rules is None
+
+
+def test_create_review_profile_with_enabled_rules() -> None:
+    profile = ReviewProfile(
+        name="wechat",
+        target_platform="wechat",
+        enabled_rules=["forbidden_terms"],
+    )
+
+    assert profile.enabled_rules == ["forbidden_terms"]
 
 
 def test_create_source_span() -> None:

@@ -3,8 +3,11 @@ from __future__ import annotations
 import inspect
 from pathlib import Path
 
+import pytest
+
 from content_review_engine.config import load_profile
-from content_review_engine.core.models import ReviewProfile, ReviewResult
+from content_review_engine.core.models import ReviewFinding, ReviewProfile, ReviewResult
+from content_review_engine.core.models import SourceSpan
 from content_review_engine.review import review_document
 
 FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures"
@@ -111,3 +114,39 @@ def test_review_document_accepts_loaded_text_and_profile_not_paths() -> None:
 
     assert len(result.findings) == 1
     assert result.findings[0].matched_term == "保证赚钱"
+
+
+def test_review_document_uses_rule_runner(monkeypatch: pytest.MonkeyPatch) -> None:
+    profile = ReviewProfile(
+        name="wechat",
+        target_platform="wechat",
+    )
+    finding = ReviewFinding(
+        rule_id="forbidden_terms",
+        severity="warning",
+        message="runner finding",
+        matched_term="token",
+        matched_text="token",
+        location=SourceSpan(
+            start_line=1,
+            start_column=1,
+            end_line=1,
+            end_column=5,
+            start_offset=0,
+            end_offset=5,
+            matched_text="token",
+        ),
+    )
+
+    def fake_run_rules(text: str, profile_arg: ReviewProfile) -> list[ReviewFinding]:
+        assert text == "text from pipeline"
+        assert profile_arg is profile
+        return [finding]
+
+    monkeypatch.setattr("content_review_engine.review.pipeline.run_rules", fake_run_rules)
+
+    result = review_document("text from pipeline", profile)
+
+    assert isinstance(result, ReviewResult)
+    assert result.findings == [finding]
+    assert result.summary.finding_count == 1

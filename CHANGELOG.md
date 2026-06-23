@@ -8,6 +8,35 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0012
+
+### Added
+
+- Added an internal rule interface, rule registry, and rule runner.
+- Added a default rule registry containing the existing forbidden-terms rule.
+- Added an optional `enabled_rules` field on `ReviewProfile` for explicit rule selection.
+- Added tests for registry registration, duplicate rules, unknown rules, default registry behavior, rule runner behavior, review pipeline integration, and unknown-rule CLI handling.
+- Added `docs/RULES.md`.
+
+### Changed
+
+- Updated the review pipeline to execute rules through the rule runner.
+- Preserved canonical `ReviewResult` output.
+- Preserved existing forbidden-terms behavior.
+- Updated `docs/ARCHITECTURE.md`, `docs/DATA_MODELS.md`, `docs/CLI.md`, `PROJECT_STATE.md`, and this changelog.
+
+### Not Added
+
+- No new review rules.
+- No LLM review.
+- No automatic rewriting.
+- No diff tracking.
+- No batch review.
+- No MCP server.
+- No REST API.
+- No GUI.
+- No database persistence.
+
 ### Added
 
 - Added canonical `ReviewSummary`, `ReviewDocumentMetadata`, and `ReviewProfileMetadata` models.

@@ -71,6 +71,8 @@ Current implemented input helpers:
 - `content_review_engine.parser.read_markdown`
 - `content_review_engine.config.load_profile`
 - `content_review_engine.rules.check_forbidden_terms`
+- `content_review_engine.rules.build_default_rule_registry`
+- `content_review_engine.rules.run_rules`
 - `content_review_engine.review.review_document`
 - `content_review_engine.reports.render_markdown_report`
 
@@ -91,6 +93,10 @@ Profile Loader
  ↓
 Review Pipeline
  ↓
+Rule Runner
+ ↓
+Rule Registry
+ ↓
 Deterministic Rules
  ↓
 Review Result
@@ -107,8 +113,9 @@ Current deterministic rules:
 Current review pipeline:
 
 - `review_document()` accepts already-loaded Markdown text and a loaded `ReviewProfile`.
-- The pipeline runs deterministic rules in memory.
-- The pipeline currently calls `forbidden_terms` directly and returns a canonical `ReviewResult`.
+- The pipeline runs deterministic rules in memory through the rule runner.
+- The default registry currently includes the deterministic `forbidden_terms` rule.
+- The pipeline returns a canonical `ReviewResult`.
 
 Current report generation:
 

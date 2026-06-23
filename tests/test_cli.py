@@ -244,6 +244,33 @@ def test_cli_review_output_write_failure_returns_two(
     assert "Error:" in captured.err
 
 
+def test_cli_review_unknown_rule_returns_two(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    markdown_path = "tests/fixtures/markdown/forbidden_terms_article.md"
+    profile_path = tmp_path / "unknown-rule.yml"
+    profile_path.write_text(
+        "\n".join(
+            [
+                "name: custom",
+                "target_platform: wechat",
+                "enabled_rules:",
+                "  - missing_rule",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    exit_code = main(["review", markdown_path, "--profile", str(profile_path)])
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert "Error: Unknown rule ID: missing_rule" in captured.err
+    assert captured.out == ""
+
+
 def test_console_script_entrypoint_is_exposed() -> None:
     console_scripts = entry_points(group="console_scripts")
     content_review_entrypoints = [

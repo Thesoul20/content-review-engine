@@ -70,3 +70,22 @@ def test_load_profile_invalid_schema_raises_validation_error(tmp_path: Path) -> 
 
     with pytest.raises(ValidationError):
         load_profile(profile_path)
+
+
+def test_load_profile_with_enabled_rules(tmp_path: Path) -> None:
+    profile_path = tmp_path / "rules.yaml"
+    profile_path.write_text(
+        "\n".join(
+            [
+                "name: wechat",
+                "target_platform: wechat",
+                "enabled_rules:",
+                "  - forbidden_terms",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    profile = load_profile(profile_path)
+
+    assert profile.enabled_rules == ["forbidden_terms"]

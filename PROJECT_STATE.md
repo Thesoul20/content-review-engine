@@ -4,7 +4,7 @@
 
 M1: Core input layer and minimal review pipeline.
 
-The project currently has Markdown input handling, profile loading, deterministic review rules, source location metadata on findings, a minimal in-memory review pipeline, and committed fixtures/examples for integration-style testing and manual CLI checks.
+The project currently has Markdown input handling, profile loading, deterministic review rules, a minimal internal rule registry and rule runner, source location metadata on findings, a minimal in-memory review pipeline, and committed fixtures/examples for integration-style testing and manual CLI checks.
 
 ---
 
@@ -34,6 +34,15 @@ The project currently has Markdown input handling, profile loading, deterministi
 - No active implementation task.
 
 ## Recent Completion
+
+- TASK-0012 is complete.
+- Added a minimal internal rule interface, rule registry, and rule runner.
+- The existing forbidden-terms rule now runs through the rule runner.
+- The review pipeline still returns canonical `ReviewResult`.
+- Added an optional `enabled_rules` field to `ReviewProfile` for explicit rule selection.
+- Preserved existing CLI behavior for the default review path.
+- Added tests for rule registry registration, duplicate rule IDs, unknown rule IDs, default registry behavior, rule runner behavior, review pipeline integration, and unknown-rule CLI handling.
+- Added `docs/RULES.md` and updated architecture, data model, project state, and changelog documentation.
 
 - TASK-0011 is complete.
 - Added a canonical `ReviewResult` model with `ReviewSummary`, document metadata, and profile metadata support.
@@ -99,6 +108,10 @@ The project currently has Markdown input handling, profile loading, deterministi
 
 ### Completed
 
+- Added a minimal internal rule registry and rule runner.
+- Routed the forbidden-terms rule through the runner.
+- Added a default registry containing `forbidden_terms`.
+- Added optional `enabled_rules` support to `ReviewProfile`.
 - Defined initial core data models.
 - Added `ReviewIssue`.
 - Added `ReviewResult`.

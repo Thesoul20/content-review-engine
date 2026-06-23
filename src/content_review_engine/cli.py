@@ -10,6 +10,7 @@ from content_review_engine.core.serialization import review_result_to_json
 from content_review_engine.parser import read_markdown
 from content_review_engine.reports import render_markdown_report
 from content_review_engine.review import review_document
+from content_review_engine.rules import UnknownRuleError
 from pydantic import ValidationError
 
 
@@ -120,6 +121,9 @@ def main(argv: list[str] | None = None) -> int:
         else:
             print(rendered_output)
         return 0
+    except UnknownRuleError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return 2
     except (FileNotFoundError, ValueError, ValidationError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 1

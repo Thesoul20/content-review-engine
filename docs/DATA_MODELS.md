@@ -214,6 +214,7 @@ Example:
 | `max_title_length` | No | Maximum suggested title length |
 | `max_paragraph_length` | No | Maximum suggested paragraph length |
 | `forbidden_terms` | No | List of forbidden terms to detect |
+| `enabled_rules` | No | Optional ordered list of rule IDs to run |
 
 ---
 
