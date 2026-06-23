@@ -6,6 +6,12 @@ from pydantic import BaseModel, Field
 
 Severity = Literal["low", "medium", "high", "critical"]
 FindingSeverity = Literal["warning"]
+REVIEW_RESULT_SCHEMA_VERSION = "review-result.v1"
+REVIEW_SUMMARY_SEVERITIES: tuple[str, ...] = ("info", "warning", "error", "critical")
+
+
+def _default_severity_counts() -> dict[str, int]:
+    return {severity: 0 for severity in REVIEW_SUMMARY_SEVERITIES}
 
 
 class SourceSpan(BaseModel):
@@ -40,14 +46,51 @@ class ReviewFinding(BaseModel):
     location: SourceSpan | None = None
 
 
+class ReviewSummary(BaseModel):
+    finding_count: int = Field(ge=0)
+    severity_counts: dict[str, int] = Field(default_factory=_default_severity_counts)
+
+    @classmethod
+    def from_findings(cls, findings: list[ReviewFinding]) -> "ReviewSummary":
+        severity_counts = _default_severity_counts()
+        for finding in findings:
+            severity_counts[finding.severity] = severity_counts.get(finding.severity, 0) + 1
+        return cls(
+            finding_count=len(findings),
+            severity_counts=severity_counts,
+        )
+
+
+class ReviewDocumentMetadata(BaseModel):
+    path: str
+
+
+class ReviewProfileMetadata(BaseModel):
+    name: str
+    path: str | None = None
+
+
 class ReviewResult(BaseModel):
-    document_id: str
-    profile_name: str
-    overall_score: float = Field(ge=0, le=100)
-    summary: str
-    issues: list[ReviewIssue]
-    rewritten_markdown: str | None = None
-    diff: str | None = None
+    schema_version: str = REVIEW_RESULT_SCHEMA_VERSION
+    summary: ReviewSummary
+    findings: list[ReviewFinding] = Field(default_factory=list)
+    document: ReviewDocumentMetadata | None = None
+    profile: ReviewProfileMetadata | None = None
+
+    @classmethod
+    def from_findings(
+        cls,
+        findings: list[ReviewFinding],
+        *,
+        document: ReviewDocumentMetadata | None = None,
+        profile: ReviewProfileMetadata | None = None,
+    ) -> "ReviewResult":
+        return cls(
+            summary=ReviewSummary.from_findings(findings),
+            findings=list(findings),
+            document=document,
+            profile=profile,
+        )
 
 
 class ReviewProfile(BaseModel):
@@ -61,10 +104,15 @@ class ReviewProfile(BaseModel):
 
 __all__ = [
     "FindingSeverity",
+    "REVIEW_RESULT_SCHEMA_VERSION",
+    "REVIEW_SUMMARY_SEVERITIES",
+    "ReviewDocumentMetadata",
     "ReviewFinding",
     "ReviewIssue",
     "ReviewProfile",
+    "ReviewProfileMetadata",
     "ReviewResult",
+    "ReviewSummary",
     "SourceSpan",
     "Severity",
 ]

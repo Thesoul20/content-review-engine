@@ -4,7 +4,7 @@ import inspect
 from pathlib import Path
 
 from content_review_engine.config import load_profile
-from content_review_engine.core.models import ReviewFinding, ReviewProfile
+from content_review_engine.core.models import ReviewProfile, ReviewResult
 from content_review_engine.review import review_document
 
 FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures"
@@ -12,32 +12,46 @@ MARKDOWN_FIXTURES_DIR = FIXTURES_DIR / "markdown"
 PROFILE_FIXTURES_DIR = FIXTURES_DIR / "profiles"
 
 
-def test_review_document_returns_finding_for_forbidden_term() -> None:
+def test_review_document_returns_review_result_for_forbidden_term() -> None:
     markdown_text = (MARKDOWN_FIXTURES_DIR / "forbidden_terms_article.md").read_text(
         encoding="utf-8"
     )
     profile = load_profile(PROFILE_FIXTURES_DIR / "default.yml")
 
-    findings = review_document(markdown_text, profile)
+    result = review_document(markdown_text, profile)
 
-    assert len(findings) == 1
-    finding = findings[0]
-    assert isinstance(finding, ReviewFinding)
+    assert isinstance(result, ReviewResult)
+    assert result.schema_version == "review-result.v1"
+    assert result.summary.finding_count == 1
+    assert result.summary.severity_counts["warning"] == 1
+    assert len(result.findings) == 1
+    finding = result.findings[0]
     assert finding.rule_id == "forbidden_terms"
     assert finding.matched_term == "绝对安全"
     assert finding.location is not None
     assert finding.location.matched_text == "绝对安全"
     assert finding.location.start_line == 1
     assert finding.location.start_column == 8
+    assert result.document is None
+    assert result.profile is not None
+    assert result.profile.name == "default"
+    assert result.profile.path is None
 
 
-def test_review_document_returns_empty_list_when_no_terms_match() -> None:
+def test_review_document_returns_empty_result_when_no_terms_match() -> None:
     markdown_text = (MARKDOWN_FIXTURES_DIR / "clean_article.md").read_text(encoding="utf-8")
     profile = load_profile(PROFILE_FIXTURES_DIR / "default.yml")
 
-    findings = review_document(markdown_text, profile)
+    result = review_document(markdown_text, profile)
 
-    assert findings == []
+    assert result.summary.finding_count == 0
+    assert result.summary.severity_counts == {
+        "info": 0,
+        "warning": 0,
+        "error": 0,
+        "critical": 0,
+    }
+    assert result.findings == []
 
 
 def test_review_document_uses_multiline_fixture_positions() -> None:
@@ -46,15 +60,15 @@ def test_review_document_uses_multiline_fixture_positions() -> None:
     )
     profile = load_profile(PROFILE_FIXTURES_DIR / "strict.yml")
 
-    findings = review_document(markdown_text, profile)
+    result = review_document(markdown_text, profile)
 
-    assert [finding.matched_term for finding in findings] == [
+    assert [finding.matched_term for finding in result.findings] == [
         "绝对安全",
         "保证赚钱",
         "100%有效",
     ]
-    assert [finding.location.start_line for finding in findings] == [3, 4, 5]
-    assert [finding.location.start_column for finding in findings] == [3, 3, 3]
+    assert [finding.location.start_line for finding in result.findings] == [3, 4, 5]
+    assert [finding.location.start_column for finding in result.findings] == [3, 3, 3]
 
 
 def test_review_document_behavior_changes_with_profile() -> None:
@@ -69,17 +83,22 @@ def test_review_document_behavior_changes_with_profile() -> None:
         forbidden_terms=["绝对安全"],
     )
 
-    strict_findings = review_document("这篇文章承诺保证赚钱。", strict_profile)
-    relaxed_findings = review_document("这篇文章承诺保证赚钱。", relaxed_profile)
+    strict_result = review_document("这篇文章承诺保证赚钱。", strict_profile)
+    relaxed_result = review_document("这篇文章承诺保证赚钱。", relaxed_profile)
 
-    assert len(strict_findings) == 1
-    assert relaxed_findings == []
+    assert len(strict_result.findings) == 1
+    assert relaxed_result.findings == []
 
 
 def test_review_document_accepts_loaded_text_and_profile_not_paths() -> None:
     signature = inspect.signature(review_document)
 
-    assert list(signature.parameters) == ["markdown_text", "profile"]
+    assert list(signature.parameters) == [
+        "markdown_text",
+        "profile",
+        "document_path",
+        "profile_path",
+    ]
 
     profile = ReviewProfile(
         name="wechat",
@@ -88,7 +107,7 @@ def test_review_document_accepts_loaded_text_and_profile_not_paths() -> None:
     )
     markdown_text = "# 标题\n\n这篇文章承诺保证赚钱。"
 
-    findings = review_document(markdown_text, profile)
+    result = review_document(markdown_text, profile)
 
-    assert len(findings) == 1
-    assert findings[0].matched_term == "保证赚钱"
+    assert len(result.findings) == 1
+    assert result.findings[0].matched_term == "保证赚钱"

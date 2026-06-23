@@ -7,7 +7,7 @@ uv run content-review review <markdown_file> --profile <profile_file> [--format 
 ```
 
 The CLI is a thin adapter over the core review pipeline.
-It reads Markdown, loads a YAML profile, runs deterministic rules, and prints or exports the result.
+It reads Markdown, loads a YAML profile, runs deterministic rules, and prints or exports the canonical `ReviewResult`.
 
 ## Output Formats
 
@@ -37,13 +37,29 @@ Context: 这个方法绝对有效。
 
 ### JSON
 
-JSON output is intended for automation and includes the finding list plus a summary object.
-The finding entries include the nested `location` object when available.
+JSON output is the canonical serialized `ReviewResult` payload.
+It is produced by `review_result_to_json()` and includes:
+
+- `schema_version`
+- `summary`
+- `findings`
+- Optional `document` metadata
+- Optional `profile` metadata
 
 Example shape:
 
 ```json
 {
+  "schema_version": "review-result.v1",
+  "summary": {
+    "finding_count": 1,
+    "severity_counts": {
+      "info": 0,
+      "warning": 1,
+      "error": 0,
+      "critical": 0
+    }
+  },
   "findings": [
     {
       "rule_id": "forbidden_terms",
@@ -63,8 +79,12 @@ Example shape:
       }
     }
   ],
-  "summary": {
-    "finding_count": 1
+  "document": {
+    "path": "examples/article.md"
+  },
+  "profile": {
+    "name": "example",
+    "path": "examples/profile.yml"
   }
 }
 ```
@@ -72,7 +92,7 @@ Example shape:
 ### Markdown
 
 Markdown output is intended for human-readable review reports.
-It uses the existing review findings and renders a report with a summary section and per-finding details.
+It consumes the canonical `ReviewResult` and renders a report with a summary section and per-finding details.
 
 When `--output` is provided, the CLI writes the rendered output to the given file instead of printing it to stdout.
 If the write fails, the command exits with code `2`.
@@ -84,8 +104,8 @@ Example shape:
 
 ## Summary
 
-- Document: `article.md`
-- Profile: `profiles/wechat.yaml`
+- Document: `examples/article.md`
+- Profile: `examples/profile.yml`
 - Findings: 1
 
 ## Findings

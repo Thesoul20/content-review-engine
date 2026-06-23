@@ -6,16 +6,16 @@ This project currently supports one report format:
 
 - Markdown
 
-The report renderer is a thin formatter over existing review output.
+The report renderer is a thin formatter over the canonical `ReviewResult`.
 It does not run rules, read input files, or write files.
 
 ## Markdown Report
 
-The Markdown report is produced from existing review findings and includes:
+The Markdown report is produced from an existing `ReviewResult` and includes:
 
-- Document path
-- Profile path or profile name
-- Finding count
+- Document path, when available
+- Profile path or profile name, when available
+- Finding count from `ReviewSummary`
 - One section per finding
 
 Each finding section can include:

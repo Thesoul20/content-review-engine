@@ -6,11 +6,15 @@ This document records the core data models used by the content review engine.
 
 The implementation source of truth is `src/content_review_engine/core/models.py`.
 
+Canonical JSON serialization helpers live in `src/content_review_engine/core/serialization.py`.
+
 ---
 
 ## ReviewIssue
 
-`ReviewIssue` represents one review issue found in a document.
+`ReviewIssue` represents a higher-level issue object kept in the core model layer for future issue-based workflows.
+
+It is not part of the canonical review result payload stabilized by TASK-0011.
 
 | Field | Required | Description |
 |---|---|---|
@@ -49,7 +53,7 @@ Character offsets are 0-based.
 
 ## ReviewFinding
 
-`ReviewFinding` represents a deterministic rule match.
+`ReviewFinding` represents one deterministic rule match.
 
 | Field | Required | Description |
 |---|---|---|
@@ -84,19 +88,117 @@ ReviewFinding(
 
 ---
 
-## ReviewResult
+## ReviewSummary
 
-`ReviewResult` represents the full review result of a document.
+`ReviewSummary` summarizes a `ReviewResult`.
+
+The summary is computed from the findings list and should not be assembled separately in the CLI or report layers.
 
 | Field | Required | Description |
 |---|---|---|
-| `document_id` | Yes | Identifier of the reviewed document |
-| `profile_name` | Yes | Review profile name |
-| `overall_score` | Yes | Score from 0 to 100 |
-| `summary` | Yes | Review summary |
-| `issues` | Yes | List of `ReviewIssue` |
-| `rewritten_markdown` | No | Optional rewritten Markdown |
-| `diff` | No | Optional diff |
+| `finding_count` | Yes | Total number of findings |
+| `severity_counts` | Yes | Count of findings by severity |
+
+`severity_counts` currently uses the canonical buckets:
+
+- `info`
+- `warning`
+- `error`
+- `critical`
+
+Example:
+
+```json
+{
+  "finding_count": 2,
+  "severity_counts": {
+    "info": 0,
+    "warning": 2,
+    "error": 0,
+    "critical": 0
+  }
+}
+```
+
+---
+
+## ReviewDocumentMetadata
+
+`ReviewDocumentMetadata` stores optional document context for a `ReviewResult`.
+
+| Field | Required | Description |
+|---|---|---|
+| `path` | Yes | Path to the reviewed document |
+
+---
+
+## ReviewProfileMetadata
+
+`ReviewProfileMetadata` stores optional profile context for a `ReviewResult`.
+
+| Field | Required | Description |
+|---|---|---|
+| `name` | Yes | Profile name |
+| `path` | No | Path to the loaded profile |
+
+---
+
+## ReviewResult
+
+`ReviewResult` is the canonical structured output for a reviewed document.
+
+The stable schema version is `review-result.v1`.
+
+| Field | Required | Description |
+|---|---|---|
+| `schema_version` | Yes | Result schema version |
+| `summary` | Yes | `ReviewSummary` computed from findings |
+| `findings` | Yes | List of `ReviewFinding` |
+| `document` | No | Optional `ReviewDocumentMetadata` |
+| `profile` | No | Optional `ReviewProfileMetadata` |
+
+Example:
+
+```json
+{
+  "schema_version": "review-result.v1",
+  "summary": {
+    "finding_count": 1,
+    "severity_counts": {
+      "info": 0,
+      "warning": 1,
+      "error": 0,
+      "critical": 0
+    }
+  },
+  "findings": [
+    {
+      "rule_id": "forbidden_terms",
+      "severity": "warning",
+      "message": "发现风险词：绝对安全",
+      "matched_term": "绝对安全",
+      "matched_text": "绝对安全",
+      "location": {
+        "start_line": 1,
+        "start_column": 8,
+        "end_line": 1,
+        "end_column": 12,
+        "start_offset": 7,
+        "end_offset": 11,
+        "matched_text": "绝对安全",
+        "context": "# 测试文章 绝对安全"
+      }
+    }
+  ],
+  "document": {
+    "path": "examples/article.md"
+  },
+  "profile": {
+    "name": "example",
+    "path": "examples/profile.yml"
+  }
+}
+```
 
 ---
 
@@ -118,6 +220,8 @@ ReviewFinding(
 ## Change Rules
 
 1. Any change to `ReviewIssue` must update this document.
-2. Any change to `ReviewResult` must update this document.
-3. Any change to `ReviewProfile` must update this document.
-4. After v0.1.0, breaking changes to these models require an ADR.
+2. Any change to `ReviewFinding` must update this document.
+3. Any change to `ReviewSummary` must update this document.
+4. Any change to `ReviewResult` must update this document.
+5. Any change to `ReviewProfile` must update this document.
+6. After v0.1.0, breaking changes to these models require an ADR.

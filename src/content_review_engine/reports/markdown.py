@@ -1,9 +1,6 @@
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Sequence
-
-from content_review_engine.core.models import ReviewFinding
+from content_review_engine.core.models import ReviewFinding, ReviewResult
 
 
 def _format_value(value: str | None) -> str:
@@ -46,14 +43,15 @@ def _render_finding_details(finding: ReviewFinding) -> list[str]:
 
 
 def render_markdown_report(
-    findings: Sequence[ReviewFinding],
-    *,
-    document_path: str | Path | None = None,
-    profile_name: str | None = None,
-    profile_path: str | Path | None = None,
+    result: ReviewResult,
 ) -> str:
-    document_label = _format_value(str(document_path) if document_path is not None else None)
-    profile_label = _format_value(str(profile_path) if profile_path is not None else profile_name)
+    document_label = _format_value(
+        result.document.path if result.document is not None else None
+    )
+    if result.profile is None:
+        profile_label = "Unknown"
+    else:
+        profile_label = _format_value(result.profile.path or result.profile.name)
 
     lines = [
         "# Content Review Report",
@@ -62,19 +60,19 @@ def render_markdown_report(
         "",
         f"- Document: {document_label}",
         f"- Profile: {profile_label}",
-        f"- Findings: {len(findings)}",
+        f"- Findings: {result.summary.finding_count}",
         "",
         "## Findings",
         "",
     ]
 
-    if not findings:
+    if not result.findings:
         lines.append("No issues found.")
         return "\n".join(lines)
 
-    for index, finding in enumerate(findings, start=1):
+    for index, finding in enumerate(result.findings, start=1):
         lines.extend(_render_finding_details(finding))
-        if index < len(findings):
+        if index < len(result.findings):
             lines.append("")
 
     return "\n".join(lines)

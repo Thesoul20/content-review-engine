@@ -2,9 +2,13 @@ import pytest
 from pydantic import ValidationError
 
 from content_review_engine.core.models import (
+    ReviewDocumentMetadata,
+    ReviewFinding,
     ReviewIssue,
     ReviewProfile,
+    ReviewProfileMetadata,
     ReviewResult,
+    ReviewSummary,
     SourceSpan,
 )
 
@@ -28,29 +32,71 @@ def test_create_review_issue() -> None:
     assert issue.end_line == 1
 
 
-def test_create_review_result_with_issues() -> None:
-    issue = ReviewIssue(
-        id="WECHAT_TITLE_001",
-        severity="medium",
-        category="wechat_title",
-        title="标题过长",
-        description="标题长度超过建议上限。",
-        suggestion="建议缩短标题。",
+def test_create_review_summary_from_findings() -> None:
+    finding = ReviewFinding(
+        rule_id="forbidden_terms",
+        severity="warning",
+        message="发现风险词：绝对安全",
+        matched_term="绝对安全",
     )
 
-    result = ReviewResult(
-        document_id="doc-001",
-        profile_name="wechat",
-        overall_score=88,
-        summary="发现 1 个问题。",
-        issues=[issue],
+    summary = ReviewSummary.from_findings([finding])
+
+    assert summary.finding_count == 1
+    assert summary.severity_counts == {
+        "info": 0,
+        "warning": 1,
+        "error": 0,
+        "critical": 0,
+    }
+
+
+def test_create_review_summary_default_severity_counts_are_zeroed() -> None:
+    summary = ReviewSummary(finding_count=0)
+
+    assert summary.severity_counts == {
+        "info": 0,
+        "warning": 0,
+        "error": 0,
+        "critical": 0,
+    }
+
+
+def test_create_review_result_with_findings_and_metadata() -> None:
+    finding = ReviewFinding(
+        rule_id="forbidden_terms",
+        severity="warning",
+        message="发现风险词：绝对安全",
+        matched_term="绝对安全",
+        matched_text="绝对安全",
+        location=SourceSpan(
+            start_line=1,
+            start_column=8,
+            end_line=1,
+            end_column=12,
+            start_offset=7,
+            end_offset=11,
+            matched_text="绝对安全",
+            context="# 测试文章 绝对安全",
+        ),
     )
 
-    assert result.document_id == "doc-001"
-    assert result.profile_name == "wechat"
-    assert result.overall_score == 88
-    assert len(result.issues) == 1
-    assert result.issues[0].id == "WECHAT_TITLE_001"
+    result = ReviewResult.from_findings(
+        [finding],
+        document=ReviewDocumentMetadata(path="article.md"),
+        profile=ReviewProfileMetadata(name="wechat", path="profiles/wechat.yml"),
+    )
+
+    assert result.schema_version == "review-result.v1"
+    assert result.summary.finding_count == 1
+    assert result.summary.severity_counts["warning"] == 1
+    assert len(result.findings) == 1
+    assert result.findings[0] == finding
+    assert result.document == ReviewDocumentMetadata(path="article.md")
+    assert result.profile == ReviewProfileMetadata(
+        name="wechat",
+        path="profiles/wechat.yml",
+    )
 
 
 def test_create_review_profile() -> None:
@@ -107,23 +153,6 @@ def test_invalid_severity_should_fail() -> None:
         )
 
 
-def test_score_below_zero_should_fail() -> None:
+def test_invalid_finding_count_should_fail() -> None:
     with pytest.raises(ValidationError):
-        ReviewResult(
-            document_id="doc-001",
-            profile_name="wechat",
-            overall_score=-1,
-            summary="Invalid score.",
-            issues=[],
-        )
-
-
-def test_score_above_100_should_fail() -> None:
-    with pytest.raises(ValidationError):
-        ReviewResult(
-            document_id="doc-001",
-            profile_name="wechat",
-            overall_score=101,
-            summary="Invalid score.",
-            issues=[],
-        )
+        ReviewSummary(finding_count=-1)

@@ -108,11 +108,11 @@ Current review pipeline:
 
 - `review_document()` accepts already-loaded Markdown text and a loaded `ReviewProfile`.
 - The pipeline runs deterministic rules in memory.
-- The pipeline currently calls `forbidden_terms` directly and returns collected findings.
+- The pipeline currently calls `forbidden_terms` directly and returns a canonical `ReviewResult`.
 
 Current report generation:
 
-- `render_markdown_report()` accepts existing `ReviewFinding` objects and renders a Markdown report.
+- `render_markdown_report()` accepts a `ReviewResult` and renders a Markdown report.
 - The report renderer does not run rules, read Markdown files, or write output files.
 
 ---

@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 from pathlib import Path
 
 from content_review_engine.config import load_profile
-from content_review_engine.core.models import ReviewFinding
+from content_review_engine.core.models import ReviewResult
+from content_review_engine.core.serialization import review_result_to_json
 from content_review_engine.parser import read_markdown
 from content_review_engine.reports import render_markdown_report
 from content_review_engine.review import review_document
@@ -44,28 +44,19 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _build_json_payload(findings: list[ReviewFinding]) -> dict[str, object]:
-    return {
-        "findings": [finding.model_dump(mode="json") for finding in findings],
-        "summary": {
-            "finding_count": len(findings),
-        },
-    }
-
-
-def _render_text_report(findings: list[ReviewFinding]) -> str:
+def _render_text_report(review_result: ReviewResult) -> str:
     lines = [
         "Review completed.",
         "",
-        f"Findings: {len(findings)}",
+        f"Findings: {review_result.summary.finding_count}",
         "",
     ]
 
-    if not findings:
+    if not review_result.findings:
         lines.append("No issues found.")
         return "\n".join(lines)
 
-    for finding in findings:
+    for finding in review_result.findings:
         lines.append(f"[{finding.severity}] {finding.rule_id}: {finding.message}")
         location = finding.location
         if location is not None:
@@ -79,29 +70,20 @@ def _render_text_report(findings: list[ReviewFinding]) -> str:
     return "\n".join(lines)
 
 
-def _render_json_report(findings: list[ReviewFinding]) -> str:
-    payload = _build_json_payload(findings)
-    return json.dumps(payload, ensure_ascii=False, indent=2)
+def _render_json_report(review_result: ReviewResult) -> str:
+    return review_result_to_json(review_result)
 
 
 def _render_output(
-    findings: list[ReviewFinding],
+    review_result: ReviewResult,
     *,
     output_format: str,
-    markdown_file: str,
-    profile_name: str,
-    profile_path: str,
 ) -> str:
     if output_format == "json":
-        return _render_json_report(findings)
+        return _render_json_report(review_result)
     if output_format == "markdown":
-        return render_markdown_report(
-            findings,
-            document_path=markdown_file,
-            profile_name=profile_name,
-            profile_path=profile_path,
-        )
-    return _render_text_report(findings)
+        return render_markdown_report(review_result)
+    return _render_text_report(review_result)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -119,13 +101,15 @@ def main(argv: list[str] | None = None) -> int:
 
         markdown_text = read_markdown(args.markdown_file)
         profile = load_profile(args.profile)
-        findings = review_document(markdown_text, profile)
-        rendered_output = _render_output(
-            findings,
-            output_format=args.format,
-            markdown_file=args.markdown_file,
-            profile_name=profile.name,
+        review_result = review_document(
+            markdown_text,
+            profile,
+            document_path=args.markdown_file,
             profile_path=args.profile,
+        )
+        rendered_output = _render_output(
+            review_result,
+            output_format=args.format,
         )
         if args.output is not None:
             try:

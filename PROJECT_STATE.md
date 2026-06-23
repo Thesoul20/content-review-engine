@@ -35,6 +35,14 @@ The project currently has Markdown input handling, profile loading, deterministi
 
 ## Recent Completion
 
+- TASK-0011 is complete.
+- Added a canonical `ReviewResult` model with `ReviewSummary`, document metadata, and profile metadata support.
+- Added explicit review result serialization helpers for dict and JSON output.
+- Updated the review pipeline, CLI JSON output, and Markdown report rendering to use the canonical `ReviewResult`.
+- Added a documented JSON Schema for `review-result.v1`.
+- Updated the data model, CLI, report, project state, and changelog documentation for the stabilized output contract.
+- Added tests for `ReviewSummary`, `ReviewResult`, serialization helpers, the review pipeline, CLI JSON output, and Markdown report rendering.
+
 - TASK-0010 is complete.
 - Added packaging configuration so the existing `content-review` console script is installable through `uv sync`.
 - Updated CLI and testing docs to prefer `uv run content-review`.

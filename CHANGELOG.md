@@ -10,6 +10,11 @@ This project follows a staged development process.
 
 ### Added
 
+- Added canonical `ReviewSummary`, `ReviewDocumentMetadata`, and `ReviewProfileMetadata` models.
+- Added a canonical `ReviewResult` schema version: `review-result.v1`.
+- Added explicit `review_result_to_dict()` and `review_result_to_json()` serialization helpers.
+- Added `docs/schemas/review-result.schema.json` and `docs/schemas/README.md`.
+- Added tests for `ReviewSummary`, `ReviewResult`, canonical serialization, the review pipeline, CLI JSON output, and Markdown report rendering.
 - Added initial core data models:
   - `ReviewIssue`
   - `ReviewResult`
@@ -45,6 +50,11 @@ This project follows a staged development process.
 
 ### Changed
 
+- Updated the review pipeline to return `ReviewResult` instead of a bare findings list.
+- Updated CLI JSON output to use canonical `ReviewResult` serialization.
+- Updated Markdown report rendering to consume `ReviewResult`.
+- Updated `docs/DATA_MODELS.md`, `docs/CLI.md`, and `docs/REPORTS.md` for the stabilized output contract.
+- Updated `PROJECT_STATE.md` for TASK-0011 completion.
 - Updated project state for the core data model foundation.
 - Configured pytest to resolve the `src/` layout without manual `sys.path` edits.
 - Updated architecture docs to describe the input layer.

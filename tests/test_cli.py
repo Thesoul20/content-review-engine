@@ -109,7 +109,7 @@ def test_cli_review_help_shows_usage(capsys: pytest.CaptureFixture[str]) -> None
     assert "--profile" in captured.out
 
 
-def test_cli_review_json_output_includes_location(
+def test_cli_review_json_output_uses_canonical_review_result(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     markdown_path = "tests/fixtures/markdown/forbidden_terms_article.md"
@@ -130,8 +130,22 @@ def test_cli_review_json_output_includes_location(
 
     assert exit_code == 0
     payload = json.loads(captured.out)
+    assert payload["schema_version"] == "review-result.v1"
     assert payload["summary"]["finding_count"] == 1
-    location = payload["findings"][0]["location"]
+    assert payload["summary"]["severity_counts"] == {
+        "info": 0,
+        "warning": 1,
+        "error": 0,
+        "critical": 0,
+    }
+    assert payload["document"]["path"] == markdown_path
+    assert payload["profile"] == {
+        "name": "default",
+        "path": profile_path,
+    }
+    finding = payload["findings"][0]
+    assert finding["rule_id"] == "forbidden_terms"
+    location = finding["location"]
     assert location["start_line"] == 1
     assert location["start_column"] == 8
     assert location["matched_text"] == "绝对安全"
