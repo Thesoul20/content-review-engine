@@ -25,6 +25,15 @@ uv run content-review review examples/article.md --profile examples/profile.yml 
 uv run content-review review examples/article.md --profile examples/profile.yml --format markdown --output /tmp/content-review-example-report.md
 ```
 
+For the opt-in Markdown structure rule:
+
+```bash
+uv run content-review review examples/markdown-structure-article.md --profile examples/markdown-structure-profile.yml --format text
+uv run content-review review examples/markdown-structure-article.md --profile examples/markdown-structure-profile.yml --format json
+uv run content-review review examples/markdown-structure-article.md --profile examples/markdown-structure-profile.yml --format markdown
+uv run content-review review examples/markdown-structure-article.md --profile examples/markdown-structure-profile.yml --format markdown --output /tmp/content-review-markdown-structure-report.md
+```
+
 ## Fixture Layout
 
 Automated tests use committed fixtures under `tests/fixtures/`.
@@ -41,6 +50,16 @@ tests/fixtures/
 Use `tests/fixtures/markdown/` for Markdown inputs that should be reused across tests.
 Use `tests/fixtures/profiles/` for YAML review profiles that should stay stable across test runs.
 Use `tests/fixtures/expected_reports/` only when a report output is stable enough to compare directly.
+
+The current Markdown structure fixtures cover:
+
+- `markdown_structure_missing_h1.md`
+- `markdown_structure_multiple_h1.md`
+- `markdown_structure_heading_jumps.md`
+- `markdown_structure_empty_headings.md`
+- `markdown_structure_long_paragraph.md`
+- `markdown_structure_code_block_headings.md`
+- `markdown_structure_issues.md`
 
 ## Inline Strings Vs Fixtures
 

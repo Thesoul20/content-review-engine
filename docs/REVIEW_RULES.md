@@ -47,6 +47,26 @@ Status:
 
 Implemented.
 
+### markdown_structure
+
+Purpose:
+
+Detect basic Markdown document structure issues such as missing H1 headings,
+multiple H1 headings, heading level jumps, empty headings, and extremely long
+paragraphs.
+
+Status:
+
+Implemented.
+
+Implementation:
+
+`src/content_review_engine/rules/markdown_structure.py`
+
+Tests:
+
+`tests/test_markdown_structure_rule.py`
+
 ---
 
 ## Planned Rules

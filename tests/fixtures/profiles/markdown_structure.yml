@@ -1,0 +1,8 @@
+name: markdown-structure
+target_platform: wechat
+tone: clear and professional
+max_title_length: 32
+max_paragraph_length: 80
+forbidden_terms: []
+enabled_rules:
+  - markdown_structure

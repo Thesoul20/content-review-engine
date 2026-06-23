@@ -35,6 +35,12 @@ The project currently has Markdown input handling, profile loading, deterministi
 
 ## Recent Completion
 
+- TASK-0013 is complete.
+- Added the deterministic `markdown_structure` rule.
+- Kept `forbidden_terms` as the default-enabled rule.
+- Added Markdown structure fixtures, example files, tests, and documentation.
+- Preserved existing default forbidden-terms behavior and CLI behavior.
+
 - TASK-0012 is complete.
 - Added a minimal internal rule interface, rule registry, and rule runner.
 - The existing forbidden-terms rule now runs through the rule runner.

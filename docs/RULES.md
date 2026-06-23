@@ -8,6 +8,21 @@ Each rule has a stable `rule_id`. That ID is how the registry stores, retrieves,
 
 Rules do not create `ReviewResult`, render reports, write files, or print CLI output.
 
+## Relationship With `docs/REVIEW_RULES.md`
+
+This file describes the rule system architecture and runtime behavior:
+
+- how rules are executed
+- how the registry works
+- how the runner selects enabled rules
+- how default-enabled rules behave
+
+`docs/REVIEW_RULES.md` is the rule catalog. It records the individual rules by
+name, purpose, implementation path, and test path.
+
+Use `docs/RULES.md` to understand the mechanics of rule execution.
+Use `docs/REVIEW_RULES.md` to see which rules exist or are planned.
+
 ---
 
 ## Rule Registry
@@ -29,7 +44,8 @@ The registry rejects duplicate rule IDs and raises a clear error for unknown rul
 
 The rule runner executes enabled rules for a Markdown document and a `ReviewProfile`.
 
-When a profile does not explicitly select rules, the runner uses the default registry order.
+When a profile does not explicitly select rules, the runner uses the registry's
+default-enabled rule order.
 
 The runner returns only `list[ReviewFinding]`.
 
@@ -39,11 +55,14 @@ It does not build `ReviewResult`.
 
 ## Default Registry
 
-The default registry currently includes one deterministic rule:
+The default registry currently registers two deterministic rules:
 
 - `forbidden_terms`
+- `markdown_structure`
 
-This is the existing profile-driven forbidden-term check, now executed through the registry and runner.
+`forbidden_terms` is default-enabled so existing profiles keep the same behavior.
+`markdown_structure` is registered but only runs when a profile explicitly
+includes it in `ReviewProfile.enabled_rules`.
 
 ---
 
@@ -67,6 +86,26 @@ Tests:
 
 `tests/test_forbidden_terms_rule.py`
 
+### markdown_structure
+
+Purpose:
+
+Detect basic Markdown document structure issues such as missing H1 headings,
+multiple H1 headings, heading level jumps, empty headings, and extremely long
+paragraphs.
+
+Status:
+
+Implemented.
+
+Implementation:
+
+`src/content_review_engine/rules/markdown_structure.py`
+
+Tests:
+
+`tests/test_markdown_structure_rule.py`
+
 ---
 
 ## Adding Future Rules
@@ -89,4 +128,3 @@ Future deterministic rules should:
 - No parallel execution.
 - No rule dependency graph.
 - No LLM rules.
-

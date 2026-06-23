@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 
 import pytest
 
 from content_review_engine.core.models import ReviewFinding, ReviewProfile
 from content_review_engine.rules.registry import RuleRegistry, UnknownRuleError
 from content_review_engine.rules.runner import run_rules
+
+FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures" / "markdown"
 
 
 @dataclass
@@ -41,6 +44,26 @@ def test_run_rules_uses_default_registry_for_forbidden_terms() -> None:
     assert len(findings) == 1
     assert findings[0].rule_id == "forbidden_terms"
     assert findings[0].matched_term == "保证赚钱"
+
+
+def test_run_rules_executes_explicit_markdown_structure_rule() -> None:
+    markdown_text = (FIXTURES_DIR / "markdown_structure_issues.md").read_text(
+        encoding="utf-8"
+    )
+    profile = ReviewProfile(
+        name="markdown-structure",
+        target_platform="wechat",
+        enabled_rules=["markdown_structure"],
+    )
+
+    findings = run_rules(markdown_text, profile)
+
+    assert findings
+    assert {finding.rule_id for finding in findings} == {"markdown_structure"}
+    assert any(
+        finding.message == "Heading level jumps from H1 to H3."
+        for finding in findings
+    )
 
 
 def test_run_rules_respects_explicit_enabled_rules_order() -> None:

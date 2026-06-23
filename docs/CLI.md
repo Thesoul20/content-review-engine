@@ -126,6 +126,9 @@ Example shape:
 - The CLI runs the default internal rule registry through the review pipeline.
 - The CLI does not add rewriting, diff tracking, batch review, watch mode, MCP, API, GUI, or report generation logic of its own.
 - If a profile references an unknown rule ID, the CLI prints a readable error and exits with code `2`.
+- Existing profiles continue to run `forbidden_terms` by default.
+- Profiles can opt into additional deterministic rules, including
+  `markdown_structure`, through `ReviewProfile.enabled_rules`.
 
 ## Example Files
 
@@ -141,4 +144,13 @@ For a saved Markdown report:
 
 ```bash
 uv run content-review review examples/article.md --profile examples/profile.yml --format markdown --output examples/review-report.md
+```
+
+For the opt-in Markdown structure rule:
+
+```bash
+uv run content-review review examples/markdown-structure-article.md --profile examples/markdown-structure-profile.yml --format text
+uv run content-review review examples/markdown-structure-article.md --profile examples/markdown-structure-profile.yml --format json
+uv run content-review review examples/markdown-structure-article.md --profile examples/markdown-structure-profile.yml --format markdown
+uv run content-review review examples/markdown-structure-article.md --profile examples/markdown-structure-profile.yml --format markdown --output examples/markdown-structure-report.md
 ```

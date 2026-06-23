@@ -153,6 +153,52 @@ def test_cli_review_json_output_uses_canonical_review_result(
     assert captured.err == ""
 
 
+def test_cli_review_json_output_supports_markdown_structure_rule(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    markdown_path = "tests/fixtures/markdown/markdown_structure_issues.md"
+    profile_path = "tests/fixtures/profiles/markdown_structure.yml"
+
+    exit_code = main(
+        [
+            "review",
+            markdown_path,
+            "--profile",
+            profile_path,
+            "--format",
+            "json",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    payload = json.loads(captured.out)
+    assert payload["schema_version"] == "review-result.v1"
+    assert payload["summary"]["finding_count"] == 4
+    assert payload["summary"]["severity_counts"] == {
+        "info": 0,
+        "warning": 4,
+        "error": 0,
+        "critical": 0,
+    }
+    assert payload["profile"] == {
+        "name": "markdown-structure",
+        "path": profile_path,
+    }
+    assert {finding["rule_id"] for finding in payload["findings"]} == {
+        "markdown_structure"
+    }
+    assert payload["findings"][0]["message"] == "Heading level jumps from H1 to H3."
+    assert payload["findings"][0]["location"]["start_line"] == 3
+    assert payload["findings"][1]["message"] == "Empty heading detected."
+    assert payload["findings"][1]["location"]["start_line"] == 5
+    assert payload["findings"][3]["message"].startswith(
+        "Paragraph exceeds maximum length ("
+    )
+    assert captured.err == ""
+
+
 def test_cli_review_markdown_stdout_includes_report_sections(
     capsys: pytest.CaptureFixture[str],
 ) -> None:

@@ -6,7 +6,7 @@ from content_review_engine.rules.registry import RuleRegistry, build_default_rul
 
 def _resolve_rule_ids(profile: ReviewProfile, registry: RuleRegistry) -> list[str]:
     if profile.enabled_rules is None:
-        return registry.list_rule_ids()
+        return registry.list_enabled_rule_ids()
     return list(profile.enabled_rules)
 
 

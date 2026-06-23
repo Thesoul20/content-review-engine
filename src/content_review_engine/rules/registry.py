@@ -15,11 +15,14 @@ class UnknownRuleError(ValueError):
 class RuleRegistry:
     def __init__(self) -> None:
         self._rules: dict[str, ReviewRule] = {}
+        self._enabled_rule_ids: list[str] = []
 
-    def register(self, rule: ReviewRule) -> None:
+    def register(self, rule: ReviewRule, *, enabled_by_default: bool = True) -> None:
         if rule.rule_id in self._rules:
             raise DuplicateRuleError(f"Duplicate rule ID registered: {rule.rule_id}")
         self._rules[rule.rule_id] = rule
+        if enabled_by_default:
+            self._enabled_rule_ids.append(rule.rule_id)
 
     def get(self, rule_id: str) -> ReviewRule:
         try:
@@ -33,10 +36,18 @@ class RuleRegistry:
     def list_rule_ids(self) -> list[str]:
         return list(self._rules)
 
+    def list_enabled_rule_ids(self) -> list[str]:
+        return list(self._enabled_rule_ids)
+
 
 def build_default_rule_registry() -> RuleRegistry:
     registry = RuleRegistry()
     registry.register(DEFAULT_FORBIDDEN_TERMS_RULE)
+    from content_review_engine.rules.markdown_structure import (
+        DEFAULT_MARKDOWN_STRUCTURE_RULE,
+    )
+
+    registry.register(DEFAULT_MARKDOWN_STRUCTURE_RULE, enabled_by_default=False)
     return registry
 
 

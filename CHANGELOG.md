@@ -8,6 +8,40 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0013
+
+### Added
+
+- Added the deterministic `markdown_structure` rule.
+- Added fixtures for missing H1, multiple H1, heading jumps, empty headings,
+  long paragraphs, and fenced code block handling.
+- Added `tests/fixtures/profiles/markdown_structure.yml` and matching example
+  files for manual CLI usage.
+- Added tests for the new rule, registry and runner integration, review
+  pipeline integration, and CLI JSON output.
+
+### Changed
+
+- Extended the rule registry to track default-enabled rules so
+  `markdown_structure` can be registered without changing the legacy implicit
+  review path.
+- Preserved the default forbidden-terms behavior and CLI contract.
+- Updated `docs/ARCHITECTURE.md`, `docs/RULES.md`, `docs/REVIEW_RULES.md`,
+  `docs/CLI.md`, `docs/TESTING.md`, `PROJECT_STATE.md`, and this changelog.
+
+### Not Added
+
+- No LLM review.
+- No automatic rewriting.
+- No diff tracking.
+- No Markdown auto-fix.
+- No batch review.
+- No watch mode.
+- No MCP server.
+- No REST API.
+- No GUI.
+- No database persistence.
+
 ## TASK-0012
 
 ### Added

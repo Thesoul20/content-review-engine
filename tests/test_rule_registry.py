@@ -38,10 +38,13 @@ def test_rule_registry_registers_and_returns_rules() -> None:
     rule = DummyRule(rule_id="dummy_rule")
 
     registry.register(rule)
+    registry.register(DummyRule(rule_id="disabled_rule"), enabled_by_default=False)
 
     assert registry.has("dummy_rule") is True
+    assert registry.has("disabled_rule") is True
     assert registry.get("dummy_rule") is rule
-    assert registry.list_rule_ids() == ["dummy_rule"]
+    assert registry.list_rule_ids() == ["dummy_rule", "disabled_rule"]
+    assert registry.list_enabled_rule_ids() == ["dummy_rule"]
 
 
 def test_rule_registry_rejects_duplicate_rule_ids() -> None:
@@ -64,4 +67,6 @@ def test_default_rule_registry_contains_forbidden_terms_rule() -> None:
     registry = build_default_rule_registry()
 
     assert registry.has("forbidden_terms") is True
-    assert registry.list_rule_ids() == ["forbidden_terms"]
+    assert registry.has("markdown_structure") is True
+    assert registry.list_rule_ids() == ["forbidden_terms", "markdown_structure"]
+    assert registry.list_enabled_rule_ids() == ["forbidden_terms"]

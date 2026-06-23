@@ -93,6 +93,38 @@ def test_review_document_behavior_changes_with_profile() -> None:
     assert relaxed_result.findings == []
 
 
+def test_review_document_returns_markdown_structure_findings_when_enabled() -> None:
+    markdown_text = (MARKDOWN_FIXTURES_DIR / "markdown_structure_issues.md").read_text(
+        encoding="utf-8"
+    )
+    profile = load_profile(PROFILE_FIXTURES_DIR / "markdown_structure.yml")
+
+    result = review_document(markdown_text, profile)
+
+    assert result.summary.finding_count == 4
+    assert result.summary.severity_counts == {
+        "info": 0,
+        "warning": 4,
+        "error": 0,
+        "critical": 0,
+    }
+    assert {finding.rule_id for finding in result.findings} == {
+        "markdown_structure"
+    }
+    assert result.findings[0].message == "Heading level jumps from H1 to H3."
+    assert result.findings[1].message == "Empty heading detected."
+    assert result.findings[2].message == "Multiple H1 headings detected."
+    assert result.findings[3].message.startswith("Paragraph exceeds maximum length (")
+    assert result.findings[3].message.endswith(" > 80).")
+    assert result.findings[3].location is not None
+    assert result.findings[3].location.start_line == 9
+    assert [finding.location.start_line for finding in result.findings[:3]] == [
+        3,
+        5,
+        7,
+    ]
+
+
 def test_review_document_accepts_loaded_text_and_profile_not_paths() -> None:
     signature = inspect.signature(review_document)
 
