@@ -4,7 +4,7 @@
 
 M1: Core input layer and minimal review pipeline.
 
-The project currently has Markdown input handling, profile loading, deterministic review rules, source location metadata on findings, and a minimal in-memory review pipeline on top of the initial data models.
+The project currently has Markdown input handling, profile loading, deterministic review rules, source location metadata on findings, a minimal in-memory review pipeline, and committed fixtures/examples for integration-style testing and manual CLI checks.
 
 ---
 
@@ -33,6 +33,14 @@ The project currently has Markdown input handling, profile loading, deterministi
 - No active implementation task.
 
 ## Recent Completion
+
+- TASK-0009 is complete.
+- Added committed Markdown fixtures for clean, forbidden-term, multiline, and code-block scenarios.
+- Added committed ReviewProfile fixtures under `tests/fixtures/profiles/`.
+- Added `examples/article.md` and `examples/profile.yml` for manual CLI usage.
+- Updated selected tests to use fixture files where appropriate.
+- Added `docs/TESTING.md` and updated CLI/report documentation for example-file commands.
+- No review behavior changes were introduced.
 
 - TASK-0008 is complete.
 - Added a Markdown review report renderer in `content_review_engine.reports`.

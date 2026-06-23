@@ -104,3 +104,19 @@ Example shape:
 
 - The CLI does not implement review logic itself.
 - The CLI does not add rewriting, diff tracking, batch review, watch mode, MCP, API, GUI, or report generation logic of its own.
+
+## Example Files
+
+You can run the CLI against the committed example files:
+
+```bash
+uv run content-review review examples/article.md --profile examples/profile.yml --format text
+uv run content-review review examples/article.md --profile examples/profile.yml --format json
+uv run content-review review examples/article.md --profile examples/profile.yml --format markdown
+```
+
+For a saved Markdown report:
+
+```bash
+uv run content-review review examples/article.md --profile examples/profile.yml --format markdown --output examples/review-report.md
+```

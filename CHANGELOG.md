@@ -72,3 +72,30 @@ This project follows a staged development process.
 ### Removed
 
 - Nothing yet.
+
+## TASK-0009
+
+### Added
+
+- Added Markdown fixture files for clean and forbidden-term review scenarios.
+- Added multiline Markdown and code-block fixtures for review-path coverage.
+- Added ReviewProfile fixture files for tests.
+- Added example Markdown and profile files for manual CLI usage.
+- Added testing documentation for fixtures and examples.
+
+### Changed
+
+- Updated selected CLI, review pipeline, and report tests to use committed fixtures where appropriate.
+- Updated CLI and report documentation with example-file commands.
+- Updated project state for the new fixture and example files.
+
+### Not Added
+
+- No new review rules.
+- No LLM review.
+- No automatic rewriting.
+- No diff tracking.
+- No MCP server.
+- No REST API.
+- No GUI.
+- No database persistence.

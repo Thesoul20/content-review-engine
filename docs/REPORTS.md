@@ -37,3 +37,9 @@ content-review review article.md --profile profiles/wechat.yaml --format markdow
 ```
 
 When `--output` is provided, the CLI writes the rendered report to the file and returns exit code `2` if the write fails.
+
+For the committed example files, the same flow is:
+
+```bash
+uv run content-review review examples/article.md --profile examples/profile.yml --format markdown --output examples/review-report.md
+```

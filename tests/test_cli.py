@@ -8,54 +8,34 @@ import pytest
 from content_review_engine.cli import main
 
 
-def _write_profile(path: Path, forbidden_terms: list[str] | None = None) -> None:
-    terms = forbidden_terms or []
-    lines = [
-        "name: wechat",
-        "target_platform: wechat",
-        "tone: clear and professional",
-        "max_title_length: 32",
-        "max_paragraph_length: 220",
-        "forbidden_terms:",
-    ]
-    lines.extend(f"  - {term}" for term in terms)
-    path.write_text("\n".join(lines), encoding="utf-8")
-
-
 def test_cli_review_with_findings_prints_finding_details(
-    tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    markdown_path = tmp_path / "article.md"
-    markdown_path.write_text("这篇文章承诺保证赚钱。", encoding="utf-8")
-    profile_path = tmp_path / "wechat.yaml"
-    _write_profile(profile_path, ["保证赚钱", "100%有效"])
+    markdown_path = "tests/fixtures/markdown/forbidden_terms_article.md"
+    profile_path = "tests/fixtures/profiles/default.yml"
 
-    exit_code = main(["review", str(markdown_path), "--profile", str(profile_path)])
+    exit_code = main(["review", markdown_path, "--profile", profile_path])
 
     captured = capsys.readouterr()
 
     assert exit_code == 0
     assert "Review completed." in captured.out
     assert "Findings: 1" in captured.out
-    assert "[warning] forbidden_terms: 发现风险词：保证赚钱" in captured.out
+    assert "[warning] forbidden_terms: 发现风险词：绝对安全" in captured.out
     assert "Line: 1" in captured.out
-    assert "Column: 7" in captured.out
-    assert "Matched: 保证赚钱" in captured.out
-    assert "Context:" in captured.out
+    assert "Column: 8" in captured.out
+    assert "Matched: 绝对安全" in captured.out
+    assert "Context: # 测试文章 绝对安全" in captured.out
     assert captured.err == ""
 
 
 def test_cli_review_without_findings_prints_zero_findings(
-    tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    markdown_path = tmp_path / "article.md"
-    markdown_path.write_text("这篇文章只是在说明产品特点。", encoding="utf-8")
-    profile_path = tmp_path / "wechat.yaml"
-    _write_profile(profile_path, ["保证赚钱"])
+    markdown_path = "tests/fixtures/markdown/clean_article.md"
+    profile_path = "tests/fixtures/profiles/default.yml"
 
-    exit_code = main(["review", str(markdown_path), "--profile", str(profile_path)])
+    exit_code = main(["review", markdown_path, "--profile", profile_path])
 
     captured = capsys.readouterr()
 
@@ -70,15 +50,14 @@ def test_cli_missing_markdown_file_returns_non_zero(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    profile_path = tmp_path / "wechat.yaml"
-    _write_profile(profile_path, ["保证赚钱"])
+    profile_path = "tests/fixtures/profiles/default.yml"
 
     exit_code = main(
         [
             "review",
             str(tmp_path / "missing.md"),
             "--profile",
-            str(profile_path),
+            profile_path,
         ]
     )
 
@@ -92,13 +71,12 @@ def test_cli_missing_profile_file_returns_non_zero(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    markdown_path = tmp_path / "article.md"
-    markdown_path.write_text("这篇文章承诺保证赚钱。", encoding="utf-8")
+    markdown_path = "tests/fixtures/markdown/forbidden_terms_article.md"
 
     exit_code = main(
         [
             "review",
-            str(markdown_path),
+            markdown_path,
             "--profile",
             str(tmp_path / "missing.yaml"),
         ]
@@ -131,20 +109,17 @@ def test_cli_review_help_shows_usage(capsys: pytest.CaptureFixture[str]) -> None
 
 
 def test_cli_review_json_output_includes_location(
-    tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    markdown_path = tmp_path / "article.md"
-    markdown_path.write_text("这篇文章承诺保证赚钱。", encoding="utf-8")
-    profile_path = tmp_path / "wechat.yaml"
-    _write_profile(profile_path, ["保证赚钱"])
+    markdown_path = "tests/fixtures/markdown/forbidden_terms_article.md"
+    profile_path = "tests/fixtures/profiles/default.yml"
 
     exit_code = main(
         [
             "review",
-            str(markdown_path),
+            markdown_path,
             "--profile",
-            str(profile_path),
+            profile_path,
             "--format",
             "json",
         ]
@@ -157,27 +132,24 @@ def test_cli_review_json_output_includes_location(
     assert payload["summary"]["finding_count"] == 1
     location = payload["findings"][0]["location"]
     assert location["start_line"] == 1
-    assert location["start_column"] == 7
-    assert location["matched_text"] == "保证赚钱"
+    assert location["start_column"] == 8
+    assert location["matched_text"] == "绝对安全"
     assert "Context:" not in captured.out
     assert captured.err == ""
 
 
 def test_cli_review_markdown_stdout_includes_report_sections(
-    tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    markdown_path = tmp_path / "article.md"
-    markdown_path.write_text("这篇文章承诺保证赚钱。", encoding="utf-8")
-    profile_path = tmp_path / "wechat.yaml"
-    _write_profile(profile_path, ["保证赚钱"])
+    markdown_path = "tests/fixtures/markdown/forbidden_terms_article.md"
+    profile_path = "tests/fixtures/profiles/default.yml"
 
     exit_code = main(
         [
             "review",
-            str(markdown_path),
+            markdown_path,
             "--profile",
-            str(profile_path),
+            profile_path,
             "--format",
             "markdown",
         ]
@@ -186,12 +158,12 @@ def test_cli_review_markdown_stdout_includes_report_sections(
     captured = capsys.readouterr()
 
     assert exit_code == 0
-    assert "# Content Review Report" in captured.out
-    assert "- Document: `" + str(markdown_path) + "`" in captured.out
-    assert "- Profile: `" + str(profile_path) + "`" in captured.out
+    assert captured.out.startswith("# Content Review Report\n")
+    assert "- Document: `tests/fixtures/markdown/forbidden_terms_article.md`" in captured.out
+    assert "- Profile: `tests/fixtures/profiles/default.yml`" in captured.out
     assert "- Findings: 1" in captured.out
-    assert "### forbidden_terms" in captured.out
-    assert "- Matched: `保证赚钱`" in captured.out
+    assert "- Context: # 测试文章 绝对安全" in captured.out
+    assert "- Matched: `绝对安全`" in captured.out
     assert captured.err == ""
 
 
@@ -199,18 +171,16 @@ def test_cli_review_markdown_output_file_writes_report(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    markdown_path = tmp_path / "article.md"
-    markdown_path.write_text("这篇文章承诺保证赚钱。", encoding="utf-8")
-    profile_path = tmp_path / "wechat.yaml"
-    _write_profile(profile_path, ["保证赚钱"])
+    markdown_path = "tests/fixtures/markdown/forbidden_terms_article.md"
+    profile_path = "tests/fixtures/profiles/default.yml"
     output_path = tmp_path / "review-report.md"
 
     exit_code = main(
         [
             "review",
-            str(markdown_path),
+            markdown_path,
             "--profile",
-            str(profile_path),
+            profile_path,
             "--format",
             "markdown",
             "--output",
@@ -223,26 +193,29 @@ def test_cli_review_markdown_output_file_writes_report(
     assert exit_code == 0
     assert captured.out == ""
     assert captured.err == ""
-    assert output_path.read_text(encoding="utf-8").startswith("# Content Review Report")
-    assert "- Findings: 1" in output_path.read_text(encoding="utf-8")
+    output_text = output_path.read_text(encoding="utf-8")
+    assert output_text.startswith("# Content Review Report\n")
+    assert "- Document: `tests/fixtures/markdown/forbidden_terms_article.md`" in output_text
+    assert "- Profile: `tests/fixtures/profiles/default.yml`" in output_text
+    assert "- Findings: 1" in output_text
+    assert "- Context: # 测试文章 绝对安全" in output_text
+    assert "- Matched: `绝对安全`" in output_text
 
 
 def test_cli_review_output_write_failure_returns_two(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    markdown_path = tmp_path / "article.md"
-    markdown_path.write_text("这篇文章承诺保证赚钱。", encoding="utf-8")
-    profile_path = tmp_path / "wechat.yaml"
-    _write_profile(profile_path, ["保证赚钱"])
+    markdown_path = "tests/fixtures/markdown/forbidden_terms_article.md"
+    profile_path = "tests/fixtures/profiles/default.yml"
     output_path = tmp_path / "missing" / "review-report.md"
 
     exit_code = main(
         [
             "review",
-            str(markdown_path),
+            markdown_path,
             "--profile",
-            str(profile_path),
+            profile_path,
             "--format",
             "markdown",
             "--output",

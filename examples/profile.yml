@@ -1,0 +1,8 @@
+name: example
+target_platform: wechat
+tone: clear and professional
+max_title_length: 32
+max_paragraph_length: 220
+forbidden_terms:
+  - 保证赚钱
+  - 绝对安全

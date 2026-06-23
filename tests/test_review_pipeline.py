@@ -1,39 +1,60 @@
 from __future__ import annotations
 
 import inspect
+from pathlib import Path
 
+from content_review_engine.config import load_profile
 from content_review_engine.core.models import ReviewFinding, ReviewProfile
 from content_review_engine.review import review_document
 
+FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures"
+MARKDOWN_FIXTURES_DIR = FIXTURES_DIR / "markdown"
+PROFILE_FIXTURES_DIR = FIXTURES_DIR / "profiles"
+
 
 def test_review_document_returns_finding_for_forbidden_term() -> None:
-    profile = ReviewProfile(
-        name="wechat",
-        target_platform="wechat",
-        forbidden_terms=["保证赚钱", "绝对安全"],
+    markdown_text = (MARKDOWN_FIXTURES_DIR / "forbidden_terms_article.md").read_text(
+        encoding="utf-8"
     )
+    profile = load_profile(PROFILE_FIXTURES_DIR / "default.yml")
 
-    findings = review_document("这篇文章承诺保证赚钱。", profile)
+    findings = review_document(markdown_text, profile)
 
     assert len(findings) == 1
     finding = findings[0]
     assert isinstance(finding, ReviewFinding)
     assert finding.rule_id == "forbidden_terms"
-    assert finding.matched_term == "保证赚钱"
+    assert finding.matched_term == "绝对安全"
     assert finding.location is not None
-    assert finding.location.matched_text == "保证赚钱"
+    assert finding.location.matched_text == "绝对安全"
+    assert finding.location.start_line == 1
+    assert finding.location.start_column == 8
 
 
 def test_review_document_returns_empty_list_when_no_terms_match() -> None:
-    profile = ReviewProfile(
-        name="wechat",
-        target_platform="wechat",
-        forbidden_terms=["保证赚钱", "绝对安全"],
-    )
+    markdown_text = (MARKDOWN_FIXTURES_DIR / "clean_article.md").read_text(encoding="utf-8")
+    profile = load_profile(PROFILE_FIXTURES_DIR / "default.yml")
 
-    findings = review_document("这篇文章只是在说明产品特点。", profile)
+    findings = review_document(markdown_text, profile)
 
     assert findings == []
+
+
+def test_review_document_uses_multiline_fixture_positions() -> None:
+    markdown_text = (MARKDOWN_FIXTURES_DIR / "multiline_forbidden_terms.md").read_text(
+        encoding="utf-8"
+    )
+    profile = load_profile(PROFILE_FIXTURES_DIR / "strict.yml")
+
+    findings = review_document(markdown_text, profile)
+
+    assert [finding.matched_term for finding in findings] == [
+        "绝对安全",
+        "保证赚钱",
+        "100%有效",
+    ]
+    assert [finding.location.start_line for finding in findings] == [3, 4, 5]
+    assert [finding.location.start_column for finding in findings] == [3, 3, 3]
 
 
 def test_review_document_behavior_changes_with_profile() -> None:
