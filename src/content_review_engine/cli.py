@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 
 from content_review_engine.config import load_profile
@@ -27,11 +28,26 @@ def build_parser() -> argparse.ArgumentParser:
         required=True,
         help="Path to the YAML review profile.",
     )
+    review_parser.add_argument(
+        "--format",
+        choices=["text", "json"],
+        default="text",
+        help="Output format for the review result.",
+    )
 
     return parser
 
 
-def _print_findings(findings: list[ReviewFinding]) -> None:
+def _build_json_payload(findings: list[ReviewFinding]) -> dict[str, object]:
+    return {
+        "findings": [finding.model_dump(mode="json") for finding in findings],
+        "summary": {
+            "finding_count": len(findings),
+        },
+    }
+
+
+def _print_text_findings(findings: list[ReviewFinding]) -> None:
     print("Review completed.")
     print()
     print(f"Findings: {len(findings)}")
@@ -43,6 +59,19 @@ def _print_findings(findings: list[ReviewFinding]) -> None:
 
     for finding in findings:
         print(f"[{finding.severity}] {finding.rule_id}: {finding.message}")
+        location = finding.location
+        if location is not None:
+            print(f"Line: {location.start_line}")
+            print(f"Column: {location.start_column}")
+            print(f"Matched: {location.matched_text}")
+            if location.context is not None:
+                print(f"Context: {location.context}")
+        print()
+
+
+def _print_json_findings(findings: list[ReviewFinding]) -> None:
+    payload = _build_json_payload(findings)
+    print(json.dumps(payload, ensure_ascii=False, indent=2))
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -61,7 +90,10 @@ def main(argv: list[str] | None = None) -> int:
         markdown_text = read_markdown(args.markdown_file)
         profile = load_profile(args.profile)
         findings = review_document(markdown_text, profile)
-        _print_findings(findings)
+        if args.format == "json":
+            _print_json_findings(findings)
+        else:
+            _print_text_findings(findings)
         return 0
     except (FileNotFoundError, ValueError, ValidationError) as exc:
         print(f"Error: {exc}", file=sys.stderr)

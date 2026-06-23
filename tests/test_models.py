@@ -1,7 +1,12 @@
 import pytest
 from pydantic import ValidationError
 
-from content_review_engine.core.models import ReviewIssue, ReviewProfile, ReviewResult
+from content_review_engine.core.models import (
+    ReviewIssue,
+    ReviewProfile,
+    ReviewResult,
+    SourceSpan,
+)
 
 
 def test_create_review_issue() -> None:
@@ -59,6 +64,35 @@ def test_create_review_profile() -> None:
     assert profile.tone == "clear and professional"
     assert profile.max_title_length == 32
     assert profile.max_paragraph_length == 220
+
+
+def test_create_source_span() -> None:
+    span = SourceSpan(
+        start_line=2,
+        start_column=4,
+        end_line=2,
+        end_column=6,
+        start_offset=7,
+        end_offset=9,
+        matched_text="绝对",
+        context="第二行绝对正确",
+    )
+
+    assert span.start_line == 2
+    assert span.start_column == 4
+    assert span.end_offset == 9
+
+    serialized = span.model_dump()
+    assert serialized == {
+        "start_line": 2,
+        "start_column": 4,
+        "end_line": 2,
+        "end_column": 6,
+        "start_offset": 7,
+        "end_offset": 9,
+        "matched_text": "绝对",
+        "context": "第二行绝对正确",
+    }
 
 
 def test_invalid_severity_should_fail() -> None:

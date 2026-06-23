@@ -26,6 +26,27 @@ The implementation source of truth is `src/content_review_engine/core/models.py`
 
 ---
 
+## SourceSpan
+
+`SourceSpan` represents the source location metadata attached to a deterministic finding.
+
+Line and column numbers are 1-based.
+Character offsets are 0-based.
+`end_offset` is exclusive.
+
+| Field | Required | Description |
+|---|---|---|
+| `start_line` | Yes | Start line number |
+| `start_column` | Yes | Start column number |
+| `end_line` | Yes | End line number |
+| `end_column` | Yes | End column number |
+| `start_offset` | Yes | Start character offset |
+| `end_offset` | Yes | End character offset, exclusive |
+| `matched_text` | Yes | Exact matched text |
+| `context` | No | Short context snippet around the match |
+
+---
+
 ## ReviewFinding
 
 `ReviewFinding` represents a deterministic rule match.
@@ -37,6 +58,29 @@ The implementation source of truth is `src/content_review_engine/core/models.py`
 | `message` | Yes | Human-readable finding summary |
 | `matched_term` | Yes | Term that triggered the finding |
 | `matched_text` | No | Original matched text |
+| `location` | No | Attached `SourceSpan` with position metadata |
+
+Example:
+
+```python
+ReviewFinding(
+    rule_id="forbidden_terms",
+    severity="warning",
+    message="发现风险词：绝对",
+    matched_term="绝对",
+    matched_text="绝对",
+    location=SourceSpan(
+        start_line=3,
+        start_column=5,
+        end_line=3,
+        end_column=7,
+        start_offset=12,
+        end_offset=14,
+        matched_text="绝对",
+        context="这个方法绝对有效。",
+    ),
+)
+```
 
 ---
 

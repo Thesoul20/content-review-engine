@@ -8,6 +8,17 @@ Severity = Literal["low", "medium", "high", "critical"]
 FindingSeverity = Literal["warning"]
 
 
+class SourceSpan(BaseModel):
+    start_line: int
+    start_column: int
+    end_line: int
+    end_column: int
+    start_offset: int
+    end_offset: int
+    matched_text: str
+    context: str | None = None
+
+
 class ReviewIssue(BaseModel):
     id: str
     severity: Severity
@@ -26,6 +37,7 @@ class ReviewFinding(BaseModel):
     message: str
     matched_term: str
     matched_text: str | None = None
+    location: SourceSpan | None = None
 
 
 class ReviewResult(BaseModel):
@@ -53,5 +65,6 @@ __all__ = [
     "ReviewIssue",
     "ReviewProfile",
     "ReviewResult",
+    "SourceSpan",
     "Severity",
 ]

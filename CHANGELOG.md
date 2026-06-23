@@ -15,6 +15,7 @@ This project follows a staged development process.
   - `ReviewResult`
   - `ReviewProfile`
 - Added `ReviewFinding` for deterministic rule matches.
+- Added `SourceSpan` for source location metadata on review findings.
 - Added validation tests for core data models.
 - Added data model documentation.
 - Added `pydantic` as a project dependency.
@@ -25,11 +26,15 @@ This project follows a staged development process.
 - Added tests for Markdown parsing and profile loading.
 - Added deterministic forbidden terms rule support.
 - Added tests for the forbidden terms rule.
+- Added location metadata and context snippets to forbidden term findings.
+- Added tests for location calculation, location-aware forbidden term findings, multiple findings, and CLI output.
 - Added minimal in-memory review pipeline support.
 - Added `review_document()` as the core review pipeline entrypoint.
 - Added tests for the review pipeline.
 - Added a minimal CLI entrypoint with `content-review review`.
 - Added CLI tests for successful reviews, missing files, and help output.
+- Added CLI JSON output support for review findings.
+- Added `docs/CLI.md`.
 
 ### Changed
 
@@ -44,6 +49,12 @@ This project follows a staged development process.
 - Updated architecture docs to include the CLI adapter and its current limits.
 - Updated project state for TASK-0006 completion.
 - Updated changelog for the CLI task.
+- Extended `ReviewFinding` with optional `location` metadata.
+- Updated data model documentation for source spans.
+- Updated CLI text output to include line, column, matched text, and context when available.
+- Updated CLI JSON output to include nested location objects.
+- Updated project state for TASK-0007 completion.
+- Updated changelog for TASK-0007.
 
 ### Fixed
 

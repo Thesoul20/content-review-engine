@@ -95,7 +95,7 @@ Review Result
 ```
 
 The CLI currently supports reviewing one Markdown file with one YAML profile.
-It prints a simple human-readable summary and does not yet support JSON, HTML, batch review, or report persistence.
+It prints a simple human-readable summary and supports JSON output, but does not yet support HTML, batch review, or report persistence.
 
 Current deterministic rules:
 

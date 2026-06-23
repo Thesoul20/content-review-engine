@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from content_review_engine.core.location import build_source_span
 from content_review_engine.core.models import ReviewFinding, ReviewProfile
 
 RULE_ID = "forbidden_terms"
@@ -24,15 +25,21 @@ def check_forbidden_terms(
 
     findings: list[ReviewFinding] = []
     for term in terms:
-        if term in markdown_text:
-            findings.append(
-                ReviewFinding(
-                    rule_id=RULE_ID,
-                    severity="warning",
-                    message=f"发现风险词：{term}",
-                    matched_term=term,
-                    matched_text=term,
-                )
+        start_offset = markdown_text.find(term)
+        if start_offset == -1:
+            continue
+
+        end_offset = start_offset + len(term)
+        location = build_source_span(markdown_text, start_offset, end_offset)
+        findings.append(
+            ReviewFinding(
+                rule_id=RULE_ID,
+                severity="warning",
+                message=f"发现风险词：{term}",
+                matched_term=term,
+                matched_text=location.matched_text,
+                location=location,
             )
+        )
 
     return findings

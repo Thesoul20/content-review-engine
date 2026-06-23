@@ -20,6 +20,8 @@ def test_review_document_returns_finding_for_forbidden_term() -> None:
     assert isinstance(finding, ReviewFinding)
     assert finding.rule_id == "forbidden_terms"
     assert finding.matched_term == "保证赚钱"
+    assert finding.location is not None
+    assert finding.location.matched_text == "保证赚钱"
 
 
 def test_review_document_returns_empty_list_when_no_terms_match() -> None:

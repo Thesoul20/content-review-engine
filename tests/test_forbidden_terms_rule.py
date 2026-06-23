@@ -18,6 +18,12 @@ def test_forbidden_terms_single_match_returns_finding() -> None:
     assert finding.message == "发现风险词：保证赚钱"
     assert finding.matched_term == "保证赚钱"
     assert finding.matched_text == "保证赚钱"
+    assert finding.location is not None
+    assert finding.location.start_line == 1
+    assert finding.location.start_column == 7
+    assert finding.location.matched_text == "保证赚钱"
+    assert finding.location.start_offset == 6
+    assert finding.location.end_offset == 10
 
 
 def test_forbidden_terms_no_match_returns_empty_list() -> None:
@@ -42,6 +48,13 @@ def test_forbidden_terms_multiple_matches_returns_multiple_findings() -> None:
     findings = check_forbidden_terms("这里写着绝对安全，也承诺保证赚钱，而且说自己100%有效。", profile)
 
     assert [finding.matched_term for finding in findings] == [
+        "绝对安全",
+        "保证赚钱",
+        "100%有效",
+    ]
+    assert [finding.location.start_line for finding in findings] == [1, 1, 1]
+    assert [finding.location.start_column for finding in findings] == [5, 13, 23]
+    assert [finding.location.matched_text for finding in findings] == [
         "绝对安全",
         "保证赚钱",
         "100%有效",

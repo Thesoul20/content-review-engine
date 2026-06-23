@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -38,6 +39,10 @@ def test_cli_review_with_findings_prints_finding_details(
     assert "Review completed." in captured.out
     assert "Findings: 1" in captured.out
     assert "[warning] forbidden_terms: 发现风险词：保证赚钱" in captured.out
+    assert "Line: 1" in captured.out
+    assert "Column: 7" in captured.out
+    assert "Matched: 保证赚钱" in captured.out
+    assert "Context:" in captured.out
     assert captured.err == ""
 
 
@@ -123,3 +128,36 @@ def test_cli_review_help_shows_usage(capsys: pytest.CaptureFixture[str]) -> None
     assert exit_code == 0
     assert "usage:" in captured.out.lower()
     assert "--profile" in captured.out
+
+
+def test_cli_review_json_output_includes_location(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    markdown_path = tmp_path / "article.md"
+    markdown_path.write_text("这篇文章承诺保证赚钱。", encoding="utf-8")
+    profile_path = tmp_path / "wechat.yaml"
+    _write_profile(profile_path, ["保证赚钱"])
+
+    exit_code = main(
+        [
+            "review",
+            str(markdown_path),
+            "--profile",
+            str(profile_path),
+            "--format",
+            "json",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    payload = json.loads(captured.out)
+    assert payload["summary"]["finding_count"] == 1
+    location = payload["findings"][0]["location"]
+    assert location["start_line"] == 1
+    assert location["start_column"] == 7
+    assert location["matched_text"] == "保证赚钱"
+    assert "Context:" not in captured.out
+    assert captured.err == ""

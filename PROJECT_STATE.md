@@ -4,7 +4,7 @@
 
 M1: Core input layer and minimal review pipeline.
 
-The project currently has Markdown input handling, profile loading, deterministic review rules, and a minimal in-memory review pipeline on top of the initial data models.
+The project currently has Markdown input handling, profile loading, deterministic review rules, source location metadata on findings, and a minimal in-memory review pipeline on top of the initial data models.
 
 ---
 
@@ -32,11 +32,11 @@ The project currently has Markdown input handling, profile loading, deterministi
 
 ## Recent Completion
 
-- TASK-0006 is complete.
-- Added a minimal `content-review review` CLI command.
-- The CLI can review one Markdown file with one YAML profile.
-- The CLI uses the existing in-memory review pipeline and deterministic forbidden terms rule.
-- The project still does not have LLM review, API, MCP, persistence, frontend, or JSON/HTML report export.
+- TASK-0007 is complete.
+- Added source location metadata to review findings.
+- The forbidden terms rule now reports matched text, line, column, character offsets, and a context snippet.
+- The CLI now prints location-aware text output and JSON output with nested location objects.
+- The project still does not have LLM review, API, MCP, persistence, frontend, diff tracking, or rewriting support.
 
 ---
 
@@ -87,6 +87,11 @@ The project currently has Markdown input handling, profile loading, deterministi
 - Added tests for the review pipeline.
 - Added a minimal CLI entrypoint with a `review` subcommand.
 - Added CLI tests for success, missing files, and help output.
+- Added source location metadata for deterministic findings.
+- Added CLI text and JSON output support for finding locations.
+- Added tests for location calculation, location-aware forbidden term findings, and CLI JSON output.
+- Added `docs/CLI.md`.
+- Added `TASK-0007` completion updates.
 - Updated architecture documentation, project state, and changelog for the CLI task.
 
 ### Changed Files
@@ -114,7 +119,7 @@ The project currently has Markdown input handling, profile loading, deterministi
 
 ### Next Recommended Task
 
-TASK-0007: Add JSON Output Format.
+TASK-0008: Add a second deterministic review rule or expand the core review metadata further.
 
 ### Notes
 
