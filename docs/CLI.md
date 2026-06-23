@@ -128,7 +128,8 @@ Example shape:
 - If a profile references an unknown rule ID, the CLI prints a readable error and exits with code `2`.
 - Existing profiles continue to run `forbidden_terms` by default.
 - Profiles can opt into additional deterministic rules, including
-  `markdown_structure`, through `ReviewProfile.enabled_rules`.
+  `markdown_structure` and `markdown_links_images`, through
+  `ReviewProfile.enabled_rules`.
 
 ## Example Files
 
@@ -153,4 +154,13 @@ uv run content-review review examples/markdown-structure-article.md --profile ex
 uv run content-review review examples/markdown-structure-article.md --profile examples/markdown-structure-profile.yml --format json
 uv run content-review review examples/markdown-structure-article.md --profile examples/markdown-structure-profile.yml --format markdown
 uv run content-review review examples/markdown-structure-article.md --profile examples/markdown-structure-profile.yml --format markdown --output examples/markdown-structure-report.md
+```
+
+For the opt-in Markdown links and images rule:
+
+```bash
+uv run content-review review examples/markdown-links-images-article.md --profile examples/markdown-links-images-profile.yml --format text
+uv run content-review review examples/markdown-links-images-article.md --profile examples/markdown-links-images-profile.yml --format json
+uv run content-review review examples/markdown-links-images-article.md --profile examples/markdown-links-images-profile.yml --format markdown
+uv run content-review review examples/markdown-links-images-article.md --profile examples/markdown-links-images-profile.yml --format markdown --output examples/markdown-links-images-report.md
 ```

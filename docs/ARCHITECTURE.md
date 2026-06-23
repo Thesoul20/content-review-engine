@@ -72,6 +72,7 @@ Current implemented input helpers:
 - `content_review_engine.config.load_profile`
 - `content_review_engine.rules.check_forbidden_terms`
 - `content_review_engine.rules.check_markdown_structure`
+- `content_review_engine.rules.check_markdown_links_images`
 - `content_review_engine.rules.build_default_rule_registry`
 - `content_review_engine.rules.run_rules`
 - `content_review_engine.review.review_document`
@@ -111,6 +112,7 @@ Current deterministic rules:
 
 - `forbidden_terms`
 - `markdown_structure`
+- `markdown_links_images`
 
 Current review pipeline:
 
@@ -119,6 +121,8 @@ Current review pipeline:
 - The default registry currently registers the deterministic `forbidden_terms`
   rule as default-enabled and the deterministic `markdown_structure` rule as
   opt-in through `ReviewProfile.enabled_rules`.
+- The deterministic `markdown_links_images` rule is also registered as opt-in
+  through `ReviewProfile.enabled_rules`.
 - The pipeline returns a canonical `ReviewResult`.
 
 Current report generation:

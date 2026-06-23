@@ -46,8 +46,12 @@ def build_default_rule_registry() -> RuleRegistry:
     from content_review_engine.rules.markdown_structure import (
         DEFAULT_MARKDOWN_STRUCTURE_RULE,
     )
+    from content_review_engine.rules.markdown_links_images import (
+        DEFAULT_MARKDOWN_LINKS_IMAGES_RULE,
+    )
 
     registry.register(DEFAULT_MARKDOWN_STRUCTURE_RULE, enabled_by_default=False)
+    registry.register(DEFAULT_MARKDOWN_LINKS_IMAGES_RULE, enabled_by_default=False)
     return registry
 
 

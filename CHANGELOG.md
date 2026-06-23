@@ -8,6 +8,46 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0014
+
+### Added
+
+- Added the deterministic `markdown_links_images` rule.
+- Added Markdown fixture coverage for empty link text, empty link target,
+  placeholder link target, empty image alt text, empty image target,
+  placeholder image target, and fenced code block handling.
+- Added `tests/fixtures/profiles/markdown_links_images.yml` and matching
+  example files for manual CLI usage.
+- Added tests for the new rule, registry and runner integration, review
+  pipeline integration, and CLI JSON output.
+
+### Changed
+
+- Extended the rule registry to register `markdown_links_images` as opt-in so
+  existing default profiles keep the same behavior.
+- Preserved the default forbidden-terms behavior, the markdown_structure
+  behavior, and the CLI contract.
+- Updated `docs/ARCHITECTURE.md`, `docs/RULES.md`, `docs/REVIEW_RULES.md`,
+  `docs/CLI.md`, `docs/TESTING.md`, `PROJECT_STATE.md`, and this changelog.
+
+### Not Added
+
+- No network link checking.
+- No HTTP status validation.
+- No local file existence checking.
+- No image download.
+- No image alt text quality scoring.
+- No LLM review.
+- No automatic rewriting.
+- No diff tracking.
+- No Markdown auto-fix.
+- No batch review.
+- No watch mode.
+- No MCP server.
+- No REST API.
+- No GUI.
+- No database persistence.
+
 ## TASK-0013
 
 ### Added

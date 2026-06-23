@@ -66,6 +66,35 @@ def test_run_rules_executes_explicit_markdown_structure_rule() -> None:
     )
 
 
+def test_run_rules_executes_explicit_markdown_links_images_rule() -> None:
+    markdown_text = "[文档](#)"
+    profile = ReviewProfile(
+        name="markdown-links-images",
+        target_platform="wechat",
+        enabled_rules=["markdown_links_images"],
+    )
+
+    findings = run_rules(markdown_text, profile)
+
+    assert len(findings) == 1
+    assert findings[0].rule_id == "markdown_links_images"
+    assert findings[0].message == "链接目标仍是占位符。"
+
+
+def test_run_rules_does_not_execute_markdown_links_images_when_not_enabled() -> None:
+    markdown_text = "[](https://example.com)"
+    profile = ReviewProfile(
+        name="forbidden-terms",
+        target_platform="wechat",
+        forbidden_terms=["保证赚钱"],
+        enabled_rules=["forbidden_terms"],
+    )
+
+    findings = run_rules(markdown_text, profile)
+
+    assert findings == []
+
+
 def test_run_rules_respects_explicit_enabled_rules_order() -> None:
     registry = RuleRegistry()
     registry.register(RunnerRule(rule_id="rule_a", message="first"))

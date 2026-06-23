@@ -67,6 +67,27 @@ Tests:
 
 `tests/test_markdown_structure_rule.py`
 
+### markdown_links_images
+
+Purpose:
+
+Detect empty Markdown link text, empty link targets, placeholder link targets,
+empty image alt text, empty image targets, and placeholder image targets.
+Fenced code blocks are ignored.
+Inline code spans are not specially excluded in this version.
+
+Status:
+
+Implemented.
+
+Implementation:
+
+`src/content_review_engine/rules/markdown_links_images.py`
+
+Tests:
+
+`tests/test_markdown_links_images_rule.py`
+
 ---
 
 ## Planned Rules

@@ -68,5 +68,10 @@ def test_default_rule_registry_contains_forbidden_terms_rule() -> None:
 
     assert registry.has("forbidden_terms") is True
     assert registry.has("markdown_structure") is True
-    assert registry.list_rule_ids() == ["forbidden_terms", "markdown_structure"]
+    assert registry.has("markdown_links_images") is True
+    assert registry.list_rule_ids() == [
+        "forbidden_terms",
+        "markdown_structure",
+        "markdown_links_images",
+    ]
     assert registry.list_enabled_rule_ids() == ["forbidden_terms"]

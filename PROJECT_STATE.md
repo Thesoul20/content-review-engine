@@ -41,6 +41,12 @@ The project currently has Markdown input handling, profile loading, deterministi
 - Added Markdown structure fixtures, example files, tests, and documentation.
 - Preserved existing default forbidden-terms behavior and CLI behavior.
 
+- TASK-0014 is complete.
+- Added the deterministic `markdown_links_images` rule.
+- Kept `markdown_links_images` opt-in through `ReviewProfile.enabled_rules`.
+- Added Markdown links/images fixtures, example files, tests, and documentation.
+- Preserved existing default forbidden-terms behavior, markdown_structure behavior, and CLI behavior.
+
 - TASK-0012 is complete.
 - Added a minimal internal rule interface, rule registry, and rule runner.
 - The existing forbidden-terms rule now runs through the rule runner.

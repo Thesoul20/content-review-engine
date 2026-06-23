@@ -34,6 +34,15 @@ uv run content-review review examples/markdown-structure-article.md --profile ex
 uv run content-review review examples/markdown-structure-article.md --profile examples/markdown-structure-profile.yml --format markdown --output /tmp/content-review-markdown-structure-report.md
 ```
 
+For the opt-in Markdown links and images rule:
+
+```bash
+uv run content-review review examples/markdown-links-images-article.md --profile examples/markdown-links-images-profile.yml --format text
+uv run content-review review examples/markdown-links-images-article.md --profile examples/markdown-links-images-profile.yml --format json
+uv run content-review review examples/markdown-links-images-article.md --profile examples/markdown-links-images-profile.yml --format markdown
+uv run content-review review examples/markdown-links-images-article.md --profile examples/markdown-links-images-profile.yml --format markdown --output /tmp/content-review-markdown-links-images-report.md
+```
+
 ## Fixture Layout
 
 Automated tests use committed fixtures under `tests/fixtures/`.
@@ -60,6 +69,10 @@ The current Markdown structure fixtures cover:
 - `markdown_structure_long_paragraph.md`
 - `markdown_structure_code_block_headings.md`
 - `markdown_structure_issues.md`
+
+The current Markdown links/images fixture covers:
+
+- `markdown_links_images_issues.md`
 
 ## Inline Strings Vs Fixtures
 

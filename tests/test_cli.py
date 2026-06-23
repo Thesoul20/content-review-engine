@@ -199,6 +199,52 @@ def test_cli_review_json_output_supports_markdown_structure_rule(
     assert captured.err == ""
 
 
+def test_cli_review_json_output_supports_markdown_links_images_rule(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    markdown_path = "tests/fixtures/markdown/markdown_links_images_issues.md"
+    profile_path = "tests/fixtures/profiles/markdown_links_images.yml"
+
+    exit_code = main(
+        [
+            "review",
+            markdown_path,
+            "--profile",
+            profile_path,
+            "--format",
+            "json",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    payload = json.loads(captured.out)
+    assert payload["schema_version"] == "review-result.v1"
+    assert payload["summary"]["finding_count"] == 6
+    assert payload["summary"]["severity_counts"] == {
+        "info": 0,
+        "warning": 6,
+        "error": 0,
+        "critical": 0,
+    }
+    assert payload["profile"] == {
+        "name": "markdown-links-images",
+        "path": profile_path,
+    }
+    assert {finding["rule_id"] for finding in payload["findings"]} == {
+        "markdown_links_images"
+    }
+    assert payload["findings"][0]["message"] == "链接文本为空。"
+    assert payload["findings"][0]["location"]["start_line"] == 1
+    assert payload["findings"][1]["message"] == "链接目标为空。"
+    assert payload["findings"][2]["message"] == "链接目标仍是占位符。"
+    assert payload["findings"][3]["message"] == "图片 alt 文本为空。"
+    assert payload["findings"][4]["message"] == "图片目标为空。"
+    assert payload["findings"][5]["message"] == "图片目标仍是占位符。"
+    assert captured.err == ""
+
+
 def test_cli_review_markdown_stdout_includes_report_sections(
     capsys: pytest.CaptureFixture[str],
 ) -> None:

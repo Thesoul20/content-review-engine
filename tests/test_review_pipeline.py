@@ -125,6 +125,59 @@ def test_review_document_returns_markdown_structure_findings_when_enabled() -> N
     ]
 
 
+def test_review_document_does_not_run_markdown_links_images_by_default() -> None:
+    markdown_text = (MARKDOWN_FIXTURES_DIR / "markdown_links_images_issues.md").read_text(
+        encoding="utf-8"
+    )
+    profile = load_profile(PROFILE_FIXTURES_DIR / "default.yml")
+
+    result = review_document(markdown_text, profile)
+
+    assert result.summary.finding_count == 0
+    assert result.findings == []
+
+
+def test_review_document_returns_markdown_links_images_findings_when_enabled() -> None:
+    markdown_text = (MARKDOWN_FIXTURES_DIR / "markdown_links_images_issues.md").read_text(
+        encoding="utf-8"
+    )
+    profile = load_profile(PROFILE_FIXTURES_DIR / "markdown_links_images.yml")
+
+    result = review_document(markdown_text, profile)
+
+    assert result.summary.finding_count == 6
+    assert result.summary.severity_counts == {
+        "info": 0,
+        "warning": 6,
+        "error": 0,
+        "critical": 0,
+    }
+    assert [finding.rule_id for finding in result.findings] == [
+        "markdown_links_images",
+        "markdown_links_images",
+        "markdown_links_images",
+        "markdown_links_images",
+        "markdown_links_images",
+        "markdown_links_images",
+    ]
+    assert [finding.message for finding in result.findings] == [
+        "链接文本为空。",
+        "链接目标为空。",
+        "链接目标仍是占位符。",
+        "图片 alt 文本为空。",
+        "图片目标为空。",
+        "图片目标仍是占位符。",
+    ]
+    assert [finding.location.start_line for finding in result.findings] == [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+    ]
+
+
 def test_review_document_accepts_loaded_text_and_profile_not_paths() -> None:
     signature = inspect.signature(review_document)
 
