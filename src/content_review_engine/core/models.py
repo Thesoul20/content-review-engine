@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 Severity = Literal["low", "medium", "high", "critical"]
 FindingSeverity = Literal["warning"]
 REVIEW_RESULT_SCHEMA_VERSION = "review-result.v1"
+BATCH_REVIEW_RESULT_SCHEMA_VERSION = "batch-review-result.v1"
 REVIEW_SUMMARY_SEVERITIES: tuple[str, ...] = ("info", "warning", "error", "critical")
 
 
@@ -93,6 +94,61 @@ class ReviewResult(BaseModel):
         )
 
 
+class BatchReviewSummary(BaseModel):
+    file_count: int = Field(ge=0)
+    reviewed_count: int = Field(ge=0)
+    finding_count: int = Field(ge=0)
+    files_with_findings: int = Field(ge=0)
+    severity_counts: dict[str, int] = Field(default_factory=_default_severity_counts)
+
+    @classmethod
+    def from_results(
+        cls,
+        *,
+        file_count: int,
+        results: list[ReviewResult],
+    ) -> "BatchReviewSummary":
+        severity_counts = _default_severity_counts()
+        finding_count = 0
+        files_with_findings = 0
+
+        for result in results:
+            finding_count += result.summary.finding_count
+            if result.summary.finding_count > 0:
+                files_with_findings += 1
+            for severity, count in result.summary.severity_counts.items():
+                severity_counts[severity] = severity_counts.get(severity, 0) + count
+
+        return cls(
+            file_count=file_count,
+            reviewed_count=len(results),
+            finding_count=finding_count,
+            files_with_findings=files_with_findings,
+            severity_counts=severity_counts,
+        )
+
+
+class BatchReviewResult(BaseModel):
+    schema_version: str = BATCH_REVIEW_RESULT_SCHEMA_VERSION
+    summary: BatchReviewSummary
+    results: list[ReviewResult] = Field(default_factory=list)
+
+    @classmethod
+    def from_results(
+        cls,
+        results: list[ReviewResult],
+        *,
+        file_count: int,
+    ) -> "BatchReviewResult":
+        return cls(
+            summary=BatchReviewSummary.from_results(
+                file_count=file_count,
+                results=results,
+            ),
+            results=list(results),
+        )
+
+
 class ReviewProfile(BaseModel):
     name: str
     target_platform: str
@@ -105,9 +161,12 @@ class ReviewProfile(BaseModel):
 
 __all__ = [
     "FindingSeverity",
+    "BATCH_REVIEW_RESULT_SCHEMA_VERSION",
     "REVIEW_RESULT_SCHEMA_VERSION",
     "REVIEW_SUMMARY_SEVERITIES",
     "ReviewDocumentMetadata",
+    "BatchReviewResult",
+    "BatchReviewSummary",
     "ReviewFinding",
     "ReviewIssue",
     "ReviewProfile",

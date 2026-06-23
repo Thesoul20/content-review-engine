@@ -363,6 +363,170 @@ def test_cli_review_unknown_rule_returns_two(
     assert captured.out == ""
 
 
+def test_cli_batch_text_output_prints_summary_and_file_sections(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    input_dir = "tests/fixtures/batch/articles"
+    profile_path = "tests/fixtures/batch/profile.yml"
+
+    exit_code = main(
+        [
+            "batch",
+            input_dir,
+            "--profile",
+            profile_path,
+            "--recursive",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "Batch review completed." in captured.out
+    assert "Files discovered: 3" in captured.out
+    assert "Files reviewed: 3" in captured.out
+    assert "Files with findings: 2" in captured.out
+    assert "Findings: 2" in captured.out
+    assert "[tests/fixtures/batch/articles/clean.md] Findings: 0" in captured.out
+    assert "[tests/fixtures/batch/articles/forbidden.md] Findings: 1" in captured.out
+    assert "[tests/fixtures/batch/articles/nested/nested_forbidden.md] Findings: 1" in captured.out
+    assert "No issues found." in captured.out
+    assert "[warning] forbidden_terms - 发现风险词：绝对安全" in captured.out
+    assert captured.err == ""
+
+
+def test_cli_batch_json_output_uses_canonical_batch_result(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    input_dir = "tests/fixtures/batch/articles"
+    profile_path = "tests/fixtures/batch/profile.yml"
+
+    exit_code = main(
+        [
+            "batch",
+            input_dir,
+            "--profile",
+            profile_path,
+            "--recursive",
+            "--format",
+            "json",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    payload = json.loads(captured.out)
+    assert payload["schema_version"] == "batch-review-result.v1"
+    assert payload["summary"] == {
+        "file_count": 3,
+        "reviewed_count": 3,
+        "finding_count": 2,
+        "files_with_findings": 2,
+        "severity_counts": {
+            "info": 0,
+            "warning": 2,
+            "error": 0,
+            "critical": 0,
+        },
+    }
+    assert [item["document"]["path"] for item in payload["results"]] == [
+        "tests/fixtures/batch/articles/clean.md",
+        "tests/fixtures/batch/articles/forbidden.md",
+        "tests/fixtures/batch/articles/nested/nested_forbidden.md",
+    ]
+    assert payload["results"][1]["findings"][0]["location"]["matched_text"] == "绝对安全"
+    assert captured.err == ""
+
+
+def test_cli_batch_markdown_output_includes_report_sections(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    input_dir = "tests/fixtures/batch/articles"
+    profile_path = "tests/fixtures/batch/profile.yml"
+
+    exit_code = main(
+        [
+            "batch",
+            input_dir,
+            "--profile",
+            profile_path,
+            "--recursive",
+            "--format",
+            "markdown",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert captured.out.startswith("# Batch Content Review Report\n")
+    assert "## Summary" in captured.out
+    assert "### 1. `tests/fixtures/batch/articles/clean.md`" in captured.out
+    assert "### 2. `tests/fixtures/batch/articles/forbidden.md`" in captured.out
+    assert "### 3. `tests/fixtures/batch/articles/nested/nested_forbidden.md`" in captured.out
+    assert "No issues found." in captured.out
+    assert captured.err == ""
+
+
+def test_cli_batch_markdown_output_file_writes_report(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    input_dir = "tests/fixtures/batch/articles"
+    profile_path = "tests/fixtures/batch/profile.yml"
+    output_path = tmp_path / "batch-report.md"
+
+    exit_code = main(
+        [
+            "batch",
+            input_dir,
+            "--profile",
+            profile_path,
+            "--recursive",
+            "--format",
+            "markdown",
+            "--output",
+            str(output_path),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert captured.out == ""
+    assert captured.err == ""
+    output_text = output_path.read_text(encoding="utf-8")
+    assert output_text.startswith("# Batch Content Review Report\n")
+    assert "### 1. `tests/fixtures/batch/articles/clean.md`" in output_text
+    assert "### 2. `tests/fixtures/batch/articles/forbidden.md`" in output_text
+    assert "### 3. `tests/fixtures/batch/articles/nested/nested_forbidden.md`" in output_text
+    assert "No issues found." in output_text
+
+
+def test_cli_batch_invalid_input_directory_returns_two(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    invalid_input = tmp_path / "not-a-directory.md"
+    invalid_input.write_text("content", encoding="utf-8")
+
+    exit_code = main(
+        [
+            "batch",
+            str(invalid_input),
+            "--profile",
+            "tests/fixtures/batch/profile.yml",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert "Error: Input path is not a directory" in captured.err
+    assert captured.out == ""
+
+
 def test_console_script_entrypoint_is_exposed() -> None:
     console_scripts = entry_points(group="console_scripts")
     content_review_entrypoints = [

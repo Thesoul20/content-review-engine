@@ -82,6 +82,7 @@ Current CLI adapter:
 
 ```text
 content-review review <markdown_file> --profile <profile_file>
+content-review batch <input_dir> --profile <profile_file>
 ```
 
 Current CLI flow:
@@ -104,9 +105,11 @@ Deterministic Rules
 Review Result
 ```
 
-The CLI currently supports reviewing one Markdown file with one YAML profile.
-It prints a simple human-readable summary, supports JSON output, and can export Markdown review reports.
-It does not yet support HTML, batch review, or report persistence beyond the optional Markdown output file.
+For batch review, the CLI adds a deterministic directory discovery step before the Markdown Reader.
+
+The CLI currently supports reviewing one Markdown file with one YAML profile and reviewing a directory of Markdown files with one YAML profile.
+It prints simple human-readable summaries, supports JSON output, and can export Markdown review reports for both single-file and batch review.
+It does not yet support HTML, watch mode, or report persistence beyond the optional Markdown output file.
 
 Current deterministic rules:
 
@@ -128,6 +131,7 @@ Current review pipeline:
 Current report generation:
 
 - `render_markdown_report()` accepts a `ReviewResult` and renders a Markdown report.
+- `render_batch_markdown_report()` accepts a `BatchReviewResult` and renders a batch Markdown report.
 - The report renderer does not run rules, read Markdown files, or write output files.
 
 ---

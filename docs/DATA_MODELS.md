@@ -202,6 +202,93 @@ Example:
 
 ---
 
+## BatchReviewSummary
+
+`BatchReviewSummary` summarizes a batch review run across multiple files.
+
+| Field | Required | Description |
+|---|---|---|
+| `file_count` | Yes | Number of discovered Markdown files |
+| `reviewed_count` | Yes | Number of files successfully reviewed |
+| `finding_count` | Yes | Total number of findings across all files |
+| `files_with_findings` | Yes | Number of files with at least one finding |
+| `severity_counts` | Yes | Aggregated severity counts across all file summaries |
+
+Example:
+
+```json
+{
+  "file_count": 3,
+  "reviewed_count": 3,
+  "finding_count": 2,
+  "files_with_findings": 2,
+  "severity_counts": {
+    "info": 0,
+    "warning": 2,
+    "error": 0,
+    "critical": 0
+  }
+}
+```
+
+---
+
+## BatchReviewResult
+
+`BatchReviewResult` is the canonical structured output for a batch review run.
+
+The stable schema version is `batch-review-result.v1`.
+
+| Field | Required | Description |
+|---|---|---|
+| `schema_version` | Yes | Result schema version |
+| `summary` | Yes | `BatchReviewSummary` computed from the file results |
+| `results` | Yes | List of canonical `ReviewResult` objects |
+
+Example:
+
+```json
+{
+  "schema_version": "batch-review-result.v1",
+  "summary": {
+    "file_count": 3,
+    "reviewed_count": 3,
+    "finding_count": 2,
+    "files_with_findings": 2,
+    "severity_counts": {
+      "info": 0,
+      "warning": 2,
+      "error": 0,
+      "critical": 0
+    }
+  },
+  "results": [
+    {
+      "schema_version": "review-result.v1",
+      "summary": {
+        "finding_count": 0,
+        "severity_counts": {
+          "info": 0,
+          "warning": 0,
+          "error": 0,
+          "critical": 0
+        }
+      },
+      "findings": [],
+      "document": {
+        "path": "tests/fixtures/batch/articles/clean.md"
+      },
+      "profile": {
+        "name": "batch-default",
+        "path": "tests/fixtures/batch/profile.yml"
+      }
+    }
+  ]
+}
+```
+
+---
+
 ## ReviewProfile
 
 `ReviewProfile` represents a review configuration.
@@ -224,5 +311,7 @@ Example:
 2. Any change to `ReviewFinding` must update this document.
 3. Any change to `ReviewSummary` must update this document.
 4. Any change to `ReviewResult` must update this document.
-5. Any change to `ReviewProfile` must update this document.
-6. After v0.1.0, breaking changes to these models require an ADR.
+5. Any change to `BatchReviewSummary` must update this document.
+6. Any change to `BatchReviewResult` must update this document.
+7. Any change to `ReviewProfile` must update this document.
+8. After v0.1.0, breaking changes to these models require an ADR.

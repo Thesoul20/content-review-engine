@@ -1,0 +1,252 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "batch-review-result.schema.json",
+  "title": "BatchReviewResult",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "summary", "results"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "batch-review-result.v1"
+    },
+    "summary": {
+      "$ref": "#/$defs/BatchReviewSummary"
+    },
+    "results": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ReviewResult"
+      }
+    }
+  },
+  "$defs": {
+    "BatchReviewSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "file_count",
+        "reviewed_count",
+        "finding_count",
+        "files_with_findings",
+        "severity_counts"
+      ],
+      "properties": {
+        "file_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "reviewed_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "finding_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "files_with_findings": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "severity_counts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["info", "warning", "error", "critical"],
+          "properties": {
+            "info": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "warning": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "error": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "critical": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      }
+    },
+    "ReviewResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "summary", "findings"],
+      "properties": {
+        "schema_version": {
+          "type": "string",
+          "const": "review-result.v1"
+        },
+        "summary": {
+          "$ref": "#/$defs/ReviewSummary"
+        },
+        "findings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ReviewFinding"
+          }
+        },
+        "document": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ReviewDocumentMetadata"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "profile": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ReviewProfileMetadata"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "ReviewSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["finding_count", "severity_counts"],
+      "properties": {
+        "finding_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "severity_counts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["info", "warning", "error", "critical"],
+          "properties": {
+            "info": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "warning": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "error": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "critical": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      }
+    },
+    "ReviewFinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rule_id", "severity", "message", "matched_term"],
+      "properties": {
+        "rule_id": {
+          "type": "string"
+        },
+        "severity": {
+          "type": "string",
+          "const": "warning"
+        },
+        "message": {
+          "type": "string"
+        },
+        "matched_term": {
+          "type": "string"
+        },
+        "matched_text": {
+          "type": "string"
+        },
+        "location": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SourceSpan"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "SourceSpan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "start_line",
+        "start_column",
+        "end_line",
+        "end_column",
+        "start_offset",
+        "end_offset",
+        "matched_text"
+      ],
+      "properties": {
+        "start_line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "start_column": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "end_line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "end_column": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "start_offset": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "end_offset": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "matched_text": {
+          "type": "string"
+        },
+        "context": {
+          "type": "string"
+        }
+      }
+    },
+    "ReviewDocumentMetadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path"],
+      "properties": {
+        "path": {
+          "type": "string"
+        }
+      }
+    },
+    "ReviewProfileMetadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

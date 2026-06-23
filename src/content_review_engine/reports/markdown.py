@@ -1,6 +1,10 @@
 from __future__ import annotations
 
-from content_review_engine.core.models import ReviewFinding, ReviewResult
+from content_review_engine.core.models import (
+    BatchReviewResult,
+    ReviewFinding,
+    ReviewResult,
+)
 
 
 def _format_value(value: str | None) -> str:
@@ -73,6 +77,57 @@ def render_markdown_report(
     for index, finding in enumerate(result.findings, start=1):
         lines.extend(_render_finding_details(finding))
         if index < len(result.findings):
+            lines.append("")
+
+    return "\n".join(lines)
+
+
+def render_batch_markdown_report(result: BatchReviewResult) -> str:
+    lines = [
+        "# Batch Content Review Report",
+        "",
+        "## Summary",
+        "",
+        f"- Files discovered: {result.summary.file_count}",
+        f"- Files reviewed: {result.summary.reviewed_count}",
+        f"- Files with findings: {result.summary.files_with_findings}",
+        f"- Findings: {result.summary.finding_count}",
+        "",
+        "## Files",
+        "",
+    ]
+
+    if not result.results:
+        lines.append("No Markdown files found.")
+        return "\n".join(lines)
+
+    for index, review_result in enumerate(result.results, start=1):
+        document_path = (
+            review_result.document.path
+            if review_result.document is not None
+            else "Unknown"
+        )
+        lines.extend(
+            [
+                f"### {index}. {_format_value(document_path)}",
+                "",
+                f"- Findings: {review_result.summary.finding_count}",
+            ]
+        )
+
+        if not review_result.findings:
+            lines.extend(["", "No issues found."])
+            if index < len(result.results):
+                lines.append("")
+            continue
+
+        lines.append("")
+        for finding_index, finding in enumerate(review_result.findings, start=1):
+            lines.extend(_render_finding_details(finding))
+            if finding_index < len(review_result.findings):
+                lines.append("")
+
+        if index < len(result.results):
             lines.append("")
 
     return "\n".join(lines)

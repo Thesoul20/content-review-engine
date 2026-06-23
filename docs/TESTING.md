@@ -25,6 +25,15 @@ uv run content-review review examples/article.md --profile examples/profile.yml 
 uv run content-review review examples/article.md --profile examples/profile.yml --format markdown --output /tmp/content-review-example-report.md
 ```
 
+Then run the committed batch example directory through the same entrypoint:
+
+```bash
+uv run content-review batch examples/batch/articles --profile examples/batch/profile.yml --recursive --format text
+uv run content-review batch examples/batch/articles --profile examples/batch/profile.yml --recursive --format json
+uv run content-review batch examples/batch/articles --profile examples/batch/profile.yml --recursive --format markdown
+uv run content-review batch examples/batch/articles --profile examples/batch/profile.yml --recursive --format markdown --output /tmp/content-review-batch-report.md
+```
+
 For the opt-in Markdown structure rule:
 
 ```bash
@@ -51,12 +60,14 @@ The current layout is:
 
 ```text
 tests/fixtures/
+  batch/
   markdown/
   profiles/
   expected_reports/
 ```
 
 Use `tests/fixtures/markdown/` for Markdown inputs that should be reused across tests.
+Use `tests/fixtures/batch/` for batch-review directory inputs and profiles that should stay stable across test runs.
 Use `tests/fixtures/profiles/` for YAML review profiles that should stay stable across test runs.
 Use `tests/fixtures/expected_reports/` only when a report output is stable enough to compare directly.
 
@@ -73,6 +84,12 @@ The current Markdown structure fixtures cover:
 The current Markdown links/images fixture covers:
 
 - `markdown_links_images_issues.md`
+
+The current batch fixtures cover:
+
+- `batch/articles/clean.md`
+- `batch/articles/forbidden.md`
+- `batch/articles/nested/nested_forbidden.md`
 
 ## Inline Strings Vs Fixtures
 

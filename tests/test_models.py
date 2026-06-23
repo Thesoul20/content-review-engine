@@ -2,6 +2,8 @@ import pytest
 from pydantic import ValidationError
 
 from content_review_engine.core.models import (
+    BatchReviewResult,
+    BatchReviewSummary,
     ReviewDocumentMetadata,
     ReviewFinding,
     ReviewIssue,
@@ -167,3 +169,42 @@ def test_invalid_severity_should_fail() -> None:
 def test_invalid_finding_count_should_fail() -> None:
     with pytest.raises(ValidationError):
         ReviewSummary(finding_count=-1)
+
+
+def test_create_batch_review_summary_from_results() -> None:
+    finding = ReviewFinding(
+        rule_id="forbidden_terms",
+        severity="warning",
+        message="发现风险词：绝对安全",
+        matched_term="绝对安全",
+    )
+    review_result = ReviewResult.from_findings(
+        [finding],
+        document=ReviewDocumentMetadata(path="article.md"),
+        profile=ReviewProfileMetadata(name="wechat"),
+    )
+
+    summary = BatchReviewSummary.from_results(file_count=2, results=[review_result])
+
+    assert summary.file_count == 2
+    assert summary.reviewed_count == 1
+    assert summary.finding_count == 1
+    assert summary.files_with_findings == 1
+    assert summary.severity_counts == {
+        "info": 0,
+        "warning": 1,
+        "error": 0,
+        "critical": 0,
+    }
+
+
+def test_create_batch_review_result_with_results() -> None:
+    review_result = ReviewResult.from_findings([])
+
+    batch_result = BatchReviewResult.from_results([review_result], file_count=1)
+
+    assert batch_result.schema_version == "batch-review-result.v1"
+    assert batch_result.summary.file_count == 1
+    assert batch_result.summary.reviewed_count == 1
+    assert batch_result.summary.finding_count == 0
+    assert batch_result.results == [review_result]

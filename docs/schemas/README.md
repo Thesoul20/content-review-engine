@@ -5,6 +5,7 @@ This directory documents the canonical JSON payloads emitted by the core package
 Current file:
 
 - `review-result.schema.json`: canonical `ReviewResult` payload for JSON CLI output and future API-style responses.
+- `batch-review-result.schema.json`: canonical `BatchReviewResult` payload for batch JSON CLI output.
 
 Notes:
 

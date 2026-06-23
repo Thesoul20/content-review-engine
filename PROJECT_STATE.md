@@ -4,7 +4,7 @@
 
 M1: Core input layer and minimal review pipeline.
 
-The project currently has Markdown input handling, profile loading, deterministic review rules, a minimal internal rule registry and rule runner, source location metadata on findings, a minimal in-memory review pipeline, and committed fixtures/examples for integration-style testing and manual CLI checks.
+The project currently has Markdown input handling, profile loading, deterministic review rules, a minimal internal rule registry and rule runner, source location metadata on findings, a minimal in-memory review pipeline, a minimal batch CLI adapter, and committed fixtures/examples for integration-style testing and manual CLI checks.
 
 ---
 
@@ -34,6 +34,13 @@ The project currently has Markdown input handling, profile loading, deterministi
 - No active implementation task.
 
 ## Recent Completion
+
+- TASK-0015 is complete.
+- Added a minimal `content-review batch` command that discovers Markdown files deterministically and reuses the existing review pipeline for each file.
+- Added `BatchReviewSummary` and `BatchReviewResult` core models with canonical JSON serialization helpers.
+- Added batch Markdown report rendering and batch CLI support for text, JSON, Markdown, `--output`, `--recursive`, and `--pattern`.
+- Added batch fixtures, batch examples, discovery tests, summary tests, serialization tests, Markdown report tests, and CLI tests.
+- Preserved the existing single-file `content-review review` behavior.
 
 - TASK-0013 is complete.
 - Added the deterministic `markdown_structure` rule.

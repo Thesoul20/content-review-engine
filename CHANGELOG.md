@@ -8,6 +8,38 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0015
+
+### Added
+
+- Added a minimal `content-review batch` command for deterministic Markdown directory review.
+- Added deterministic file discovery helpers with `--recursive` and `--pattern` support.
+- Added `BatchReviewSummary` and `BatchReviewResult` core models.
+- Added batch JSON serialization helpers and a batch Markdown report renderer.
+- Added batch fixtures, batch examples, discovery tests, summary tests, serialization tests, Markdown report tests, and CLI tests.
+
+### Changed
+
+- Reused the existing single-file `review_document()` pipeline for each batch file without duplicating rule logic.
+- Preserved the canonical single-file `ReviewResult` contract and existing `content-review review` behavior.
+- Updated `docs/ARCHITECTURE.md`, `docs/DATA_MODELS.md`, `docs/CLI.md`, `docs/REPORTS.md`, `docs/TESTING.md`, `docs/schemas/README.md`, `PROJECT_STATE.md`, and this changelog.
+
+### Not Added
+
+- No new review rules.
+- No new rule behavior.
+- No LLM review.
+- No automatic rewriting.
+- No diff tracking.
+- No Markdown auto-fix.
+- No watch mode.
+- No MCP server.
+- No REST API.
+- No GUI.
+- No database persistence.
+- No HTML/PDF report generation.
+- No parallel execution.
+
 ## TASK-0014
 
 ### Added

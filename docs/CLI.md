@@ -4,10 +4,12 @@
 
 ```bash
 uv run content-review review <markdown_file> --profile <profile_file> [--format text|json|markdown] [--output <file>]
+uv run content-review batch <input_dir> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--recursive] [--pattern "*.md"]
 ```
 
 The CLI is a thin adapter over the core review pipeline.
 It reads Markdown, loads a YAML profile, runs deterministic rules, and prints or exports the canonical `ReviewResult`.
+The batch command reuses the same pipeline for each discovered Markdown file and returns a canonical `BatchReviewResult`.
 
 ## Output Formats
 
@@ -124,12 +126,36 @@ Example shape:
 
 - The CLI does not implement review logic itself.
 - The CLI runs the default internal rule registry through the review pipeline.
-- The CLI does not add rewriting, diff tracking, batch review, watch mode, MCP, API, GUI, or report generation logic of its own.
+- The CLI does not add rewriting, diff tracking, watch mode, MCP, API, GUI, or report generation logic of its own.
 - If a profile references an unknown rule ID, the CLI prints a readable error and exits with code `2`.
 - Existing profiles continue to run `forbidden_terms` by default.
 - Profiles can opt into additional deterministic rules, including
   `markdown_structure` and `markdown_links_images`, through
   `ReviewProfile.enabled_rules`.
+- The batch command discovers Markdown files in deterministic sorted order, supports `--recursive`, supports `--pattern`, and exits with code `2` for missing or invalid input directories.
+
+## Batch Output Formats
+
+### Text
+
+Batch text output shows a summary for the directory plus one block per file.
+Each file block includes the file path, finding count, and per-finding details when present.
+
+### JSON
+
+Batch JSON output is the canonical serialized `BatchReviewResult` payload.
+It is produced by `batch_review_result_to_json()` and includes:
+
+- `schema_version`
+- `summary`
+- `results`
+
+Each item in `results` uses the canonical single-file `ReviewResult` shape.
+
+### Markdown
+
+Batch Markdown output is intended for human-readable directory review reports.
+It consumes the canonical `BatchReviewResult` and renders a batch summary plus one section per reviewed file.
 
 ## Example Files
 
@@ -163,4 +189,13 @@ uv run content-review review examples/markdown-links-images-article.md --profile
 uv run content-review review examples/markdown-links-images-article.md --profile examples/markdown-links-images-profile.yml --format json
 uv run content-review review examples/markdown-links-images-article.md --profile examples/markdown-links-images-profile.yml --format markdown
 uv run content-review review examples/markdown-links-images-article.md --profile examples/markdown-links-images-profile.yml --format markdown --output examples/markdown-links-images-report.md
+```
+
+For batch review examples:
+
+```bash
+uv run content-review batch examples/batch/articles --profile examples/batch/profile.yml --recursive --format text
+uv run content-review batch examples/batch/articles --profile examples/batch/profile.yml --recursive --format json
+uv run content-review batch examples/batch/articles --profile examples/batch/profile.yml --recursive --format markdown
+uv run content-review batch examples/batch/articles --profile examples/batch/profile.yml --recursive --format markdown --output examples/batch/batch-report.md
 ```
