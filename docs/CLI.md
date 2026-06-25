@@ -6,12 +6,14 @@
 uv run content-review review <markdown_file> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--fail-on info|warning|error|critical]
 uv run content-review batch <input_dir> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--recursive] [--pattern "*.md"] [--fail-on info|warning|error|critical]
 uv run content-review profile validate <profile_file> [--format text|json]
+uv run content-review profile init --template <general-basic|wechat-basic|wechat-strict> --output <profile_file> [--force]
 ```
 
 The CLI is a thin adapter over the core review pipeline.
 It reads Markdown, loads a YAML profile, runs deterministic rules, and prints or exports the canonical `ReviewResult`.
 The batch command reuses the same pipeline for each discovered Markdown file and returns a canonical `BatchReviewResult`.
 The profile validation command reuses the existing profile loader and registry checks and returns a canonical `ProfileValidationResult`.
+The profile init command creates a new editable YAML profile from one built-in template and keeps validation on the existing loader path.
 
 ## Forbidden Terms Allowlist
 
@@ -108,6 +110,48 @@ Exit codes:
 ```text
 0 = profile is valid
 2 = profile is invalid, missing, unreadable, or cannot be parsed
+```
+
+## Profile Initialization
+
+Create a new editable profile from a built-in template:
+
+```bash
+uv run content-review profile init --template general-basic --output profiles/general.yaml
+uv run content-review profile init --template wechat-basic --output profiles/my-wechat.yaml
+uv run content-review profile init --template wechat-strict --output profiles/wechat-strict.yaml --force
+```
+
+Supported templates:
+
+```text
+general-basic
+wechat-basic
+wechat-strict
+```
+
+The generated file is normal YAML in the current `rules:`-based profile format.
+It is intended to be edited after creation and should be validated before use:
+
+```bash
+uv run content-review profile init --template wechat-basic --output profiles/my-wechat.yaml
+uv run content-review profile validate profiles/my-wechat.yaml
+uv run content-review review article.md --profile profiles/my-wechat.yaml
+```
+
+Overwrite behavior:
+
+```text
+default: do not overwrite an existing file
+--force: overwrite an existing file
+missing parent directory: fail
+```
+
+Exit codes:
+
+```text
+0 = profile file created successfully
+2 = invalid template, missing required options, output conflict, invalid path, or write error
 ```
 
 ## Quality Gate

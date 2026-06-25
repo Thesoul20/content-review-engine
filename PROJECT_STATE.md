@@ -35,6 +35,8 @@ The project currently has Markdown input handling, profile loading, standalone p
 - The repository includes built-in example profiles under `profiles/examples/`
   that validate through the existing profile validation command and can be used
   directly with `review` and `batch`.
+- The CLI can initialize a new YAML review profile from a built-in template
+  through `content-review profile init`.
 
 ---
 
@@ -43,6 +45,21 @@ The project currently has Markdown input handling, profile loading, standalone p
 - No active implementation task.
 
 ## Recent Completion
+
+- TASK-0021 is complete.
+- Added `content-review profile init` with required `--template` and
+  `--output` options plus optional `--force`.
+- Supported built-in templates:
+  - `general-basic`
+  - `wechat-basic`
+  - `wechat-strict`
+- Reused the committed example profiles as the template source and kept
+  `review`, `batch`, and `profile validate` behavior unchanged.
+- Added CLI tests for successful initialization, generated-profile validation,
+  help output, unknown templates, overwrite conflicts, forced overwrite, and
+  missing parent directories.
+- Updated CLI and profile documentation with initialization workflow and
+  overwrite rules.
 
 - TASK-0020 is complete.
 - Added built-in example profiles:

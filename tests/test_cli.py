@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from content_review_engine.cli import main
+from content_review_engine.config import load_profile
 
 
 def test_cli_review_with_findings_prints_finding_details(
@@ -236,6 +237,7 @@ def test_cli_profile_help_shows_validate_subcommand(
     assert exit_code == 0
     assert "usage:" in captured.out.lower()
     assert "validate" in captured.out
+    assert "init" in captured.out
 
 
 def test_cli_profile_validate_help_shows_profile_path(
@@ -248,6 +250,178 @@ def test_cli_profile_validate_help_shows_profile_path(
     assert exit_code == 0
     assert "usage:" in captured.out.lower()
     assert "profile_path" in captured.out
+
+
+def test_cli_profile_init_help_shows_template_output_and_force(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = main(["profile", "init", "--help"])
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "usage:" in captured.out.lower()
+    assert "--template" in captured.out
+    assert "--output" in captured.out
+    assert "--force" in captured.out
+    assert "Create a new review profile from a built-in template." in captured.out
+
+
+@pytest.mark.parametrize(
+    ("template_name", "expected_name", "expected_platform"),
+    [
+        ("general-basic", "general-basic", "general"),
+        ("wechat-basic", "wechat-basic", "wechat"),
+        ("wechat-strict", "wechat-strict", "wechat"),
+    ],
+)
+def test_cli_profile_init_creates_valid_profile(
+    template_name: str,
+    expected_name: str,
+    expected_platform: str,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    output_path = tmp_path / f"{template_name}.yaml"
+
+    exit_code = main(
+        [
+            "profile",
+            "init",
+            "--template",
+            template_name,
+            "--output",
+            str(output_path),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert output_path.exists()
+    assert "Profile created." in captured.out
+    assert f"Template: {template_name}" in captured.out
+    assert f"Output: {output_path}" in captured.out
+    assert captured.err == ""
+
+    profile = load_profile(output_path)
+    assert profile.name == expected_name
+    assert profile.target_platform == expected_platform
+
+    validate_exit_code = main(["profile", "validate", str(output_path)])
+    validate_captured = capsys.readouterr()
+
+    assert validate_exit_code == 0
+    assert "Profile validation passed." in validate_captured.out
+    assert f"Path: {output_path}" in validate_captured.out
+    assert validate_captured.err == ""
+
+
+def test_cli_profile_init_unknown_template_returns_two(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    output_path = tmp_path / "profile.yaml"
+
+    exit_code = main(
+        [
+            "profile",
+            "init",
+            "--template",
+            "unknown",
+            "--output",
+            str(output_path),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert "invalid choice" in captured.err
+    assert "general-basic" in captured.err
+    assert "wechat-basic" in captured.err
+    assert "wechat-strict" in captured.err
+    assert captured.out == ""
+    assert not output_path.exists()
+
+
+def test_cli_profile_init_existing_file_fails_without_force(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    output_path = tmp_path / "existing.yaml"
+    output_path.write_text("original", encoding="utf-8")
+
+    exit_code = main(
+        [
+            "profile",
+            "init",
+            "--template",
+            "wechat-basic",
+            "--output",
+            str(output_path),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert "Output file already exists" in captured.err
+    assert "Use --force to overwrite." in captured.err
+    assert captured.out == ""
+    assert output_path.read_text(encoding="utf-8") == "original"
+
+
+def test_cli_profile_init_force_overwrites_existing_file(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    output_path = tmp_path / "existing.yaml"
+    output_path.write_text("original", encoding="utf-8")
+
+    exit_code = main(
+        [
+            "profile",
+            "init",
+            "--template",
+            "wechat-strict",
+            "--output",
+            str(output_path),
+            "--force",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "Profile created." in captured.out
+    assert captured.err == ""
+    assert "name: wechat-strict" in output_path.read_text(encoding="utf-8")
+
+
+def test_cli_profile_init_missing_parent_directory_returns_two(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    output_path = tmp_path / "missing-dir" / "profile.yaml"
+
+    exit_code = main(
+        [
+            "profile",
+            "init",
+            "--template",
+            "wechat-basic",
+            "--output",
+            str(output_path),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert "Parent directory does not exist" in captured.err
+    assert captured.out == ""
+    assert not output_path.exists()
 
 
 def test_cli_profile_validate_valid_profile_returns_zero(

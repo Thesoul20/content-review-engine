@@ -4,7 +4,12 @@ import argparse
 import sys
 from pathlib import Path
 
-from content_review_engine.config import load_profile, validate_profile
+from content_review_engine.config import (
+    get_profile_template,
+    list_profile_templates,
+    load_profile,
+    validate_profile,
+)
 from content_review_engine.core.models import BatchReviewResult, ReviewResult
 from content_review_engine.core.quality_gate import (
     SEVERITY_ORDER,
@@ -90,6 +95,27 @@ def build_parser() -> argparse.ArgumentParser:
         choices=["text", "json"],
         default="text",
         help="Output format for the validation result.",
+    )
+    init_parser = profile_subparsers.add_parser(
+        "init",
+        help="Create a new review profile from a built-in template.",
+        description="Create a new review profile from a built-in template.",
+    )
+    init_parser.add_argument(
+        "--template",
+        required=True,
+        choices=list_profile_templates(),
+        help="Built-in template name.",
+    )
+    init_parser.add_argument(
+        "--output",
+        required=True,
+        help="Path to the generated YAML review profile.",
+    )
+    init_parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Overwrite the output file if it already exists.",
     )
 
     batch_parser = subparsers.add_parser(
@@ -274,6 +300,22 @@ def _render_profile_validation_output(result, *, output_format: str) -> str:
     return _render_profile_validation_text(result)
 
 
+def _render_profile_init_text(*, template_name: str, output_path: Path) -> str:
+    return "\n".join(
+        [
+            "Profile created.",
+            "",
+            f"Template: {template_name}",
+            f"Output: {output_path}",
+            "",
+            "Next steps:",
+            "1. Edit the profile terms and severity levels.",
+            f"2. Validate it with: content-review profile validate {output_path}",
+            f"3. Use it with: content-review review article.md --profile {output_path}",
+        ]
+    )
+
+
 def _write_or_print_output(output_text: str, output_path: str | None) -> int:
     if output_path is not None:
         try:
@@ -350,6 +392,30 @@ def _run_profile_validate_command(args: argparse.Namespace) -> int:
     return 0 if validation_result.valid else 2
 
 
+def _run_profile_init_command(args: argparse.Namespace) -> int:
+    output_path = Path(args.output)
+    parent_dir = output_path.parent
+
+    if parent_dir != Path(".") and not parent_dir.exists():
+        raise ValueError(f"Parent directory does not exist: {parent_dir}")
+
+    if output_path.exists() and not args.force:
+        raise ValueError(
+            f"Output file already exists: {output_path}. Use --force to overwrite."
+        )
+
+    template_text = get_profile_template(args.template)
+
+    output_path.write_text(template_text, encoding="utf-8")
+    load_profile(output_path)
+
+    rendered_output = _render_profile_init_text(
+        template_name=args.template,
+        output_path=output_path,
+    )
+    return _write_or_print_output(rendered_output, None)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
 
@@ -363,6 +429,8 @@ def main(argv: list[str] | None = None) -> int:
             return _run_review_command(args)
         if args.command == "profile" and args.profile_command == "validate":
             return _run_profile_validate_command(args)
+        if args.command == "profile" and args.profile_command == "init":
+            return _run_profile_init_command(args)
         if args.command == "batch":
             return _run_batch_command(args)
 

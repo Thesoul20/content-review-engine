@@ -8,6 +8,44 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0021
+
+### Added
+
+- Added `content-review profile init --template <name> --output <path>`.
+- Added built-in template support for `general-basic`, `wechat-basic`, and
+  `wechat-strict` by reusing the committed example profile YAML files.
+- Added CLI tests for successful profile initialization, generated-profile
+  validation, unknown templates, overwrite conflicts, `--force` overwrite,
+  missing parent directories, and help output.
+
+### Changed
+
+- Kept generated profiles on the existing `load_profile()` validation path so
+  initialized YAML files stay compatible with
+  `content-review profile validate`.
+- Updated CLI and profile documentation with the initialization workflow,
+  template list, validation steps, and overwrite behavior.
+- Updated project state documentation to record the new command and test
+  coverage.
+
+### Not Added
+
+- No new review rules.
+- No LLM review.
+- No natural-language profile generation.
+- No interactive wizard.
+- No remote template loading.
+- No user-defined template directories.
+- No template marketplace.
+- No `content-review profile list`.
+- No profile aliases for `review` or `batch`.
+- No API server.
+- No MCP server.
+- No frontend.
+- No database persistence.
+- No publishing integration.
+
 ## TASK-0020
 
 ### Added

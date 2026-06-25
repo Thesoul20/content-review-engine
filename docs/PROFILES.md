@@ -24,6 +24,39 @@ The repository now includes three built-in example profiles:
 These files are committed examples and test fixtures. They are not discovered
 automatically at runtime. Use them by passing the profile path explicitly.
 
+The same three profiles are also exposed as built-in templates through
+`content-review profile init`.
+
+## Initialize A Profile
+
+Create a new editable profile file from a built-in template:
+
+```bash
+uv run content-review profile init --template general-basic --output profiles/general.yaml
+uv run content-review profile init --template wechat-basic --output profiles/my-wechat.yaml
+uv run content-review profile init --template wechat-strict --output profiles/wechat-strict.yaml
+```
+
+Supported template names:
+
+- `general-basic`
+- `wechat-basic`
+- `wechat-strict`
+
+Generated profiles are starting points. They do not guarantee compliance with
+any platform policy, legal requirement, advertising regulation, medical
+content standard, or publishing rule.
+
+By default, initialization does not overwrite an existing file.
+Use `--force` only when you intentionally want to replace the output file:
+
+```bash
+uv run content-review profile init --template wechat-strict --output profiles/wechat-strict.yaml --force
+```
+
+If the parent directory does not exist, the command fails instead of creating
+directories automatically.
+
 ## Profile Format
 
 Example profiles use the current `rules:`-based format:
@@ -61,6 +94,10 @@ Current implemented rule IDs that can be used in example profiles:
 The built-in examples only use `forbidden_terms` and `absolute_claims` so they
 stay easy to read and customize.
 
+Initialized profiles use the same YAML content as the built-in examples at the
+time they are created. After initialization, the new file is a normal local
+profile and is no longer linked to the example file in the repository.
+
 ## Profile Differences
 
 `general-basic.yaml`
@@ -92,6 +129,7 @@ Validate before using a profile in review or batch:
 uv run content-review profile validate profiles/examples/general-basic.yaml
 uv run content-review profile validate profiles/examples/wechat-basic.yaml
 uv run content-review profile validate profiles/examples/wechat-strict.yaml
+uv run content-review profile validate profiles/my-wechat.yaml
 ```
 
 JSON output is available for automation:
@@ -113,6 +151,7 @@ Batch:
 
 ```bash
 uv run content-review batch examples/batch/articles --profile profiles/examples/wechat-strict.yaml --recursive --fail-on error
+uv run content-review batch articles --profile profiles/my-wechat.yaml --recursive --fail-on error
 ```
 
 ## Customization
@@ -127,6 +166,13 @@ Common edits:
   specific literal form.
 - Adjust `max_title_length` and `max_paragraph_length` for your publishing
   channel.
+
+Typical workflow after initialization:
+
+1. Run `content-review profile init` with the closest built-in template.
+2. Edit `terms`, `allow_terms`, and rule severities for your workflow.
+3. Validate the file with `content-review profile validate`.
+4. Use the resulting profile with `review` or `batch`.
 
 `allow_terms` is a literal allowlist. It does not support regex, wildcards, or
 fuzzy matching.
