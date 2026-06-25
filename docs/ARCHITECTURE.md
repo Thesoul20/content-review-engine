@@ -86,6 +86,7 @@ Current CLI adapter:
 ```text
 content-review review <markdown_file> --profile <profile_file>
 content-review batch <input_dir> --profile <profile_file>
+content-review profile validate <profile_file>
 ```
 
 Current CLI flow:
@@ -112,7 +113,7 @@ Review Result
 
 For batch review, the CLI adds a deterministic directory discovery step before the Markdown Reader.
 
-The CLI currently supports reviewing one Markdown file with one YAML profile and reviewing a directory of Markdown files with one YAML profile.
+The CLI currently supports reviewing one Markdown file with one YAML profile, reviewing a directory of Markdown files with one YAML profile, and validating a YAML profile independently before a review run.
 It prints simple human-readable summaries, supports JSON output, and can export Markdown review reports for both single-file and batch review.
 It also supports a CLI quality gate through `--fail-on`, using canonical severity ordering in the core package to choose automation-friendly exit codes.
 It does not yet support HTML, watch mode, or report persistence beyond the optional Markdown output file.
@@ -157,6 +158,15 @@ Current quality gate support:
   gates evaluate only unsuppressed findings.
 - `ReviewResult` and `BatchReviewResult` schemas are unchanged by quality-gate
   evaluation.
+
+Current profile validation support:
+
+- `content_review_engine.config.validate_profile` reuses the existing
+  `load_profile()` path and adds a thin validation-result wrapper for CLI use.
+- The `profile validate` command does not run review rules against Markdown
+  content.
+- Invalid, missing, unreadable, or unparsable profiles return exit code `2`,
+  which stays separate from quality-gate exit code `1`.
 
 ---
 

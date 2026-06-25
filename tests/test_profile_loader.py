@@ -64,6 +64,14 @@ def test_load_profile_empty_yaml_raises(tmp_path: Path) -> None:
         load_profile(profile_path)
 
 
+def test_load_profile_invalid_yaml_raises_value_error(tmp_path: Path) -> None:
+    profile_path = tmp_path / "invalid.yaml"
+    profile_path.write_text("name: [wechat", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="Invalid YAML"):
+        load_profile(profile_path)
+
+
 def test_load_profile_invalid_schema_raises_validation_error(tmp_path: Path) -> None:
     profile_path = tmp_path / "invalid.yaml"
     profile_path.write_text("name: wechat\n", encoding="utf-8")

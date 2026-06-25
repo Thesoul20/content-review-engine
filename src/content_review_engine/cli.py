@@ -4,7 +4,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from content_review_engine.config import load_profile
+from content_review_engine.config import load_profile, validate_profile
 from content_review_engine.core.models import BatchReviewResult, ReviewResult
 from content_review_engine.core.quality_gate import (
     SEVERITY_ORDER,
@@ -13,6 +13,7 @@ from content_review_engine.core.quality_gate import (
 )
 from content_review_engine.core.serialization import (
     batch_review_result_to_json,
+    profile_validation_result_to_json,
     review_result_to_json,
 )
 from content_review_engine.parser import read_markdown
@@ -66,6 +67,29 @@ def build_parser() -> argparse.ArgumentParser:
         type=_parse_fail_on,
         choices=SEVERITY_ORDER,
         help="Exit with code 1 when findings are at or above the severity threshold.",
+    )
+
+    profile_parser = subparsers.add_parser(
+        "profile",
+        help="Validate review profile YAML files.",
+    )
+    profile_subparsers = profile_parser.add_subparsers(
+        dest="profile_command",
+        required=True,
+    )
+    validate_parser = profile_subparsers.add_parser(
+        "validate",
+        help="Validate a review profile YAML file.",
+    )
+    validate_parser.add_argument(
+        "profile_path",
+        help="Path to the YAML review profile.",
+    )
+    validate_parser.add_argument(
+        "--format",
+        choices=["text", "json"],
+        default="text",
+        help="Output format for the validation result.",
     )
 
     batch_parser = subparsers.add_parser(
@@ -214,6 +238,42 @@ def _render_batch_output(
     return _render_batch_text_report(batch_result)
 
 
+def _render_profile_validation_text(result) -> str:
+    lines = [
+        "Profile validation passed." if result.valid else "Profile validation failed.",
+        "",
+        f"Path: {result.path}",
+    ]
+
+    if result.valid and result.profile is not None:
+        lines.extend(
+            [
+                f"Name: {result.profile.name}",
+                f"Target Platform: {result.profile.target_platform}",
+                f"Enabled Rules: {result.profile.enabled_rule_count}",
+                f"Disabled Rules: {result.profile.disabled_rule_count}",
+                "Rules:",
+            ]
+        )
+        if result.profile.rules:
+            for rule in result.profile.rules:
+                lines.append(f"- {rule.id}")
+        else:
+            lines.append("- None")
+        return "\n".join(lines)
+
+    for error in result.errors:
+        lines.append(f"Error: {error.message}")
+
+    return "\n".join(lines)
+
+
+def _render_profile_validation_output(result, *, output_format: str) -> str:
+    if output_format == "json":
+        return profile_validation_result_to_json(result)
+    return _render_profile_validation_text(result)
+
+
 def _write_or_print_output(output_text: str, output_path: str | None) -> int:
     if output_path is not None:
         try:
@@ -278,6 +338,18 @@ def _run_batch_command(args: argparse.Namespace) -> int:
     )
 
 
+def _run_profile_validate_command(args: argparse.Namespace) -> int:
+    validation_result = validate_profile(args.profile_path)
+    rendered_output = _render_profile_validation_output(
+        validation_result,
+        output_format=args.format,
+    )
+    output_exit_code = _write_or_print_output(rendered_output, None)
+    if output_exit_code != 0:
+        return output_exit_code
+    return 0 if validation_result.valid else 2
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
 
@@ -289,6 +361,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.command == "review":
             return _run_review_command(args)
+        if args.command == "profile" and args.profile_command == "validate":
+            return _run_profile_validate_command(args)
         if args.command == "batch":
             return _run_batch_command(args)
 

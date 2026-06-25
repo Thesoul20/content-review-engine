@@ -8,6 +8,7 @@ Severity = Literal["low", "medium", "high", "critical"]
 FindingSeverity = Literal["info", "warning", "error", "critical"]
 REVIEW_RESULT_SCHEMA_VERSION = "review-result.v1"
 BATCH_REVIEW_RESULT_SCHEMA_VERSION = "batch-review-result.v1"
+PROFILE_VALIDATION_RESULT_SCHEMA_VERSION = "profile-validation-result.v1"
 REVIEW_SUMMARY_SEVERITIES: tuple[str, ...] = ("info", "warning", "error", "critical")
 
 
@@ -70,6 +71,32 @@ class ReviewDocumentMetadata(BaseModel):
 class ReviewProfileMetadata(BaseModel):
     name: str
     path: str | None = None
+
+
+class ProfileValidationError(BaseModel):
+    message: str
+
+
+class ProfileValidationRuleSummary(BaseModel):
+    id: str
+    enabled: bool
+    severity: FindingSeverity | None = None
+
+
+class ProfileValidationProfileSummary(BaseModel):
+    name: str
+    target_platform: str
+    enabled_rule_count: int = Field(ge=0)
+    disabled_rule_count: int = Field(ge=0)
+    rules: list[ProfileValidationRuleSummary] = Field(default_factory=list)
+
+
+class ProfileValidationResult(BaseModel):
+    schema_version: str = PROFILE_VALIDATION_RESULT_SCHEMA_VERSION
+    valid: bool
+    path: str
+    profile: ProfileValidationProfileSummary | None = None
+    errors: list[ProfileValidationError] = Field(default_factory=list)
 
 
 class ReviewResult(BaseModel):
@@ -167,6 +194,7 @@ class ReviewProfile(BaseModel):
 __all__ = [
     "FindingSeverity",
     "BATCH_REVIEW_RESULT_SCHEMA_VERSION",
+    "PROFILE_VALIDATION_RESULT_SCHEMA_VERSION",
     "REVIEW_RESULT_SCHEMA_VERSION",
     "REVIEW_SUMMARY_SEVERITIES",
     "ReviewDocumentMetadata",
@@ -174,6 +202,10 @@ __all__ = [
     "BatchReviewSummary",
     "ReviewFinding",
     "ReviewIssue",
+    "ProfileValidationError",
+    "ProfileValidationProfileSummary",
+    "ProfileValidationResult",
+    "ProfileValidationRuleSummary",
     "ReviewProfile",
     "ReviewProfileMetadata",
     "ReviewResult",

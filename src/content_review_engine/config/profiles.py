@@ -92,7 +92,15 @@ def load_profile(path: str | Path) -> ReviewProfile:
     if profile_path.suffix.lower() not in {".yaml", ".yml"}:
         raise ValueError(f"Expected a YAML profile file, got: {profile_path.suffix}")
 
-    data = yaml.safe_load(profile_path.read_text(encoding="utf-8"))
+    try:
+        raw_text = profile_path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise ValueError(f"Profile file is not readable: {profile_path}") from exc
+
+    try:
+        data = yaml.safe_load(raw_text)
+    except yaml.YAMLError as exc:
+        raise ValueError(f"Invalid YAML: {exc}") from exc
 
     if data is None:
         raise ValueError(f"Profile file is empty: {profile_path}")

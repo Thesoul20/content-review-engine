@@ -226,6 +226,177 @@ def test_cli_review_help_shows_usage(capsys: pytest.CaptureFixture[str]) -> None
     assert "--profile" in captured.out
 
 
+def test_cli_profile_help_shows_validate_subcommand(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = main(["profile", "--help"])
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "usage:" in captured.out.lower()
+    assert "validate" in captured.out
+
+
+def test_cli_profile_validate_help_shows_profile_path(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = main(["profile", "validate", "--help"])
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "usage:" in captured.out.lower()
+    assert "profile_path" in captured.out
+
+
+def test_cli_profile_validate_valid_profile_returns_zero(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    profile_path = "tests/fixtures/profiles/absolute_claims.yml"
+
+    exit_code = main(["profile", "validate", profile_path])
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "Profile validation passed." in captured.out
+    assert f"Path: {profile_path}" in captured.out
+    assert "Name: absolute-claims" in captured.out
+    assert "Target Platform: wechat" in captured.out
+    assert "Enabled Rules: 1" in captured.out
+    assert "Disabled Rules: 0" in captured.out
+    assert "- absolute_claims" in captured.out
+    assert captured.err == ""
+
+
+def test_cli_profile_validate_valid_profile_json_output_returns_zero(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    profile_path = "tests/fixtures/profiles/absolute_claims.yml"
+
+    exit_code = main(["profile", "validate", profile_path, "--format", "json"])
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    payload = json.loads(captured.out)
+    assert payload["schema_version"] == "profile-validation-result.v1"
+    assert payload["valid"] is True
+    assert payload["path"] == profile_path
+    assert payload["profile"]["name"] == "absolute-claims"
+    assert payload["profile"]["target_platform"] == "wechat"
+    assert payload["profile"]["enabled_rule_count"] == 1
+    assert payload["profile"]["disabled_rule_count"] == 0
+    assert payload["profile"]["rules"] == [
+        {
+            "id": "absolute_claims",
+            "enabled": True,
+            "severity": "error",
+        }
+    ]
+    assert payload["errors"] == []
+    assert captured.err == ""
+
+
+def test_cli_profile_validate_missing_profile_returns_two(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    missing_path = tmp_path / "missing.yaml"
+
+    exit_code = main(["profile", "validate", str(missing_path)])
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert "Profile validation failed." in captured.out
+    assert f"Path: {missing_path}" in captured.out
+    assert "Profile file not found" in captured.out
+    assert captured.err == ""
+
+
+def test_cli_profile_validate_invalid_yaml_returns_two(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    profile_path = tmp_path / "invalid.yaml"
+    profile_path.write_text("name: [wechat", encoding="utf-8")
+
+    exit_code = main(["profile", "validate", str(profile_path)])
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert "Profile validation failed." in captured.out
+    assert f"Path: {profile_path}" in captured.out
+    assert "Error: Invalid YAML:" in captured.out
+    assert captured.err == ""
+
+
+def test_cli_profile_validate_unknown_rule_returns_two(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    profile_path = tmp_path / "unknown-rule.yaml"
+    profile_path.write_text(
+        "\n".join(
+            [
+                "name: custom",
+                "target_platform: wechat",
+                "rules:",
+                "  - id: unknown_rule",
+                "    enabled: true",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    exit_code = main(["profile", "validate", str(profile_path)])
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert "Profile validation failed." in captured.out
+    assert "Error: unknown rule id: unknown_rule" in captured.out
+    assert captured.err == ""
+
+
+def test_cli_profile_validate_invalid_terms_returns_two_and_json_error(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    profile_path = tmp_path / "invalid-terms.yaml"
+    profile_path.write_text(
+        "\n".join(
+            [
+                "name: custom",
+                "target_platform: wechat",
+                "rules:",
+                "  - id: absolute_claims",
+                "    enabled: true",
+                "    terms: 全网最强",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    exit_code = main(["profile", "validate", str(profile_path), "--format", "json"])
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    payload = json.loads(captured.out)
+    assert payload["schema_version"] == "profile-validation-result.v1"
+    assert payload["valid"] is False
+    assert payload["path"] == str(profile_path)
+    assert payload["profile"] is None
+    assert payload["errors"] == [
+        {"message": "absolute_claims.terms must be a list of strings"}
+    ]
+    assert captured.err == ""
+
+
 def test_cli_review_json_output_uses_canonical_review_result(
     capsys: pytest.CaptureFixture[str],
 ) -> None:

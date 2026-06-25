@@ -145,6 +145,85 @@ Example:
 
 ---
 
+## ProfileValidationError
+
+`ProfileValidationError` stores one human-readable validation failure message.
+
+| Field | Required | Description |
+|---|---|---|
+| `message` | Yes | Readable validation error message |
+
+---
+
+## ProfileValidationRuleSummary
+
+`ProfileValidationRuleSummary` records one rule entry in a valid profile
+validation result.
+
+| Field | Required | Description |
+|---|---|---|
+| `id` | Yes | Stable rule identifier |
+| `enabled` | Yes | Whether the rule is enabled |
+| `severity` | No | Effective finding severity when the rule exposes one |
+
+---
+
+## ProfileValidationProfileSummary
+
+`ProfileValidationProfileSummary` stores the summary returned for a valid
+profile validation run.
+
+| Field | Required | Description |
+|---|---|---|
+| `name` | Yes | Profile name |
+| `target_platform` | Yes | Target platform |
+| `enabled_rule_count` | Yes | Number of enabled rules in the summary |
+| `disabled_rule_count` | Yes | Number of disabled rules in the summary |
+| `rules` | Yes | Ordered list of `ProfileValidationRuleSummary` items |
+
+---
+
+## ProfileValidationResult
+
+`ProfileValidationResult` is the canonical structured output for
+`content-review profile validate`.
+
+The stable schema version is `profile-validation-result.v1`.
+
+| Field | Required | Description |
+|---|---|---|
+| `schema_version` | Yes | Result schema version |
+| `valid` | Yes | Whether the profile is valid |
+| `path` | Yes | Path that was validated |
+| `profile` | No | Optional `ProfileValidationProfileSummary` for valid profiles |
+| `errors` | Yes | List of `ProfileValidationError` items |
+
+Example:
+
+```json
+{
+  "schema_version": "profile-validation-result.v1",
+  "valid": true,
+  "path": "profiles/wechat.yaml",
+  "profile": {
+    "name": "wechat",
+    "target_platform": "wechat",
+    "enabled_rule_count": 1,
+    "disabled_rule_count": 0,
+    "rules": [
+      {
+        "id": "forbidden_terms",
+        "enabled": true,
+        "severity": "warning"
+      }
+    ]
+  },
+  "errors": []
+}
+```
+
+---
+
 ## ReviewResult
 
 `ReviewResult` is the canonical structured output for a reviewed document.
@@ -319,5 +398,6 @@ Example:
 4. Any change to `ReviewResult` must update this document.
 5. Any change to `BatchReviewSummary` must update this document.
 6. Any change to `BatchReviewResult` must update this document.
-7. Any change to `ReviewProfile` must update this document.
-8. After v0.1.0, breaking changes to these models require an ADR.
+7. Any change to `ProfileValidationResult` must update this document.
+8. Any change to `ReviewProfile` must update this document.
+9. After v0.1.0, breaking changes to these models require an ADR.

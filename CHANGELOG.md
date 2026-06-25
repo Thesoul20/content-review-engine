@@ -8,6 +8,38 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0019
+
+### Added
+
+- Added the `content-review profile validate <profile_path>` CLI command group
+  and subcommand.
+- Added canonical `profile-validation-result.v1` text and JSON outputs for
+  profile validation.
+- Added CLI tests for valid profiles, invalid profiles, invalid YAML, unknown
+  rules, help output, and JSON output.
+
+### Changed
+
+- Reused the existing profile loader for CLI profile validation instead of
+  introducing a second validation pipeline.
+- Updated profile loading to report invalid YAML as a command/configuration
+  error with a readable message.
+- Updated CLI, architecture, data model, project state, and changelog
+  documentation.
+
+### Not Added
+
+- No new review rules.
+- No LLM review.
+- No automatic rewriting or fixing.
+- No profile generation, formatting, or wizard flow.
+- No API server.
+- No MCP server.
+- No frontend.
+- No database persistence.
+- No publishing integration.
+
 ## TASK-0018
 
 ### Added

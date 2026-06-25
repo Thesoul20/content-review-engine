@@ -5,11 +5,13 @@
 ```bash
 uv run content-review review <markdown_file> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--fail-on info|warning|error|critical]
 uv run content-review batch <input_dir> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--recursive] [--pattern "*.md"] [--fail-on info|warning|error|critical]
+uv run content-review profile validate <profile_file> [--format text|json]
 ```
 
 The CLI is a thin adapter over the core review pipeline.
 It reads Markdown, loads a YAML profile, runs deterministic rules, and prints or exports the canonical `ReviewResult`.
 The batch command reuses the same pipeline for each discovered Markdown file and returns a canonical `BatchReviewResult`.
+The profile validation command reuses the existing profile loader and registry checks and returns a canonical `ProfileValidationResult`.
 
 ## Forbidden Terms Allowlist
 
@@ -84,6 +86,27 @@ The same suppression directives work for `absolute_claims`, for example:
 
 ```markdown
 这是一款全网最强的工具。 <!-- content-review-disable-line absolute_claims -->
+```
+
+## Profile Validation
+
+The profile validation command checks a YAML review profile before it is used
+by `review` or `batch`.
+
+```bash
+uv run content-review profile validate profiles/wechat.yaml
+uv run content-review profile validate profiles/wechat.yaml --format json
+```
+
+Text output reports either `Profile validation passed.` or `Profile validation failed.`
+JSON output uses `profile-validation-result.v1` and includes `schema_version`,
+`valid`, `path`, an optional `profile` summary, and an `errors` array.
+
+Exit codes:
+
+```text
+0 = profile is valid
+2 = profile is invalid, missing, unreadable, or cannot be parsed
 ```
 
 ## Quality Gate
@@ -240,6 +263,8 @@ Example shape:
 - Profiles can opt into additional deterministic rules, including
   `absolute_claims`, `markdown_structure`, and `markdown_links_images`,
   through `ReviewProfile.enabled_rules` or rule-style YAML configuration.
+- `content-review profile validate` is a separate command group for YAML
+  validation and does not run the review pipeline.
 - The batch command discovers Markdown files in deterministic sorted order, supports `--recursive`, supports `--pattern`, and exits with code `2` for missing or invalid input directories.
 
 ## Batch Output Formats

@@ -4,7 +4,7 @@
 
 M1: Core input layer and minimal review pipeline.
 
-The project currently has Markdown input handling, profile loading, deterministic review rules, forbidden-terms allowlists, absolute-claims rule configuration, Markdown inline suppression filtering, a minimal internal rule registry and rule runner, source location metadata on findings, a minimal in-memory review pipeline, a minimal batch CLI adapter, CLI quality-gate exit codes, and committed fixtures/examples for integration-style testing and manual CLI checks.
+The project currently has Markdown input handling, profile loading, standalone profile validation, deterministic review rules, forbidden-terms allowlists, absolute-claims rule configuration, Markdown inline suppression filtering, a minimal internal rule registry and rule runner, source location metadata on findings, a minimal in-memory review pipeline, a minimal batch CLI adapter, CLI quality-gate exit codes, and committed fixtures/examples for integration-style testing and manual CLI checks.
 
 ---
 
@@ -31,6 +31,7 @@ The project currently has Markdown input handling, profile loading, deterministi
 - The opt-in `absolute_claims` rule supports literal `terms`, optional `allow_terms`, and configurable finding severity in rule-style YAML configuration.
 - Markdown inline comments can suppress `forbidden_terms` findings for the current line or next line.
 - Markdown inline comments can also suppress `absolute_claims` findings for the current line or next line.
+- The CLI can validate a YAML review profile independently through `content-review profile validate`.
 
 ---
 
@@ -39,6 +40,14 @@ The project currently has Markdown input handling, profile loading, deterministi
 - No active implementation task.
 
 ## Recent Completion
+
+- TASK-0019 is complete.
+- Added a new `content-review profile validate <profile_path>` CLI flow.
+- Reused the existing profile loader for profile validation and kept review and
+  batch behavior unchanged.
+- Added canonical text and JSON outputs for profile validation results.
+- Added CLI tests for valid profiles, invalid profiles, invalid YAML, unknown
+  rules, and validation JSON output.
 
 - TASK-0018 is complete.
 - Added the deterministic `absolute_claims` rule with literal `terms`,
