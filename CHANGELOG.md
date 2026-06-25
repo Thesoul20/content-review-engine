@@ -8,6 +8,37 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0016
+
+### Added
+
+- Added `--fail-on` to `content-review review`.
+- Added `--fail-on` to `content-review batch`.
+- Added centralized quality-gate helpers with canonical severity ordering:
+  `info < warning < error < critical`.
+- Added CI-friendly exit-code behavior for quality gates.
+- Added unit tests for severity threshold comparison and CLI tests for
+  quality-gate exit codes.
+
+### Changed
+
+- Updated CLI command errors to consistently return exit code `2`.
+- Preserved existing text, JSON, and Markdown output schemas and behavior.
+- Updated `docs/ARCHITECTURE.md`, `docs/CLI.md`, `PROJECT_STATE.md`, and this
+  changelog.
+
+### Not Added
+
+- No new review rules.
+- No LLM review.
+- No automatic rewriting.
+- No inline suppression.
+- No `.gitignore` support.
+- No API server.
+- No MCP server.
+- No frontend.
+- No database persistence.
+
 ## TASK-0015
 
 ### Added

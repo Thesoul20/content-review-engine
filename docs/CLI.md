@@ -3,13 +3,42 @@
 ## Current Command
 
 ```bash
-uv run content-review review <markdown_file> --profile <profile_file> [--format text|json|markdown] [--output <file>]
-uv run content-review batch <input_dir> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--recursive] [--pattern "*.md"]
+uv run content-review review <markdown_file> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--fail-on info|warning|error|critical]
+uv run content-review batch <input_dir> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--recursive] [--pattern "*.md"] [--fail-on info|warning|error|critical]
 ```
 
 The CLI is a thin adapter over the core review pipeline.
 It reads Markdown, loads a YAML profile, runs deterministic rules, and prints or exports the canonical `ReviewResult`.
 The batch command reuses the same pipeline for each discovered Markdown file and returns a canonical `BatchReviewResult`.
+
+## Quality Gate
+
+Both commands support `--fail-on <severity>` for CI and automation workflows.
+When configured, the command exits with code `1` if any finding meets or exceeds the severity threshold.
+
+Canonical severity ordering is:
+
+```text
+info < warning < error < critical
+```
+
+Examples:
+
+```bash
+uv run content-review review examples/article.md --profile examples/profile.yml --fail-on error
+uv run content-review batch examples/batch/articles --profile examples/batch/profile.yml --recursive --fail-on warning
+```
+
+Exit codes:
+
+```text
+0 = command completed and quality gate passed
+1 = command completed but quality gate failed
+2 = command error, invalid input, invalid profile, file error, or invalid --fail-on value
+```
+
+If `--fail-on` is omitted, successful commands preserve the existing behavior and exit with code `0` even when findings are present.
+Invalid `--fail-on` values are rejected; valid values are only `info`, `warning`, `error`, and `critical`.
 
 ## Output Formats
 
@@ -165,6 +194,7 @@ You can run the CLI against the committed example files:
 uv run content-review review examples/article.md --profile examples/profile.yml --format text
 uv run content-review review examples/article.md --profile examples/profile.yml --format json
 uv run content-review review examples/article.md --profile examples/profile.yml --format markdown
+uv run content-review review examples/article.md --profile examples/profile.yml --fail-on warning
 ```
 
 For a saved Markdown report:
@@ -198,4 +228,5 @@ uv run content-review batch examples/batch/articles --profile examples/batch/pro
 uv run content-review batch examples/batch/articles --profile examples/batch/profile.yml --recursive --format json
 uv run content-review batch examples/batch/articles --profile examples/batch/profile.yml --recursive --format markdown
 uv run content-review batch examples/batch/articles --profile examples/batch/profile.yml --recursive --format markdown --output examples/batch/batch-report.md
+uv run content-review batch examples/batch/articles --profile examples/batch/profile.yml --recursive --fail-on warning
 ```

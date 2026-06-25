@@ -2,6 +2,7 @@ from content_review_engine.core.models import (
     BatchReviewResult,
     BatchReviewSummary,
     BATCH_REVIEW_RESULT_SCHEMA_VERSION,
+    REVIEW_SUMMARY_SEVERITIES,
     ReviewDocumentMetadata,
     ReviewFinding,
     ReviewIssue,
@@ -11,6 +12,13 @@ from content_review_engine.core.models import (
     ReviewSummary,
     SourceSpan,
     Severity,
+)
+from content_review_engine.core.quality_gate import (
+    SEVERITY_ORDER,
+    count_findings_at_or_above,
+    quality_gate_failed,
+    severity_meets_threshold,
+    severity_rank,
 )
 from content_review_engine.core.serialization import (
     batch_review_result_to_dict,
@@ -24,6 +32,7 @@ __all__ = [
     "BatchReviewResult",
     "BatchReviewSummary",
     "BATCH_REVIEW_RESULT_SCHEMA_VERSION",
+    "REVIEW_SUMMARY_SEVERITIES",
     "ReviewFinding",
     "ReviewIssue",
     "ReviewProfile",
@@ -32,8 +41,13 @@ __all__ = [
     "ReviewSummary",
     "SourceSpan",
     "Severity",
+    "SEVERITY_ORDER",
     "batch_review_result_to_dict",
     "batch_review_result_to_json",
+    "count_findings_at_or_above",
+    "quality_gate_failed",
     "review_result_to_dict",
     "review_result_to_json",
+    "severity_meets_threshold",
+    "severity_rank",
 ]

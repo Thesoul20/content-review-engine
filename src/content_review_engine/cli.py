@@ -6,6 +6,11 @@ from pathlib import Path
 
 from content_review_engine.config import load_profile
 from content_review_engine.core.models import BatchReviewResult, ReviewResult
+from content_review_engine.core.quality_gate import (
+    SEVERITY_ORDER,
+    quality_gate_failed,
+    severity_rank,
+)
 from content_review_engine.core.serialization import (
     batch_review_result_to_json,
     review_result_to_json,
@@ -18,6 +23,14 @@ from content_review_engine.reports import (
 from content_review_engine.review import review_document, review_markdown_directory
 from content_review_engine.rules import UnknownRuleError
 from pydantic import ValidationError
+
+
+def _parse_fail_on(value: str) -> str:
+    try:
+        severity_rank(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(str(exc)) from exc
+    return value
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -46,6 +59,13 @@ def build_parser() -> argparse.ArgumentParser:
     review_parser.add_argument(
         "--output",
         help="Write the rendered review output to a file.",
+    )
+    review_parser.add_argument(
+        "--fail-on",
+        metavar="SEVERITY",
+        type=_parse_fail_on,
+        choices=SEVERITY_ORDER,
+        help="Exit with code 1 when findings are at or above the severity threshold.",
     )
 
     batch_parser = subparsers.add_parser(
@@ -77,6 +97,13 @@ def build_parser() -> argparse.ArgumentParser:
         "--pattern",
         default="*.md",
         help="Glob pattern used to discover Markdown files.",
+    )
+    batch_parser.add_argument(
+        "--fail-on",
+        metavar="SEVERITY",
+        type=_parse_fail_on,
+        choices=SEVERITY_ORDER,
+        help="Exit with code 1 when findings are at or above the severity threshold.",
     )
 
     return parser
@@ -196,6 +223,13 @@ def _write_or_print_output(output_text: str, output_path: str | None) -> int:
     return 0
 
 
+def _quality_gate_exit_code(
+    severity_counts: dict[str, int],
+    threshold: str | None,
+) -> int:
+    return 1 if quality_gate_failed(severity_counts, threshold) else 0
+
+
 def _run_review_command(args: argparse.Namespace) -> int:
     markdown_text = read_markdown(args.markdown_file)
     profile = load_profile(args.profile)
@@ -209,7 +243,13 @@ def _run_review_command(args: argparse.Namespace) -> int:
         review_result,
         output_format=args.format,
     )
-    return _write_or_print_output(rendered_output, args.output)
+    output_exit_code = _write_or_print_output(rendered_output, args.output)
+    if output_exit_code != 0:
+        return output_exit_code
+    return _quality_gate_exit_code(
+        review_result.summary.severity_counts,
+        args.fail_on,
+    )
 
 
 def _run_batch_command(args: argparse.Namespace) -> int:
@@ -225,7 +265,13 @@ def _run_batch_command(args: argparse.Namespace) -> int:
         batch_result,
         output_format=args.format,
     )
-    return _write_or_print_output(rendered_output, args.output)
+    output_exit_code = _write_or_print_output(rendered_output, args.output)
+    if output_exit_code != 0:
+        return output_exit_code
+    return _quality_gate_exit_code(
+        batch_result.summary.severity_counts,
+        args.fail_on,
+    )
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -249,7 +295,7 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     except (FileNotFoundError, NotADirectoryError, ValueError, ValidationError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
-        return 2 if args.command == "batch" else 1
+        return 2
 
 
 if __name__ == "__main__":

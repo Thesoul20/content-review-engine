@@ -4,7 +4,7 @@
 
 M1: Core input layer and minimal review pipeline.
 
-The project currently has Markdown input handling, profile loading, deterministic review rules, a minimal internal rule registry and rule runner, source location metadata on findings, a minimal in-memory review pipeline, a minimal batch CLI adapter, and committed fixtures/examples for integration-style testing and manual CLI checks.
+The project currently has Markdown input handling, profile loading, deterministic review rules, a minimal internal rule registry and rule runner, source location metadata on findings, a minimal in-memory review pipeline, a minimal batch CLI adapter, CLI quality-gate exit codes, and committed fixtures/examples for integration-style testing and manual CLI checks.
 
 ---
 
@@ -26,6 +26,7 @@ The project currently has Markdown input handling, profile loading, deterministi
 - A minimal Markdown report renderer has been implemented.
 - The CLI can export Markdown review reports.
 - The project is packaged so `uv run content-review` resolves the console script.
+- The CLI supports automation-friendly quality gates with `--fail-on`.
 
 ---
 
@@ -34,6 +35,13 @@ The project currently has Markdown input handling, profile loading, deterministi
 - No active implementation task.
 
 ## Recent Completion
+
+- TASK-0016 is complete.
+- Added `--fail-on` support to both `content-review review` and `content-review batch`.
+- Added canonical severity ordering for quality gates: `info < warning < error < critical`.
+- Added CI-friendly exit-code behavior: `0` for pass, `1` for quality-gate failure, and `2` for command errors.
+- Kept `ReviewResult` and `BatchReviewResult` schemas stable.
+- Added quality-gate helper tests and CLI exit-code tests.
 
 - TASK-0015 is complete.
 - Added a minimal `content-review batch` command that discovers Markdown files deterministically and reuses the existing review pipeline for each file.

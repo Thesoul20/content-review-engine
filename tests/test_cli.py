@@ -30,6 +30,93 @@ def test_cli_review_with_findings_prints_finding_details(
     assert captured.err == ""
 
 
+def test_cli_review_preserves_success_exit_code_without_fail_on(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    markdown_path = "tests/fixtures/markdown/forbidden_terms_article.md"
+    profile_path = "tests/fixtures/profiles/default.yml"
+
+    exit_code = main(["review", markdown_path, "--profile", profile_path])
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "Findings: 1" in captured.out
+    assert captured.err == ""
+
+
+def test_cli_review_fail_on_exits_zero_when_findings_are_below_threshold(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    markdown_path = "tests/fixtures/markdown/forbidden_terms_article.md"
+    profile_path = "tests/fixtures/profiles/default.yml"
+
+    exit_code = main(
+        [
+            "review",
+            markdown_path,
+            "--profile",
+            profile_path,
+            "--fail-on",
+            "error",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "Findings: 1" in captured.out
+    assert captured.err == ""
+
+
+def test_cli_review_fail_on_exits_one_when_finding_meets_threshold(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    markdown_path = "tests/fixtures/markdown/forbidden_terms_article.md"
+    profile_path = "tests/fixtures/profiles/default.yml"
+
+    exit_code = main(
+        [
+            "review",
+            markdown_path,
+            "--profile",
+            profile_path,
+            "--fail-on",
+            "warning",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    assert "Findings: 1" in captured.out
+    assert captured.err == ""
+
+
+def test_cli_review_fail_on_rejects_invalid_severity(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    markdown_path = "tests/fixtures/markdown/forbidden_terms_article.md"
+    profile_path = "tests/fixtures/profiles/default.yml"
+
+    exit_code = main(
+        [
+            "review",
+            markdown_path,
+            "--profile",
+            profile_path,
+            "--fail-on",
+            "high",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert "Invalid severity: 'high'" in captured.err
+    assert captured.out == ""
+
+
 def test_cli_review_without_findings_prints_zero_findings(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
@@ -64,7 +151,7 @@ def test_cli_missing_markdown_file_returns_non_zero(
 
     captured = capsys.readouterr()
 
-    assert exit_code == 1
+    assert exit_code == 2
     assert "Markdown file not found" in captured.err
 
 
@@ -85,7 +172,7 @@ def test_cli_missing_profile_file_returns_non_zero(
 
     captured = capsys.readouterr()
 
-    assert exit_code == 1
+    assert exit_code == 2
     assert "Profile file not found" in captured.err
 
 
@@ -393,6 +480,103 @@ def test_cli_batch_text_output_prints_summary_and_file_sections(
     assert "No issues found." in captured.out
     assert "[warning] forbidden_terms - 发现风险词：绝对安全" in captured.out
     assert captured.err == ""
+
+
+def test_cli_batch_preserves_success_exit_code_without_fail_on(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    input_dir = "tests/fixtures/batch/articles"
+    profile_path = "tests/fixtures/batch/profile.yml"
+
+    exit_code = main(
+        [
+            "batch",
+            input_dir,
+            "--profile",
+            profile_path,
+            "--recursive",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "Findings: 2" in captured.out
+    assert captured.err == ""
+
+
+def test_cli_batch_fail_on_exits_zero_when_findings_are_below_threshold(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    input_dir = "tests/fixtures/batch/articles"
+    profile_path = "tests/fixtures/batch/profile.yml"
+
+    exit_code = main(
+        [
+            "batch",
+            input_dir,
+            "--profile",
+            profile_path,
+            "--recursive",
+            "--fail-on",
+            "error",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "Findings: 2" in captured.out
+    assert captured.err == ""
+
+
+def test_cli_batch_fail_on_exits_one_when_findings_meet_threshold(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    input_dir = "tests/fixtures/batch/articles"
+    profile_path = "tests/fixtures/batch/profile.yml"
+
+    exit_code = main(
+        [
+            "batch",
+            input_dir,
+            "--profile",
+            profile_path,
+            "--recursive",
+            "--fail-on",
+            "warning",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    assert "Findings: 2" in captured.out
+    assert captured.err == ""
+
+
+def test_cli_batch_fail_on_rejects_invalid_severity(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    input_dir = "tests/fixtures/batch/articles"
+    profile_path = "tests/fixtures/batch/profile.yml"
+
+    exit_code = main(
+        [
+            "batch",
+            input_dir,
+            "--profile",
+            profile_path,
+            "--fail-on",
+            "high",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert "Invalid severity: 'high'" in captured.err
+    assert captured.out == ""
 
 
 def test_cli_batch_json_output_uses_canonical_batch_result(

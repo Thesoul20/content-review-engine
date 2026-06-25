@@ -70,6 +70,7 @@ Current implemented input helpers:
 
 - `content_review_engine.parser.read_markdown`
 - `content_review_engine.config.load_profile`
+- `content_review_engine.core.quality_gate`
 - `content_review_engine.rules.check_forbidden_terms`
 - `content_review_engine.rules.check_markdown_structure`
 - `content_review_engine.rules.check_markdown_links_images`
@@ -109,6 +110,7 @@ For batch review, the CLI adds a deterministic directory discovery step before t
 
 The CLI currently supports reviewing one Markdown file with one YAML profile and reviewing a directory of Markdown files with one YAML profile.
 It prints simple human-readable summaries, supports JSON output, and can export Markdown review reports for both single-file and batch review.
+It also supports a CLI quality gate through `--fail-on`, using canonical severity ordering in the core package to choose automation-friendly exit codes.
 It does not yet support HTML, watch mode, or report persistence beyond the optional Markdown output file.
 
 Current deterministic rules:
@@ -133,6 +135,15 @@ Current report generation:
 - `render_markdown_report()` accepts a `ReviewResult` and renders a Markdown report.
 - `render_batch_markdown_report()` accepts a `BatchReviewResult` and renders a batch Markdown report.
 - The report renderer does not run rules, read Markdown files, or write output files.
+
+Current quality gate support:
+
+- `content_review_engine.core.quality_gate` defines canonical severity ordering:
+  `info < warning < error < critical`.
+- The CLI adapter evaluates `ReviewSummary.severity_counts` or
+  `BatchReviewSummary.severity_counts` after rendering succeeds.
+- `ReviewResult` and `BatchReviewResult` schemas are unchanged by quality-gate
+  evaluation.
 
 ---
 
