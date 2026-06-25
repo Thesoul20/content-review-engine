@@ -78,3 +78,32 @@ def test_review_markdown_directory_builds_batch_summary() -> None:
     assert result.results[2].summary.finding_count == 1
     assert result.results[1].profile is not None
     assert result.results[1].profile.path == "tests/fixtures/batch/profile.yml"
+
+
+def test_review_markdown_directory_excludes_suppressed_findings_from_summary(
+    tmp_path: Path,
+) -> None:
+    articles_dir = tmp_path / "articles"
+    articles_dir.mkdir()
+    (articles_dir / "suppressed.md").write_text(
+        "\n".join(
+            [
+                "<!-- content-review-disable-next-line forbidden_terms -->",
+                "这里写着绝对安全。",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    profile = load_profile(BATCH_PROFILE_PATH)
+
+    result = review_markdown_directory(articles_dir, profile)
+
+    assert result.summary.finding_count == 0
+    assert result.summary.files_with_findings == 0
+    assert result.summary.severity_counts == {
+        "info": 0,
+        "warning": 0,
+        "error": 0,
+        "critical": 0,
+    }
+    assert result.results[0].findings == []

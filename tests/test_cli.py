@@ -93,6 +93,36 @@ def test_cli_review_fail_on_exits_one_when_finding_meets_threshold(
     assert captured.err == ""
 
 
+def test_cli_review_suppressed_finding_does_not_fail_quality_gate(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    markdown_path = tmp_path / "suppressed.md"
+    markdown_path.write_text(
+        "这里写着绝对安全。 <!-- content-review-disable-line forbidden_terms -->",
+        encoding="utf-8",
+    )
+    profile_path = "tests/fixtures/profiles/default.yml"
+
+    exit_code = main(
+        [
+            "review",
+            str(markdown_path),
+            "--profile",
+            profile_path,
+            "--fail-on",
+            "warning",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "Findings: 0" in captured.out
+    assert "绝对安全" not in captured.out
+    assert captured.err == ""
+
+
 def test_cli_review_fail_on_rejects_invalid_severity(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
@@ -552,6 +582,43 @@ def test_cli_batch_fail_on_exits_one_when_findings_meet_threshold(
 
     assert exit_code == 1
     assert "Findings: 2" in captured.out
+    assert captured.err == ""
+
+
+def test_cli_batch_suppressed_finding_does_not_fail_quality_gate(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    input_dir = tmp_path / "articles"
+    input_dir.mkdir()
+    (input_dir / "suppressed.md").write_text(
+        "\n".join(
+            [
+                "<!-- content-review-disable-next-line forbidden_terms -->",
+                "这里写着绝对安全。",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    profile_path = "tests/fixtures/batch/profile.yml"
+
+    exit_code = main(
+        [
+            "batch",
+            str(input_dir),
+            "--profile",
+            profile_path,
+            "--fail-on",
+            "warning",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "Files with findings: 0" in captured.out
+    assert "Findings: 0" in captured.out
+    assert "绝对安全" not in captured.out
     assert captured.err == ""
 
 

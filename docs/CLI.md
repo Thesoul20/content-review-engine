@@ -11,6 +11,52 @@ The CLI is a thin adapter over the core review pipeline.
 It reads Markdown, loads a YAML profile, runs deterministic rules, and prints or exports the canonical `ReviewResult`.
 The batch command reuses the same pipeline for each discovered Markdown file and returns a canonical `BatchReviewResult`.
 
+## Forbidden Terms Allowlist
+
+The `forbidden_terms` rule supports an optional literal allowlist in rule-style
+YAML configuration:
+
+```yaml
+rules:
+  - id: forbidden_terms
+    enabled: true
+    severity: error
+    terms:
+      - 全网最强
+      - 永久有效
+    allow_terms:
+      - 永久有效
+```
+
+`allow_terms` must be a list of strings. A forbidden term that exactly matches
+an allowed term is not reported. Omitted or empty `allow_terms` preserves the
+existing behavior.
+
+## Inline Suppression
+
+Markdown HTML comments can suppress findings for specific physical lines:
+
+```markdown
+This sentence intentionally mentions 全网最强. <!-- content-review-disable-line forbidden_terms -->
+```
+
+```markdown
+<!-- content-review-disable-next-line forbidden_terms -->
+This sentence intentionally mentions 全网最强.
+```
+
+Optional whitespace inside the HTML comment is tolerated:
+
+```markdown
+<!--content-review-disable-line forbidden_terms-->
+<!--  content-review-disable-line forbidden_terms  -->
+```
+
+Suppression matches by exact rule ID. Suppressed findings are excluded before
+text, JSON, and Markdown output are rendered, so they do not appear in output,
+do not count toward single-file or batch summaries, and do not trigger
+`--fail-on`.
+
 ## Quality Gate
 
 Both commands support `--fail-on <severity>` for CI and automation workflows.
@@ -155,6 +201,8 @@ Example shape:
 
 - The CLI does not implement review logic itself.
 - The CLI runs the default internal rule registry through the review pipeline.
+- The CLI automatically respects `forbidden_terms.allow_terms` and inline
+  suppression comments without adding any suppression-specific flags.
 - The CLI does not add rewriting, diff tracking, watch mode, MCP, API, GUI, or report generation logic of its own.
 - If a profile references an unknown rule ID, the CLI prints a readable error and exits with code `2`.
 - Existing profiles continue to run `forbidden_terms` by default.

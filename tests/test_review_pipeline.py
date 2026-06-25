@@ -201,6 +201,26 @@ def test_review_document_accepts_loaded_text_and_profile_not_paths() -> None:
     assert result.findings[0].matched_term == "保证赚钱"
 
 
+def test_review_document_filters_inline_suppressed_findings() -> None:
+    profile = ReviewProfile(
+        name="wechat",
+        target_platform="wechat",
+        forbidden_terms=["全网最强", "绝对安全"],
+    )
+    markdown_text = "\n".join(
+        [
+            "这里写着全网最强。 <!-- content-review-disable-line forbidden_terms -->",
+            "这里写着绝对安全。",
+        ]
+    )
+
+    result = review_document(markdown_text, profile)
+
+    assert result.summary.finding_count == 1
+    assert result.summary.severity_counts["warning"] == 1
+    assert [finding.matched_term for finding in result.findings] == ["绝对安全"]
+
+
 def test_review_document_uses_rule_runner(monkeypatch: pytest.MonkeyPatch) -> None:
     profile = ReviewProfile(
         name="wechat",

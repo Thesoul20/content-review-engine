@@ -8,6 +8,10 @@ from content_review_engine.core.models import (
     ReviewProfileMetadata,
     ReviewResult,
 )
+from content_review_engine.core.suppression import (
+    filter_suppressed_findings,
+    parse_inline_suppressions,
+)
 from content_review_engine.rules import run_rules
 
 
@@ -19,6 +23,8 @@ def review_document(
     profile_path: str | Path | None = None,
 ) -> ReviewResult:
     findings = run_rules(markdown_text, profile)
+    directives = parse_inline_suppressions(markdown_text)
+    findings = filter_suppressed_findings(findings, directives)
     document = (
         ReviewDocumentMetadata(path=str(document_path))
         if document_path is not None

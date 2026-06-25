@@ -89,3 +89,55 @@ def test_load_profile_with_enabled_rules(tmp_path: Path) -> None:
     profile = load_profile(profile_path)
 
     assert profile.enabled_rules == ["forbidden_terms"]
+
+
+def test_load_profile_with_forbidden_terms_rule_configuration(
+    tmp_path: Path,
+) -> None:
+    profile_path = tmp_path / "rules.yaml"
+    profile_path.write_text(
+        "\n".join(
+            [
+                "name: wechat",
+                "target_platform: wechat",
+                "rules:",
+                "  - id: forbidden_terms",
+                "    enabled: true",
+                "    severity: error",
+                "    terms:",
+                "      - 全网最强",
+                "      - 永久有效",
+                "    allow_terms:",
+                "      - 永久有效",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    profile = load_profile(profile_path)
+
+    assert profile.forbidden_terms == ["全网最强", "永久有效"]
+    assert profile.forbidden_terms_allow_terms == ["永久有效"]
+
+
+def test_load_profile_rejects_invalid_forbidden_terms_allow_terms(
+    tmp_path: Path,
+) -> None:
+    profile_path = tmp_path / "invalid-allow-terms.yaml"
+    profile_path.write_text(
+        "\n".join(
+            [
+                "name: wechat",
+                "target_platform: wechat",
+                "rules:",
+                "  - id: forbidden_terms",
+                "    terms:",
+                "      - 全网最强",
+                "    allow_terms: 全网最强",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="forbidden_terms.allow_terms"):
+        load_profile(profile_path)

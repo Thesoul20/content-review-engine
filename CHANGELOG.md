@@ -8,6 +8,41 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0017
+
+### Added
+
+- Added `allow_terms` support for `forbidden_terms` in rule-style YAML
+  configuration.
+- Added Markdown inline suppression comments:
+  `content-review-disable-line <rule_id>` and
+  `content-review-disable-next-line <rule_id>`.
+- Added suppression filtering before `ReviewResult` creation so default text,
+  JSON, and Markdown outputs only include unsuppressed findings.
+- Added tests for allowlist behavior, suppression parsing and filtering, review
+  pipeline integration, batch summary aggregation, and CLI quality-gate behavior.
+
+### Changed
+
+- Suppressed findings are excluded from single-file summaries, batch summaries,
+  and `--fail-on` quality-gate checks.
+- Updated architecture, data model, rule, CLI, project state, and changelog
+  documentation.
+
+### Not Added
+
+- No new review rules.
+- No LLM review.
+- No automatic rewriting.
+- No block-level, file-level, reason, or expiration suppression.
+- No external allowlist files, regex allowlists, or wildcard allowlists.
+- No `.gitignore` support.
+- No API server.
+- No MCP server.
+- No frontend.
+- No database persistence.
+- No publishing integration.
+
 ## TASK-0016
 
 ### Added

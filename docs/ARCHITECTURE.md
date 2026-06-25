@@ -71,6 +71,7 @@ Current implemented input helpers:
 - `content_review_engine.parser.read_markdown`
 - `content_review_engine.config.load_profile`
 - `content_review_engine.core.quality_gate`
+- `content_review_engine.core.suppression`
 - `content_review_engine.rules.check_forbidden_terms`
 - `content_review_engine.rules.check_markdown_structure`
 - `content_review_engine.rules.check_markdown_links_images`
@@ -103,6 +104,8 @@ Rule Registry
  ↓
 Deterministic Rules
  ↓
+Inline Suppression Filtering
+ ↓
 Review Result
 ```
 
@@ -129,6 +132,9 @@ Current review pipeline:
 - The deterministic `markdown_links_images` rule is also registered as opt-in
   through `ReviewProfile.enabled_rules`.
 - The pipeline returns a canonical `ReviewResult`.
+- The pipeline parses supported Markdown inline suppression comments after rule
+  execution and filters suppressed findings before creating the
+  `ReviewResult`.
 
 Current report generation:
 
@@ -142,6 +148,8 @@ Current quality gate support:
   `info < warning < error < critical`.
 - The CLI adapter evaluates `ReviewSummary.severity_counts` or
   `BatchReviewSummary.severity_counts` after rendering succeeds.
+- Because inline suppression is applied before summaries are computed, quality
+  gates evaluate only unsuppressed findings.
 - `ReviewResult` and `BatchReviewResult` schemas are unchanged by quality-gate
   evaluation.
 

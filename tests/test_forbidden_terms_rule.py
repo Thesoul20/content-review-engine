@@ -67,3 +67,41 @@ def test_forbidden_terms_empty_configuration_returns_empty_list() -> None:
     findings = check_forbidden_terms("任何文本都不会触发。", profile)
 
     assert findings == []
+
+
+def test_forbidden_terms_allow_terms_suppresses_exact_term() -> None:
+    profile = ReviewProfile(
+        name="wechat",
+        target_platform="wechat",
+        forbidden_terms=["全网最强", "永久有效", "绝对安全"],
+        forbidden_terms_allow_terms=["永久有效"],
+    )
+
+    findings = check_forbidden_terms("这里写着全网最强、永久有效、绝对安全。", profile)
+
+    assert [finding.matched_term for finding in findings] == ["全网最强", "绝对安全"]
+
+
+def test_forbidden_terms_missing_allow_terms_preserves_existing_behavior() -> None:
+    profile = ReviewProfile(
+        name="wechat",
+        target_platform="wechat",
+        forbidden_terms=["永久有效"],
+    )
+
+    findings = check_forbidden_terms("这个承诺永久有效。", profile)
+
+    assert [finding.matched_term for finding in findings] == ["永久有效"]
+
+
+def test_forbidden_terms_empty_allow_terms_preserves_existing_behavior() -> None:
+    profile = ReviewProfile(
+        name="wechat",
+        target_platform="wechat",
+        forbidden_terms=["永久有效"],
+        forbidden_terms_allow_terms=[],
+    )
+
+    findings = check_forbidden_terms("这个承诺永久有效。", profile)
+
+    assert [finding.matched_term for finding in findings] == ["永久有效"]

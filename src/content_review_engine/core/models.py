@@ -156,6 +156,7 @@ class ReviewProfile(BaseModel):
     max_title_length: int = 32
     max_paragraph_length: int = 220
     forbidden_terms: list[str] = Field(default_factory=list)
+    forbidden_terms_allow_terms: list[str] = Field(default_factory=list)
     enabled_rules: list[str] | None = None
 
 

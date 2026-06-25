@@ -28,6 +28,15 @@ class ForbiddenTermsRule:
         if not terms:
             return []
 
+        allow_terms = {
+            term.strip()
+            for term in profile.forbidden_terms_allow_terms
+            if term.strip()
+        }
+        terms = [term for term in terms if term not in allow_terms]
+        if not terms:
+            return []
+
         findings: list[ReviewFinding] = []
         for term in terms:
             start_offset = text.find(term)

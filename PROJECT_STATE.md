@@ -4,7 +4,7 @@
 
 M1: Core input layer and minimal review pipeline.
 
-The project currently has Markdown input handling, profile loading, deterministic review rules, a minimal internal rule registry and rule runner, source location metadata on findings, a minimal in-memory review pipeline, a minimal batch CLI adapter, CLI quality-gate exit codes, and committed fixtures/examples for integration-style testing and manual CLI checks.
+The project currently has Markdown input handling, profile loading, deterministic review rules, forbidden-terms allowlists, Markdown inline suppression filtering, a minimal internal rule registry and rule runner, source location metadata on findings, a minimal in-memory review pipeline, a minimal batch CLI adapter, CLI quality-gate exit codes, and committed fixtures/examples for integration-style testing and manual CLI checks.
 
 ---
 
@@ -27,6 +27,8 @@ The project currently has Markdown input handling, profile loading, deterministi
 - The CLI can export Markdown review reports.
 - The project is packaged so `uv run content-review` resolves the console script.
 - The CLI supports automation-friendly quality gates with `--fail-on`.
+- The `forbidden_terms` rule supports literal `allow_terms` in rule-style YAML configuration.
+- Markdown inline comments can suppress `forbidden_terms` findings for the current line or next line.
 
 ---
 
@@ -35,6 +37,13 @@ The project currently has Markdown input handling, profile loading, deterministi
 - No active implementation task.
 
 ## Recent Completion
+
+- TASK-0017 is complete.
+- Added optional `allow_terms` support for the `forbidden_terms` rule through rule-style YAML configuration.
+- Added Markdown inline suppression comments for `content-review-disable-line forbidden_terms` and `content-review-disable-next-line forbidden_terms`.
+- Suppressed findings are filtered before `ReviewResult` creation, so they are excluded from text, JSON, and Markdown output.
+- Batch summaries and quality gates now evaluate only unsuppressed findings.
+- Added unit tests for allowlist behavior, suppression parsing/filtering, review pipeline filtering, batch summary behavior, and CLI quality-gate behavior.
 
 - TASK-0016 is complete.
 - Added `--fail-on` support to both `content-review review` and `content-review batch`.

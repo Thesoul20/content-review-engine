@@ -8,6 +8,11 @@ Each rule has a stable `rule_id`. That ID is how the registry stores, retrieves,
 
 Rules do not create `ReviewResult`, render reports, write files, or print CLI output.
 
+Inline suppression is applied by the review pipeline after rule execution and
+before `ReviewResult` creation. This keeps rules focused on detection while
+ensuring suppressed findings are absent from output, summaries, batch
+aggregation, and quality-gate checks.
+
 ## Relationship With `docs/REVIEW_RULES.md`
 
 This file describes the rule system architecture and runtime behavior:
@@ -76,6 +81,13 @@ includes it in `ReviewProfile.enabled_rules`.
 Purpose:
 
 Detect forbidden terms configured in the review profile.
+
+Configuration:
+
+- Top-level `forbidden_terms` remains supported for existing profiles.
+- Rule-style YAML may use `rules[].terms`.
+- Rule-style YAML may use `rules[].allow_terms` as a list of literal strings to
+  exclude exact forbidden-term matches.
 
 Status:
 

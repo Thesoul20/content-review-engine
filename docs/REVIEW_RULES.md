@@ -43,9 +43,25 @@ Purpose:
 
 Detect forbidden terms configured in the review profile.
 
+Configuration:
+
+- Legacy profiles may continue to use top-level `forbidden_terms`.
+- Rule-style YAML may use `rules[].terms` for forbidden terms.
+- Rule-style YAML may use `rules[].allow_terms` as a list of literal strings
+  that should not produce findings when they exactly match configured
+  forbidden terms.
+
 Status:
 
 Implemented.
+
+Implementation:
+
+`src/content_review_engine/rules/forbidden_terms.py`
+
+Tests:
+
+`tests/test_forbidden_terms_rule.py`
 
 ### markdown_structure
 
