@@ -7,6 +7,7 @@ uv run content-review review <markdown_file> --profile <profile_file> [--format 
 uv run content-review batch <input_dir> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--recursive] [--pattern "*.md"] [--fail-on info|warning|error|critical]
 uv run content-review profile validate <profile_file> [--format text|json]
 uv run content-review profile init --template <general-basic|wechat-basic|wechat-strict> --output <profile_file> [--force]
+uv run content-review profile list [--format text|json]
 ```
 
 The CLI is a thin adapter over the core review pipeline.
@@ -14,6 +15,7 @@ It reads Markdown, loads a YAML profile, runs deterministic rules, and prints or
 The batch command reuses the same pipeline for each discovered Markdown file and returns a canonical `BatchReviewResult`.
 The profile validation command reuses the existing profile loader and registry checks and returns a canonical `ProfileValidationResult`.
 The profile init command creates a new editable YAML profile from one built-in template and keeps validation on the existing loader path.
+The profile list command exposes the same built-in template registry used by `profile init` and returns either text output or a canonical `profile-template-list.v1` JSON payload.
 
 ## Forbidden Terms Allowlist
 
@@ -152,6 +154,66 @@ Exit codes:
 ```text
 0 = profile file created successfully
 2 = invalid template, missing required options, output conflict, invalid path, or write error
+```
+
+## Profile Template Listing
+
+List the available built-in templates before initialization:
+
+```bash
+uv run content-review profile list
+uv run content-review profile list --format text
+uv run content-review profile list --format json
+```
+
+Text output includes the template name, a short description, and a usage example:
+
+```text
+Available profile templates:
+
+- general-basic
+  General-purpose starter profile for public-facing content.
+
+- wechat-basic
+  Basic WeChat article profile with moderate checks.
+
+- wechat-strict
+  Stricter WeChat profile intended for batch checks and CI gates.
+
+Use a template:
+
+  content-review profile init --template wechat-basic --output profile.yaml
+```
+
+JSON output uses `profile-template-list.v1` and includes only summary metadata:
+
+```json
+{
+  "schema_version": "profile-template-list.v1",
+  "templates": [
+    {
+      "name": "general-basic",
+      "description": "General-purpose starter profile for public-facing content."
+    },
+    {
+      "name": "wechat-basic",
+      "description": "Basic WeChat article profile with moderate checks."
+    },
+    {
+      "name": "wechat-strict",
+      "description": "Stricter WeChat profile intended for batch checks and CI gates."
+    }
+  ]
+}
+```
+
+The JSON output does not include the full YAML template content.
+
+Exit codes:
+
+```text
+0 = templates listed successfully
+2 = invalid command usage or invalid --format value
 ```
 
 ## Quality Gate

@@ -7,7 +7,13 @@ from pathlib import Path
 import pytest
 
 from content_review_engine.cli import main
-from content_review_engine.config import load_profile
+from content_review_engine.config import (
+    get_profile_template,
+    list_profile_template_names,
+    list_profile_templates,
+    load_profile,
+    validate_profile,
+)
 
 
 def test_cli_review_with_findings_prints_finding_details(
@@ -238,6 +244,7 @@ def test_cli_profile_help_shows_validate_subcommand(
     assert "usage:" in captured.out.lower()
     assert "validate" in captured.out
     assert "init" in captured.out
+    assert "list" in captured.out
 
 
 def test_cli_profile_validate_help_shows_profile_path(
@@ -265,6 +272,72 @@ def test_cli_profile_init_help_shows_template_output_and_force(
     assert "--output" in captured.out
     assert "--force" in captured.out
     assert "Create a new review profile from a built-in template." in captured.out
+
+
+def test_cli_profile_list_help_shows_format(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = main(["profile", "list", "--help"])
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "usage:" in captured.out.lower()
+    assert "--format" in captured.out
+    assert "List available built-in review profile templates." in captured.out
+
+
+def test_cli_profile_list_text_output(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = main(["profile", "list"])
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert captured.err == ""
+    assert "Available profile templates:" in captured.out
+    assert "- general-basic" in captured.out
+    assert "General-purpose starter profile for public-facing content." in captured.out
+    assert "- wechat-basic" in captured.out
+    assert "Basic WeChat article profile with moderate checks." in captured.out
+    assert "- wechat-strict" in captured.out
+    assert "Stricter WeChat profile intended for batch checks and CI gates." in captured.out
+    assert (
+        "content-review profile init --template wechat-basic --output profile.yaml"
+        in captured.out
+    )
+
+
+def test_cli_profile_list_json_output_uses_canonical_schema(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = main(["profile", "list", "--format", "json"])
+
+    captured = capsys.readouterr()
+    payload = json.loads(captured.out)
+
+    assert exit_code == 0
+    assert captured.err == ""
+    assert payload == {
+        "schema_version": "profile-template-list.v1",
+        "templates": [
+            {
+                "name": "general-basic",
+                "description": "General-purpose starter profile for public-facing content.",
+            },
+            {
+                "name": "wechat-basic",
+                "description": "Basic WeChat article profile with moderate checks.",
+            },
+            {
+                "name": "wechat-strict",
+                "description": "Stricter WeChat profile intended for batch checks and CI gates.",
+            },
+        ],
+    }
+    for template in payload["templates"]:
+        assert set(template.keys()) == {"name", "description"}
 
 
 @pytest.mark.parametrize(
@@ -343,6 +416,35 @@ def test_cli_profile_init_unknown_template_returns_two(
     assert "wechat-strict" in captured.err
     assert captured.out == ""
     assert not output_path.exists()
+
+
+def test_profile_template_registry_matches_init_and_templates_validate(
+    tmp_path: Path,
+) -> None:
+    templates = list_profile_templates()
+
+    assert [template.name for template in templates] == list_profile_template_names()
+
+    for template in templates:
+        fetched_template = get_profile_template(template.name)
+        assert fetched_template == template
+
+        output_path = tmp_path / f"{template.name}.yaml"
+        exit_code = main(
+            [
+                "profile",
+                "init",
+                "--template",
+                template.name,
+                "--output",
+                str(output_path),
+            ]
+        )
+
+        assert exit_code == 0
+        profile = load_profile(output_path)
+        assert profile.name == template.name
+        assert validate_profile(output_path).valid is True
 
 
 def test_cli_profile_init_existing_file_fails_without_force(

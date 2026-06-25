@@ -87,6 +87,8 @@ Current CLI adapter:
 content-review review <markdown_file> --profile <profile_file>
 content-review batch <input_dir> --profile <profile_file>
 content-review profile validate <profile_file>
+content-review profile init --template <template_name> --output <profile_file>
+content-review profile list [--format text|json]
 ```
 
 Current CLI flow:
@@ -113,7 +115,7 @@ Review Result
 
 For batch review, the CLI adds a deterministic directory discovery step before the Markdown Reader.
 
-The CLI currently supports reviewing one Markdown file with one YAML profile, reviewing a directory of Markdown files with one YAML profile, and validating a YAML profile independently before a review run.
+The CLI currently supports reviewing one Markdown file with one YAML profile, reviewing a directory of Markdown files with one YAML profile, validating a YAML profile independently before a review run, initializing a local profile from a built-in template, and listing the built-in templates exposed by the same registry.
 It prints simple human-readable summaries, supports JSON output, and can export Markdown review reports for both single-file and batch review.
 It also supports a CLI quality gate through `--fail-on`, using canonical severity ordering in the core package to choose automation-friendly exit codes.
 It does not yet support HTML, watch mode, or report persistence beyond the optional Markdown output file.

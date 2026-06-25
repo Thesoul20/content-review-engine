@@ -9,6 +9,7 @@ FindingSeverity = Literal["info", "warning", "error", "critical"]
 REVIEW_RESULT_SCHEMA_VERSION = "review-result.v1"
 BATCH_REVIEW_RESULT_SCHEMA_VERSION = "batch-review-result.v1"
 PROFILE_VALIDATION_RESULT_SCHEMA_VERSION = "profile-validation-result.v1"
+PROFILE_TEMPLATE_LIST_SCHEMA_VERSION = "profile-template-list.v1"
 REVIEW_SUMMARY_SEVERITIES: tuple[str, ...] = ("info", "warning", "error", "critical")
 
 
@@ -97,6 +98,16 @@ class ProfileValidationResult(BaseModel):
     path: str
     profile: ProfileValidationProfileSummary | None = None
     errors: list[ProfileValidationError] = Field(default_factory=list)
+
+
+class ProfileTemplateSummary(BaseModel):
+    name: str
+    description: str
+
+
+class ProfileTemplateListResult(BaseModel):
+    schema_version: str = PROFILE_TEMPLATE_LIST_SCHEMA_VERSION
+    templates: list[ProfileTemplateSummary] = Field(default_factory=list)
 
 
 class ReviewResult(BaseModel):
@@ -194,6 +205,7 @@ class ReviewProfile(BaseModel):
 __all__ = [
     "FindingSeverity",
     "BATCH_REVIEW_RESULT_SCHEMA_VERSION",
+    "PROFILE_TEMPLATE_LIST_SCHEMA_VERSION",
     "PROFILE_VALIDATION_RESULT_SCHEMA_VERSION",
     "REVIEW_RESULT_SCHEMA_VERSION",
     "REVIEW_SUMMARY_SEVERITIES",
@@ -206,6 +218,8 @@ __all__ = [
     "ProfileValidationProfileSummary",
     "ProfileValidationResult",
     "ProfileValidationRuleSummary",
+    "ProfileTemplateListResult",
+    "ProfileTemplateSummary",
     "ReviewProfile",
     "ReviewProfileMetadata",
     "ReviewResult",

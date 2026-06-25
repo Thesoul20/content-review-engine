@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 
 from content_review_engine.core.models import (
+    ProfileTemplateListResult,
+    ProfileTemplateSummary,
     ReviewDocumentMetadata,
     ReviewFinding,
     ReviewProfileMetadata,
@@ -10,6 +12,7 @@ from content_review_engine.core.models import (
     SourceSpan,
 )
 from content_review_engine.core.serialization import (
+    profile_template_list_result_to_json,
     review_result_to_dict,
     review_result_to_json,
 )
@@ -98,3 +101,34 @@ def test_review_result_to_json_uses_canonical_shape() -> None:
     assert payload["schema_version"] == "review-result.v1"
     assert payload["summary"]["finding_count"] == 1
     assert payload["findings"][0]["location"]["matched_text"] == "绝对安全"
+
+
+def test_profile_template_list_result_to_json_uses_canonical_shape() -> None:
+    result = ProfileTemplateListResult(
+        templates=[
+            ProfileTemplateSummary(
+                name="general-basic",
+                description="General-purpose starter profile for public-facing content.",
+            ),
+            ProfileTemplateSummary(
+                name="wechat-basic",
+                description="Basic WeChat article profile with moderate checks.",
+            ),
+        ]
+    )
+
+    payload = json.loads(profile_template_list_result_to_json(result))
+
+    assert payload == {
+        "schema_version": "profile-template-list.v1",
+        "templates": [
+            {
+                "name": "general-basic",
+                "description": "General-purpose starter profile for public-facing content.",
+            },
+            {
+                "name": "wechat-basic",
+                "description": "Basic WeChat article profile with moderate checks.",
+            },
+        ],
+    }

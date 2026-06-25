@@ -37,6 +37,8 @@ The project currently has Markdown input handling, profile loading, standalone p
   directly with `review` and `batch`.
 - The CLI can initialize a new YAML review profile from a built-in template
   through `content-review profile init`.
+- The CLI can list the built-in profile templates through
+  `content-review profile list`.
 
 ---
 
@@ -45,6 +47,18 @@ The project currently has Markdown input handling, profile loading, standalone p
 - No active implementation task.
 
 ## Recent Completion
+
+- TASK-0022 is complete.
+- Added `content-review profile list` with `--format text|json`.
+- Reused the built-in template registry as the single source of truth for both
+  `profile list` and `profile init`.
+- Added deterministic template descriptions and canonical
+  `profile-template-list.v1` JSON output without embedding full YAML template
+  content.
+- Added CLI tests for text output, JSON output, help output, and registry
+  consistency including generated-profile validation.
+- Updated CLI, profile, architecture, data model, project state, and
+  changelog documentation for the new profile discovery command.
 
 - TASK-0021 is complete.
 - Added `content-review profile init` with required `--template` and

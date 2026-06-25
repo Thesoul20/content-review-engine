@@ -224,6 +224,50 @@ Example:
 
 ---
 
+## ProfileTemplateSummary
+
+`ProfileTemplateSummary` records one built-in profile template exposed by
+`content-review profile list`.
+
+| Field | Required | Description |
+|---|---|---|
+| `name` | Yes | Stable built-in template name |
+| `description` | Yes | Short human-readable template description |
+
+---
+
+## ProfileTemplateListResult
+
+`ProfileTemplateListResult` is the canonical structured output for
+`content-review profile list --format json`.
+
+The stable schema version is `profile-template-list.v1`.
+
+| Field | Required | Description |
+|---|---|---|
+| `schema_version` | Yes | Result schema version |
+| `templates` | Yes | Ordered list of `ProfileTemplateSummary` items |
+
+Example:
+
+```json
+{
+  "schema_version": "profile-template-list.v1",
+  "templates": [
+    {
+      "name": "general-basic",
+      "description": "General-purpose starter profile for public-facing content."
+    },
+    {
+      "name": "wechat-basic",
+      "description": "Basic WeChat article profile with moderate checks."
+    }
+  ]
+}
+```
+
+---
+
 ## ReviewResult
 
 `ReviewResult` is the canonical structured output for a reviewed document.

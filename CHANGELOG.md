@@ -8,6 +8,43 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0022
+
+### Added
+
+- Added `content-review profile list [--format text|json]`.
+- Added canonical `profile-template-list.v1` JSON output for built-in template
+  discovery.
+- Added deterministic template descriptions for `general-basic`,
+  `wechat-basic`, and `wechat-strict`.
+- Added CLI tests for profile-list text output, JSON output, help output, and
+  template-registry consistency with generated-profile validation.
+
+### Changed
+
+- Reused the same built-in template registry for both `profile list` and
+  `profile init` so the supported template set stays consistent.
+- Kept `profile init`, `profile validate`, `review`, `batch`, `--fail-on`,
+  suppression, `forbidden_terms`, and `absolute_claims` behavior unchanged.
+- Updated CLI, profile, architecture, data model, project state, and
+  changelog documentation.
+
+### Not Added
+
+- No new review rules.
+- No LLM review.
+- No natural-language profile generation.
+- No interactive wizard.
+- No remote template loading.
+- No user-defined template directories.
+- No template marketplace.
+- No profile aliases for `review` or `batch`.
+- No API server.
+- No MCP server.
+- No frontend.
+- No database persistence.
+- No publishing integration.
+
 ## TASK-0021
 
 ### Added

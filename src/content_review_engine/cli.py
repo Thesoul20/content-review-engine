@@ -5,12 +5,18 @@ import sys
 from pathlib import Path
 
 from content_review_engine.config import (
-    get_profile_template,
+    get_profile_template_content,
+    list_profile_template_names,
     list_profile_templates,
     load_profile,
     validate_profile,
 )
-from content_review_engine.core.models import BatchReviewResult, ReviewResult
+from content_review_engine.core.models import (
+    BatchReviewResult,
+    ProfileTemplateListResult,
+    ProfileTemplateSummary,
+    ReviewResult,
+)
 from content_review_engine.core.quality_gate import (
     SEVERITY_ORDER,
     quality_gate_failed,
@@ -18,6 +24,7 @@ from content_review_engine.core.quality_gate import (
 )
 from content_review_engine.core.serialization import (
     batch_review_result_to_json,
+    profile_template_list_result_to_json,
     profile_validation_result_to_json,
     review_result_to_json,
 )
@@ -104,7 +111,7 @@ def build_parser() -> argparse.ArgumentParser:
     init_parser.add_argument(
         "--template",
         required=True,
-        choices=list_profile_templates(),
+        choices=list_profile_template_names(),
         help="Built-in template name.",
     )
     init_parser.add_argument(
@@ -116,6 +123,17 @@ def build_parser() -> argparse.ArgumentParser:
         "--force",
         action="store_true",
         help="Overwrite the output file if it already exists.",
+    )
+    list_parser = profile_subparsers.add_parser(
+        "list",
+        help="List available built-in review profile templates.",
+        description="List available built-in review profile templates.",
+    )
+    list_parser.add_argument(
+        "--format",
+        choices=["text", "json"],
+        default="text",
+        help="Output format for the template list.",
     )
 
     batch_parser = subparsers.add_parser(
@@ -316,6 +334,43 @@ def _render_profile_init_text(*, template_name: str, output_path: Path) -> str:
     )
 
 
+def _build_profile_template_list_result() -> ProfileTemplateListResult:
+    return ProfileTemplateListResult(
+        templates=[
+            ProfileTemplateSummary(
+                name=template.name,
+                description=template.description,
+            )
+            for template in list_profile_templates()
+        ]
+    )
+
+
+def _render_profile_list_text(result: ProfileTemplateListResult) -> str:
+    lines = ["Available profile templates:", ""]
+
+    for template in result.templates:
+        lines.append(f"- {template.name}")
+        lines.append(f"  {template.description}")
+        lines.append("")
+
+    lines.extend(
+        [
+            "Use a template:",
+            "",
+            "  content-review profile init --template wechat-basic --output profile.yaml",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def _render_profile_list_output(*, output_format: str) -> str:
+    result = _build_profile_template_list_result()
+    if output_format == "json":
+        return profile_template_list_result_to_json(result)
+    return _render_profile_list_text(result)
+
+
 def _write_or_print_output(output_text: str, output_path: str | None) -> int:
     if output_path is not None:
         try:
@@ -404,7 +459,7 @@ def _run_profile_init_command(args: argparse.Namespace) -> int:
             f"Output file already exists: {output_path}. Use --force to overwrite."
         )
 
-    template_text = get_profile_template(args.template)
+    template_text = get_profile_template_content(args.template)
 
     output_path.write_text(template_text, encoding="utf-8")
     load_profile(output_path)
@@ -413,6 +468,11 @@ def _run_profile_init_command(args: argparse.Namespace) -> int:
         template_name=args.template,
         output_path=output_path,
     )
+    return _write_or_print_output(rendered_output, None)
+
+
+def _run_profile_list_command(args: argparse.Namespace) -> int:
+    rendered_output = _render_profile_list_output(output_format=args.format)
     return _write_or_print_output(rendered_output, None)
 
 
@@ -431,6 +491,8 @@ def main(argv: list[str] | None = None) -> int:
             return _run_profile_validate_command(args)
         if args.command == "profile" and args.profile_command == "init":
             return _run_profile_init_command(args)
+        if args.command == "profile" and args.profile_command == "list":
+            return _run_profile_list_command(args)
         if args.command == "batch":
             return _run_batch_command(args)
 

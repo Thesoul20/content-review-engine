@@ -4,6 +4,8 @@ from pydantic import ValidationError
 from content_review_engine.core.models import (
     BatchReviewResult,
     BatchReviewSummary,
+    ProfileTemplateListResult,
+    ProfileTemplateSummary,
     ReviewDocumentMetadata,
     ReviewFinding,
     ReviewIssue,
@@ -142,6 +144,20 @@ def test_create_review_profile_with_enabled_rules() -> None:
     )
 
     assert profile.enabled_rules == ["forbidden_terms"]
+
+
+def test_create_profile_template_list_result() -> None:
+    result = ProfileTemplateListResult(
+        templates=[
+            ProfileTemplateSummary(
+                name="wechat-basic",
+                description="Basic WeChat article profile with moderate checks.",
+            )
+        ]
+    )
+
+    assert result.schema_version == "profile-template-list.v1"
+    assert result.templates[0].name == "wechat-basic"
 
 
 def test_create_source_span() -> None:

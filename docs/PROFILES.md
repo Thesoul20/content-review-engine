@@ -27,6 +27,13 @@ automatically at runtime. Use them by passing the profile path explicitly.
 The same three profiles are also exposed as built-in templates through
 `content-review profile init`.
 
+Discover the available built-in templates with:
+
+```bash
+uv run content-review profile list
+uv run content-review profile list --format json
+```
+
 ## Initialize A Profile
 
 Create a new editable profile file from a built-in template:
@@ -38,6 +45,13 @@ uv run content-review profile init --template wechat-strict --output profiles/we
 ```
 
 Supported template names:
+
+- `general-basic`
+- `wechat-basic`
+- `wechat-strict`
+
+`content-review profile list` and `content-review profile init` use the same
+built-in template registry. The displayed order is deterministic:
 
 - `general-basic`
 - `wechat-basic`
@@ -169,10 +183,11 @@ Common edits:
 
 Typical workflow after initialization:
 
-1. Run `content-review profile init` with the closest built-in template.
-2. Edit `terms`, `allow_terms`, and rule severities for your workflow.
-3. Validate the file with `content-review profile validate`.
-4. Use the resulting profile with `review` or `batch`.
+1. Run `content-review profile list` to inspect the built-in templates.
+2. Run `content-review profile init` with the closest built-in template.
+3. Edit `terms`, `allow_terms`, and rule severities for your workflow.
+4. Validate the file with `content-review profile validate`.
+5. Use the resulting profile with `review` or `batch`.
 
 `allow_terms` is a literal allowlist. It does not support regex, wildcards, or
 fuzzy matching.
