@@ -178,6 +178,55 @@ def test_review_document_returns_markdown_links_images_findings_when_enabled() -
     ]
 
 
+def test_review_document_returns_absolute_claims_findings_when_enabled() -> None:
+    markdown_text = (MARKDOWN_FIXTURES_DIR / "absolute_claims_article.md").read_text(
+        encoding="utf-8"
+    )
+    profile = load_profile(PROFILE_FIXTURES_DIR / "absolute_claims.yml")
+
+    result = review_document(markdown_text, profile)
+
+    assert result.summary.finding_count == 1
+    assert result.summary.severity_counts == {
+        "info": 0,
+        "warning": 0,
+        "error": 1,
+        "critical": 0,
+    }
+    assert [finding.rule_id for finding in result.findings] == ["absolute_claims"]
+    assert result.findings[0].message == "发现可能存在绝对化表述：全网最强"
+    assert result.findings[0].suggestion is not None
+    assert result.findings[0].location is not None
+    assert result.findings[0].location.start_line == 1
+
+
+def test_review_document_filters_inline_suppressed_absolute_claims_findings() -> None:
+    profile = ReviewProfile(
+        name="wechat",
+        target_platform="wechat",
+        absolute_claims_terms=["全网最强", "零风险"],
+        absolute_claims_severity="error",
+        enabled_rules=["absolute_claims"],
+    )
+    markdown_text = "\n".join(
+        [
+            "这里写着全网最强。 <!-- content-review-disable-line absolute_claims -->",
+            "这里写着零风险。",
+        ]
+    )
+
+    result = review_document(markdown_text, profile)
+
+    assert result.summary.finding_count == 1
+    assert result.summary.severity_counts == {
+        "info": 0,
+        "warning": 0,
+        "error": 1,
+        "critical": 0,
+    }
+    assert [finding.matched_term for finding in result.findings] == ["零风险"]
+
+
 def test_review_document_accepts_loaded_text_and_profile_not_paths() -> None:
     signature = inspect.signature(review_document)
 

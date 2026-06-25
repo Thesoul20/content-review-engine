@@ -101,6 +101,25 @@ def test_create_review_result_with_findings_and_metadata() -> None:
     )
 
 
+def test_review_summary_counts_non_warning_finding_severity() -> None:
+    finding = ReviewFinding(
+        rule_id="absolute_claims",
+        severity="error",
+        message="发现可能存在绝对化表述：全网最强",
+        suggestion="建议改为更审慎的表述。",
+        matched_term="全网最强",
+    )
+
+    summary = ReviewSummary.from_findings([finding])
+
+    assert summary.severity_counts == {
+        "info": 0,
+        "warning": 0,
+        "error": 1,
+        "critical": 0,
+    }
+
+
 def test_create_review_profile() -> None:
     profile = ReviewProfile(
         name="wechat",

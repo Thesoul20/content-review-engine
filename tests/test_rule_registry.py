@@ -67,10 +67,12 @@ def test_default_rule_registry_contains_forbidden_terms_rule() -> None:
     registry = build_default_rule_registry()
 
     assert registry.has("forbidden_terms") is True
+    assert registry.has("absolute_claims") is True
     assert registry.has("markdown_structure") is True
     assert registry.has("markdown_links_images") is True
     assert registry.list_rule_ids() == [
         "forbidden_terms",
+        "absolute_claims",
         "markdown_structure",
         "markdown_links_images",
     ]

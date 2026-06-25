@@ -63,10 +63,13 @@ It does not build `ReviewResult`.
 The default registry currently registers three deterministic rules:
 
 - `forbidden_terms`
+- `absolute_claims`
 - `markdown_structure`
 - `markdown_links_images`
 
 `forbidden_terms` is default-enabled so existing profiles keep the same behavior.
+`absolute_claims` is registered but only runs when a profile explicitly
+includes it, or enables it through rule-style YAML configuration.
 `markdown_structure` is registered but only runs when a profile explicitly
 includes it in `ReviewProfile.enabled_rules`.
 `markdown_links_images` is registered but only runs when a profile explicitly
@@ -100,6 +103,33 @@ Implementation:
 Tests:
 
 `tests/test_forbidden_terms_rule.py`
+
+### absolute_claims
+
+Purpose:
+
+Detect configured literal absolute-claim expressions and return findings with a
+rule-specific message, configured severity, source location, and suggestion.
+
+Configuration:
+
+- Rule-style YAML may use `rules[].terms`.
+- Rule-style YAML may use `rules[].allow_terms` as a literal exact-match
+  allowlist.
+- Rule-style YAML may use `rules[].severity` with `info`, `warning`, `error`,
+  or `critical`.
+
+Status:
+
+Implemented.
+
+Implementation:
+
+`src/content_review_engine/rules/absolute_claims.py`
+
+Tests:
+
+`tests/test_absolute_claims_rule.py`
 
 ### markdown_structure
 

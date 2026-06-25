@@ -106,3 +106,10 @@ def test_multiple_rule_ids_are_supported() -> None:
     directives = parse_inline_suppressions(markdown)
 
     assert filter_suppressed_findings([_finding(line=1)], directives) == []
+
+
+def test_absolute_claims_suppression_matches_by_rule_id() -> None:
+    markdown = "line 1 <!-- content-review-disable-line absolute_claims -->"
+    finding = _finding(rule_id="absolute_claims", line=1)
+
+    assert filter_suppressed_findings([finding], parse_inline_suppressions(markdown)) == []

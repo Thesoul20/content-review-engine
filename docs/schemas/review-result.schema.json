@@ -85,12 +85,15 @@
         },
         "severity": {
           "type": "string",
-          "const": "warning"
+          "enum": ["info", "warning", "error", "critical"]
         },
         "message": {
           "type": "string"
         },
         "matched_term": {
+          "type": "string"
+        },
+        "suggestion": {
           "type": "string"
         },
         "matched_text": {

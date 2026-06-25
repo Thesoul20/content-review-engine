@@ -107,3 +107,58 @@ def test_review_markdown_directory_excludes_suppressed_findings_from_summary(
         "critical": 0,
     }
     assert result.results[0].findings == []
+
+
+def test_review_markdown_directory_counts_absolute_claims_findings(
+    tmp_path: Path,
+) -> None:
+    articles_dir = tmp_path / "articles"
+    articles_dir.mkdir()
+    (articles_dir / "claims.md").write_text(
+        "这是一款全网最强的工具。",
+        encoding="utf-8",
+    )
+    profile = load_profile("tests/fixtures/profiles/absolute_claims.yml")
+
+    result = review_markdown_directory(articles_dir, profile)
+
+    assert result.summary.file_count == 1
+    assert result.summary.reviewed_count == 1
+    assert result.summary.finding_count == 1
+    assert result.summary.files_with_findings == 1
+    assert result.summary.severity_counts == {
+        "info": 0,
+        "warning": 0,
+        "error": 1,
+        "critical": 0,
+    }
+    assert result.results[0].findings[0].rule_id == "absolute_claims"
+
+
+def test_review_markdown_directory_ignores_suppressed_absolute_claims_findings(
+    tmp_path: Path,
+) -> None:
+    articles_dir = tmp_path / "articles"
+    articles_dir.mkdir()
+    (articles_dir / "claims.md").write_text(
+        "\n".join(
+            [
+                "<!-- content-review-disable-next-line absolute_claims -->",
+                "这是一款全网最强的工具。",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    profile = load_profile("tests/fixtures/profiles/absolute_claims.yml")
+
+    result = review_markdown_directory(articles_dir, profile)
+
+    assert result.summary.finding_count == 0
+    assert result.summary.files_with_findings == 0
+    assert result.summary.severity_counts == {
+        "info": 0,
+        "warning": 0,
+        "error": 0,
+        "critical": 0,
+    }
+    assert result.results[0].findings == []

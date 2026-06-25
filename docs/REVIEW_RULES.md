@@ -63,6 +63,34 @@ Tests:
 
 `tests/test_forbidden_terms_rule.py`
 
+### absolute_claims
+
+Purpose:
+
+Detect configured absolute, exaggerated, or over-promising expressions such as
+`全网最强`, `永久有效`, and `零风险`.
+
+Configuration:
+
+- Rule-style YAML may use `rules[].terms`.
+- Rule-style YAML may use `rules[].allow_terms` as a list of literal strings
+  that should not produce findings when they exactly match configured
+  absolute-claim terms.
+- Rule-style YAML may use `rules[].severity` with one of `info`, `warning`,
+  `error`, or `critical`.
+
+Status:
+
+Implemented.
+
+Implementation:
+
+`src/content_review_engine/rules/absolute_claims.py`
+
+Tests:
+
+`tests/test_absolute_claims_rule.py`
+
 ### markdown_structure
 
 Purpose:

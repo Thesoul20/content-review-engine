@@ -5,7 +5,7 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 Severity = Literal["low", "medium", "high", "critical"]
-FindingSeverity = Literal["warning"]
+FindingSeverity = Literal["info", "warning", "error", "critical"]
 REVIEW_RESULT_SCHEMA_VERSION = "review-result.v1"
 BATCH_REVIEW_RESULT_SCHEMA_VERSION = "batch-review-result.v1"
 REVIEW_SUMMARY_SEVERITIES: tuple[str, ...] = ("info", "warning", "error", "critical")
@@ -43,6 +43,7 @@ class ReviewFinding(BaseModel):
     severity: FindingSeverity
     message: str
     matched_term: str
+    suggestion: str | None = None
     matched_text: str | None = None
     location: SourceSpan | None = None
 
@@ -157,6 +158,9 @@ class ReviewProfile(BaseModel):
     max_paragraph_length: int = 220
     forbidden_terms: list[str] = Field(default_factory=list)
     forbidden_terms_allow_terms: list[str] = Field(default_factory=list)
+    absolute_claims_terms: list[str] = Field(default_factory=list)
+    absolute_claims_allow_terms: list[str] = Field(default_factory=list)
+    absolute_claims_severity: FindingSeverity = "warning"
     enabled_rules: list[str] | None = None
 
 

@@ -123,6 +123,8 @@ def _render_text_report(review_result: ReviewResult) -> str:
 
     for finding in review_result.findings:
         lines.append(f"[{finding.severity}] {finding.rule_id}: {finding.message}")
+        if finding.suggestion:
+            lines.append(f"Suggestion: {finding.suggestion}")
         location = finding.location
         if location is not None:
             lines.append(f"Line: {location.start_line}")
@@ -179,6 +181,8 @@ def _render_batch_text_report(batch_result: BatchReviewResult) -> str:
 
         for finding in review_result.findings:
             lines.append(f"[{finding.severity}] {finding.rule_id} - {finding.message}")
+            if finding.suggestion:
+                lines.append(f"Suggestion: {finding.suggestion}")
             location = finding.location
             if location is not None:
                 lines.append(f"Line: {location.start_line}")

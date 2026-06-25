@@ -1,3 +1,9 @@
+from content_review_engine.rules.absolute_claims import (
+    ABSOLUTE_CLAIMS_RULE_ID,
+    DEFAULT_ABSOLUTE_CLAIMS_RULE,
+    AbsoluteClaimsRule,
+    check_absolute_claims,
+)
 from content_review_engine.rules.base import ReviewRule
 from content_review_engine.rules.forbidden_terms import (
     DEFAULT_FORBIDDEN_TERMS_RULE,
@@ -27,6 +33,9 @@ from content_review_engine.rules.registry import (
 from content_review_engine.rules.runner import run_rules
 
 __all__ = [
+    "ABSOLUTE_CLAIMS_RULE_ID",
+    "AbsoluteClaimsRule",
+    "DEFAULT_ABSOLUTE_CLAIMS_RULE",
     "DEFAULT_FORBIDDEN_TERMS_RULE",
     "DEFAULT_MARKDOWN_LINKS_IMAGES_RULE",
     "DEFAULT_MARKDOWN_STRUCTURE_RULE",
@@ -42,6 +51,7 @@ __all__ = [
     "RULE_ID",
     "UnknownRuleError",
     "build_default_rule_registry",
+    "check_absolute_claims",
     "check_forbidden_terms",
     "check_markdown_links_images",
     "check_markdown_structure",

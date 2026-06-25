@@ -73,6 +73,7 @@ Current implemented input helpers:
 - `content_review_engine.core.quality_gate`
 - `content_review_engine.core.suppression`
 - `content_review_engine.rules.check_forbidden_terms`
+- `content_review_engine.rules.check_absolute_claims`
 - `content_review_engine.rules.check_markdown_structure`
 - `content_review_engine.rules.check_markdown_links_images`
 - `content_review_engine.rules.build_default_rule_registry`
@@ -119,6 +120,7 @@ It does not yet support HTML, watch mode, or report persistence beyond the optio
 Current deterministic rules:
 
 - `forbidden_terms`
+- `absolute_claims`
 - `markdown_structure`
 - `markdown_links_images`
 
@@ -127,8 +129,11 @@ Current review pipeline:
 - `review_document()` accepts already-loaded Markdown text and a loaded `ReviewProfile`.
 - The pipeline runs deterministic rules in memory through the rule runner.
 - The default registry currently registers the deterministic `forbidden_terms`
-  rule as default-enabled and the deterministic `markdown_structure` rule as
-  opt-in through `ReviewProfile.enabled_rules`.
+  rule as default-enabled.
+- The deterministic `absolute_claims` rule is registered as opt-in through
+  `ReviewProfile.enabled_rules` or rule-style YAML configuration.
+- The deterministic `markdown_structure` rule is registered as opt-in through
+  `ReviewProfile.enabled_rules`.
 - The deterministic `markdown_links_images` rule is also registered as opt-in
   through `ReviewProfile.enabled_rules`.
 - The pipeline returns a canonical `ReviewResult`.

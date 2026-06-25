@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from content_review_engine.rules.absolute_claims import DEFAULT_ABSOLUTE_CLAIMS_RULE
 from content_review_engine.rules.base import ReviewRule
 from content_review_engine.rules.forbidden_terms import DEFAULT_FORBIDDEN_TERMS_RULE
 
@@ -43,6 +44,7 @@ class RuleRegistry:
 def build_default_rule_registry() -> RuleRegistry:
     registry = RuleRegistry()
     registry.register(DEFAULT_FORBIDDEN_TERMS_RULE)
+    registry.register(DEFAULT_ABSOLUTE_CLAIMS_RULE, enabled_by_default=False)
     from content_review_engine.rules.markdown_structure import (
         DEFAULT_MARKDOWN_STRUCTURE_RULE,
     )

@@ -58,9 +58,10 @@ Character offsets are 0-based.
 | Field | Required | Description |
 |---|---|---|
 | `rule_id` | Yes | Stable rule identifier |
-| `severity` | Yes | `warning` |
+| `severity` | Yes | `info`, `warning`, `error`, or `critical` |
 | `message` | Yes | Human-readable finding summary |
 | `matched_term` | Yes | Term that triggered the finding |
+| `suggestion` | No | Optional remediation or safer wording guidance |
 | `matched_text` | No | Original matched text |
 | `location` | No | Attached `SourceSpan` with position metadata |
 
@@ -68,10 +69,11 @@ Example:
 
 ```python
 ReviewFinding(
-    rule_id="forbidden_terms",
-    severity="warning",
-    message="发现风险词：绝对",
+    rule_id="absolute_claims",
+    severity="error",
+    message="发现可能存在绝对化表述：绝对",
     matched_term="绝对",
+    suggestion="建议改为更审慎的表述，或补充证据支持该结论。",
     matched_text="绝对",
     location=SourceSpan(
         start_line=3,
@@ -302,6 +304,9 @@ Example:
 | `max_paragraph_length` | No | Maximum suggested paragraph length |
 | `forbidden_terms` | No | List of forbidden terms to detect |
 | `forbidden_terms_allow_terms` | No | Normalized literal allowlist for `forbidden_terms`; populated from `rules[].allow_terms` when using rule-style YAML configuration |
+| `absolute_claims_terms` | No | List of literal absolute-claim terms to detect |
+| `absolute_claims_allow_terms` | No | Normalized literal allowlist for `absolute_claims`; populated from `rules[].allow_terms` when using rule-style YAML configuration |
+| `absolute_claims_severity` | No | Severity used for `absolute_claims` findings; defaults to `warning` |
 | `enabled_rules` | No | Optional ordered list of rule IDs to run |
 
 ---

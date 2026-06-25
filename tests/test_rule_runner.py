@@ -81,6 +81,23 @@ def test_run_rules_executes_explicit_markdown_links_images_rule() -> None:
     assert findings[0].message == "链接目标仍是占位符。"
 
 
+def test_run_rules_executes_explicit_absolute_claims_rule() -> None:
+    profile = ReviewProfile(
+        name="absolute-claims",
+        target_platform="wechat",
+        absolute_claims_terms=["全网最强"],
+        absolute_claims_severity="error",
+        enabled_rules=["absolute_claims"],
+    )
+
+    findings = run_rules("这是一款全网最强的工具。", profile)
+
+    assert len(findings) == 1
+    assert findings[0].rule_id == "absolute_claims"
+    assert findings[0].severity == "error"
+    assert findings[0].matched_term == "全网最强"
+
+
 def test_run_rules_does_not_execute_markdown_links_images_when_not_enabled() -> None:
     markdown_text = "[](https://example.com)"
     profile = ReviewProfile(

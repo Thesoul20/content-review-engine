@@ -32,6 +32,29 @@ rules:
 an allowed term is not reported. Omitted or empty `allow_terms` preserves the
 existing behavior.
 
+## Absolute Claims Rule
+
+The opt-in `absolute_claims` rule detects configured literal absolute or
+over-promising expressions and supports a rule-specific severity:
+
+```yaml
+rules:
+  - id: absolute_claims
+    enabled: true
+    severity: error
+    terms:
+      - 全网最强
+      - 永久有效
+      - 零风险
+    allow_terms:
+      - 永久有效
+```
+
+`terms` and `allow_terms` must both be lists of strings. `allow_terms` uses
+exact literal matching. When the rule is enabled, its findings participate in
+text, JSON, Markdown, summary counts, batch summary counts, and `--fail-on`
+using the configured severity.
+
 ## Inline Suppression
 
 Markdown HTML comments can suppress findings for specific physical lines:
@@ -56,6 +79,12 @@ Suppression matches by exact rule ID. Suppressed findings are excluded before
 text, JSON, and Markdown output are rendered, so they do not appear in output,
 do not count toward single-file or batch summaries, and do not trigger
 `--fail-on`.
+
+The same suppression directives work for `absolute_claims`, for example:
+
+```markdown
+这是一款全网最强的工具。 <!-- content-review-disable-line absolute_claims -->
+```
 
 ## Quality Gate
 
@@ -97,6 +126,8 @@ When a finding has source location metadata, the CLI prints:
 - `Column`
 - `Matched`
 - `Context`
+
+If a finding includes a suggestion, the CLI also prints `Suggestion`.
 
 Example:
 
@@ -207,8 +238,8 @@ Example shape:
 - If a profile references an unknown rule ID, the CLI prints a readable error and exits with code `2`.
 - Existing profiles continue to run `forbidden_terms` by default.
 - Profiles can opt into additional deterministic rules, including
-  `markdown_structure` and `markdown_links_images`, through
-  `ReviewProfile.enabled_rules`.
+  `absolute_claims`, `markdown_structure`, and `markdown_links_images`,
+  through `ReviewProfile.enabled_rules` or rule-style YAML configuration.
 - The batch command discovers Markdown files in deterministic sorted order, supports `--recursive`, supports `--pattern`, and exits with code `2` for missing or invalid input directories.
 
 ## Batch Output Formats

@@ -4,7 +4,7 @@
 
 M1: Core input layer and minimal review pipeline.
 
-The project currently has Markdown input handling, profile loading, deterministic review rules, forbidden-terms allowlists, Markdown inline suppression filtering, a minimal internal rule registry and rule runner, source location metadata on findings, a minimal in-memory review pipeline, a minimal batch CLI adapter, CLI quality-gate exit codes, and committed fixtures/examples for integration-style testing and manual CLI checks.
+The project currently has Markdown input handling, profile loading, deterministic review rules, forbidden-terms allowlists, absolute-claims rule configuration, Markdown inline suppression filtering, a minimal internal rule registry and rule runner, source location metadata on findings, a minimal in-memory review pipeline, a minimal batch CLI adapter, CLI quality-gate exit codes, and committed fixtures/examples for integration-style testing and manual CLI checks.
 
 ---
 
@@ -28,7 +28,9 @@ The project currently has Markdown input handling, profile loading, deterministi
 - The project is packaged so `uv run content-review` resolves the console script.
 - The CLI supports automation-friendly quality gates with `--fail-on`.
 - The `forbidden_terms` rule supports literal `allow_terms` in rule-style YAML configuration.
+- The opt-in `absolute_claims` rule supports literal `terms`, optional `allow_terms`, and configurable finding severity in rule-style YAML configuration.
 - Markdown inline comments can suppress `forbidden_terms` findings for the current line or next line.
+- Markdown inline comments can also suppress `absolute_claims` findings for the current line or next line.
 
 ---
 
@@ -37,6 +39,18 @@ The project currently has Markdown input handling, profile loading, deterministi
 - No active implementation task.
 
 ## Recent Completion
+
+- TASK-0018 is complete.
+- Added the deterministic `absolute_claims` rule with literal `terms`,
+  optional literal `allow_terms`, and configurable finding severity.
+- Added rule-style YAML loading for `absolute_claims` and kept existing
+  `forbidden_terms` loading behavior compatible.
+- Registered `absolute_claims` in the default rule registry as opt-in, and
+  reused the existing review pipeline, suppression filtering, summaries, batch
+  aggregation, and CLI quality gates.
+- Added tests for profile loading, rule behavior, registry/runner integration,
+  review pipeline behavior, batch summaries, CLI output, and quality-gate
+  behavior for `absolute_claims`.
 
 - TASK-0017 is complete.
 - Added optional `allow_terms` support for the `forbidden_terms` rule through rule-style YAML configuration.

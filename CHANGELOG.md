@@ -8,6 +8,43 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0018
+
+### Added
+
+- Added the deterministic `absolute_claims` rule with rule ID
+  `absolute_claims`.
+- Added rule-style YAML support for `absolute_claims.terms`,
+  `absolute_claims.allow_terms`, and `absolute_claims.severity`.
+- Added rule-specific suggestion text for `absolute_claims` findings.
+- Added tests for profile loading, rule behavior, registry and runner
+  integration, review pipeline integration, batch summaries, CLI output, and
+  CLI quality-gate behavior.
+
+### Changed
+
+- Extended `ReviewFinding.severity` to support the canonical quality-gate
+  severities `info`, `warning`, `error`, and `critical`.
+- Added optional `suggestion` support to `ReviewFinding` and surfaced it in
+  text, JSON, and Markdown output when present.
+- Registered `absolute_claims` as an opt-in deterministic rule in the default
+  registry.
+- Updated architecture, data model, rule, CLI, project state, and schema
+  documentation.
+
+### Not Added
+
+- No LLM review.
+- No semantic claim detection.
+- No regex, wildcard, or fuzzy matching.
+- No automatic rewriting or fixing.
+- No new output formats.
+- No API server.
+- No MCP server.
+- No frontend.
+- No database persistence.
+- No publishing integration.
+
 ## TASK-0017
 
 ### Added

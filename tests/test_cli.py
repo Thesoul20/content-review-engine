@@ -362,6 +362,43 @@ def test_cli_review_json_output_supports_markdown_links_images_rule(
     assert captured.err == ""
 
 
+def test_cli_review_json_output_supports_absolute_claims_rule(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    markdown_path = "tests/fixtures/markdown/absolute_claims_article.md"
+    profile_path = "tests/fixtures/profiles/absolute_claims.yml"
+
+    exit_code = main(
+        [
+            "review",
+            markdown_path,
+            "--profile",
+            profile_path,
+            "--format",
+            "json",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    payload = json.loads(captured.out)
+    assert payload["summary"]["finding_count"] == 1
+    assert payload["summary"]["severity_counts"] == {
+        "info": 0,
+        "warning": 0,
+        "error": 1,
+        "critical": 0,
+    }
+    finding = payload["findings"][0]
+    assert finding["rule_id"] == "absolute_claims"
+    assert finding["severity"] == "error"
+    assert finding["message"] == "发现可能存在绝对化表述：全网最强"
+    assert "suggestion" in finding
+    assert finding["location"]["start_line"] == 1
+    assert captured.err == ""
+
+
 def test_cli_review_markdown_stdout_includes_report_sections(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
@@ -535,6 +572,61 @@ def test_cli_batch_preserves_success_exit_code_without_fail_on(
     assert captured.err == ""
 
 
+def test_cli_review_absolute_claims_fail_on_exits_one(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    markdown_path = "tests/fixtures/markdown/absolute_claims_article.md"
+    profile_path = "tests/fixtures/profiles/absolute_claims.yml"
+
+    exit_code = main(
+        [
+            "review",
+            markdown_path,
+            "--profile",
+            profile_path,
+            "--fail-on",
+            "error",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    assert "[error] absolute_claims: 发现可能存在绝对化表述：全网最强" in captured.out
+    assert "Suggestion:" in captured.out
+    assert captured.err == ""
+
+
+def test_cli_review_suppressed_absolute_claims_does_not_fail_quality_gate(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    markdown_path = tmp_path / "suppressed-absolute-claims.md"
+    markdown_path.write_text(
+        "这是一款全网最强的工具。 <!-- content-review-disable-line absolute_claims -->",
+        encoding="utf-8",
+    )
+    profile_path = "tests/fixtures/profiles/absolute_claims.yml"
+
+    exit_code = main(
+        [
+            "review",
+            str(markdown_path),
+            "--profile",
+            profile_path,
+            "--fail-on",
+            "error",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "Findings: 0" in captured.out
+    assert "全网最强" not in captured.out
+    assert captured.err == ""
+
+
 def test_cli_batch_fail_on_exits_zero_when_findings_are_below_threshold(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
@@ -619,6 +711,71 @@ def test_cli_batch_suppressed_finding_does_not_fail_quality_gate(
     assert "Files with findings: 0" in captured.out
     assert "Findings: 0" in captured.out
     assert "绝对安全" not in captured.out
+    assert captured.err == ""
+
+
+def test_cli_batch_absolute_claims_fail_on_exits_one(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    input_dir = tmp_path / "articles"
+    input_dir.mkdir()
+    (input_dir / "claims.md").write_text("这是一款全网最强的工具。", encoding="utf-8")
+    profile_path = "tests/fixtures/profiles/absolute_claims.yml"
+
+    exit_code = main(
+        [
+            "batch",
+            str(input_dir),
+            "--profile",
+            profile_path,
+            "--fail-on",
+            "error",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    assert "Files with findings: 1" in captured.out
+    assert "[error] absolute_claims - 发现可能存在绝对化表述：全网最强" in captured.out
+    assert captured.err == ""
+
+
+def test_cli_batch_suppressed_absolute_claims_does_not_fail_quality_gate(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    input_dir = tmp_path / "articles"
+    input_dir.mkdir()
+    (input_dir / "suppressed.md").write_text(
+        "\n".join(
+            [
+                "<!-- content-review-disable-next-line absolute_claims -->",
+                "这是一款全网最强的工具。",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    profile_path = "tests/fixtures/profiles/absolute_claims.yml"
+
+    exit_code = main(
+        [
+            "batch",
+            str(input_dir),
+            "--profile",
+            profile_path,
+            "--fail-on",
+            "error",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "Files with findings: 0" in captured.out
+    assert "Findings: 0" in captured.out
+    assert "全网最强" not in captured.out
     assert captured.err == ""
 
 

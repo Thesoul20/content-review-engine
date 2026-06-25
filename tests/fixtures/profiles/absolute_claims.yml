@@ -1,0 +1,11 @@
+name: absolute-claims
+target_platform: wechat
+rules:
+  - id: absolute_claims
+    enabled: true
+    severity: error
+    terms:
+      - 全网最强
+      - 永久有效
+    allow_terms:
+      - 永久有效
