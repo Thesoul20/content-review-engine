@@ -1,0 +1,31 @@
+name: wechat-basic
+target_platform: wechat
+tone: clear and professional
+max_title_length: 32
+max_paragraph_length: 220
+
+rules:
+  - id: forbidden_terms
+    enabled: true
+    severity: error
+    terms:
+      - 违规词
+      - 敏感词
+      - 禁用词
+    allow_terms: []
+
+  - id: absolute_claims
+    enabled: true
+    severity: warning
+    terms:
+      - 全网最强
+      - 行业第一
+      - 绝对安全
+      - 永久有效
+      - 零风险
+      - 100% 有效
+      - 保证成功
+      - 彻底解决
+      - 唯一选择
+    allow_terms:
+      - 唯一标识符

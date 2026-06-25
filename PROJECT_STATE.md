@@ -32,6 +32,9 @@ The project currently has Markdown input handling, profile loading, standalone p
 - Markdown inline comments can suppress `forbidden_terms` findings for the current line or next line.
 - Markdown inline comments can also suppress `absolute_claims` findings for the current line or next line.
 - The CLI can validate a YAML review profile independently through `content-review profile validate`.
+- The repository includes built-in example profiles under `profiles/examples/`
+  that validate through the existing profile validation command and can be used
+  directly with `review` and `batch`.
 
 ---
 
@@ -40,6 +43,17 @@ The project currently has Markdown input handling, profile loading, standalone p
 - No active implementation task.
 
 ## Recent Completion
+
+- TASK-0020 is complete.
+- Added built-in example profiles:
+  - `profiles/examples/general-basic.yaml`
+  - `profiles/examples/wechat-basic.yaml`
+  - `profiles/examples/wechat-strict.yaml`
+- Added tests that load the example profiles, validate them through
+  `content-review profile validate`, and run review integration coverage with
+  an example profile.
+- Added `docs/PROFILES.md` and updated CLI documentation with example-profile
+  usage and validation examples.
 
 - TASK-0019 is complete.
 - Added a new `content-review profile validate <profile_path>` CLI flow.
@@ -197,6 +211,12 @@ The project currently has Markdown input handling, profile loading, standalone p
 
 ### Changed Files
 
+- `profiles/examples/general-basic.yaml`
+- `profiles/examples/wechat-basic.yaml`
+- `profiles/examples/wechat-strict.yaml`
+- `tests/test_example_profiles.py`
+- `tests/test_cli.py`
+- `docs/PROFILES.md`
 - `src/content_review_engine/core/__init__.py`
 - `src/content_review_engine/core/models.py`
 - `tests/test_models.py`

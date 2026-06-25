@@ -1,0 +1,28 @@
+name: general-basic
+target_platform: general
+tone: clear and professional
+max_title_length: 48
+max_paragraph_length: 260
+
+rules:
+  - id: forbidden_terms
+    enabled: true
+    severity: error
+    terms:
+      - 违规词
+      - 敏感词
+      - 禁用词
+    allow_terms: []
+
+  - id: absolute_claims
+    enabled: true
+    severity: warning
+    terms:
+      - 全网最强
+      - 绝对安全
+      - 永久有效
+      - 零风险
+      - 100% 有效
+      - 保证成功
+      - 彻底解决
+    allow_terms: []

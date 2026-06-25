@@ -1,0 +1,34 @@
+name: wechat-strict
+target_platform: wechat
+tone: clear and professional
+max_title_length: 28
+max_paragraph_length: 180
+
+rules:
+  - id: forbidden_terms
+    enabled: true
+    severity: critical
+    terms:
+      - 违规词
+      - 敏感词
+      - 禁用词
+      - 不当表达
+    allow_terms: []
+
+  - id: absolute_claims
+    enabled: true
+    severity: error
+    terms:
+      - 全网最强
+      - 行业第一
+      - 绝对安全
+      - 永久有效
+      - 零风险
+      - 100% 有效
+      - 保证成功
+      - 彻底解决
+      - 永不失败
+      - 立刻见效
+      - 唯一选择
+    allow_terms:
+      - 唯一标识符

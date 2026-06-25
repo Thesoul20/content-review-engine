@@ -8,6 +8,38 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0020
+
+### Added
+
+- Added built-in example profiles under `profiles/examples/`:
+  `general-basic.yaml`, `wechat-basic.yaml`, and `wechat-strict.yaml`.
+- Added example-profile tests for profile loading, CLI validation, and review
+  integration coverage.
+- Added `docs/PROFILES.md` describing profile structure, example profile
+  purposes, validation, customization, and usage.
+
+### Changed
+
+- Updated CLI documentation with example-profile validation, review, and batch
+  commands.
+- Updated project state documentation to record the new example profiles and
+  related test coverage.
+
+### Not Added
+
+- No new review rules.
+- No LLM review.
+- No automatic fixing.
+- No profile generation, auto-formatting, or interactive wizard.
+- No remote profile loading or runtime profile aliases.
+- No `content-review profile list` or `content-review profile init`.
+- No API server.
+- No MCP server.
+- No frontend.
+- No database persistence.
+- No publishing integration.
+
 ## TASK-0019
 
 ### Added

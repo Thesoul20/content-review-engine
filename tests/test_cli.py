@@ -299,6 +299,33 @@ def test_cli_profile_validate_valid_profile_json_output_returns_zero(
     assert captured.err == ""
 
 
+@pytest.mark.parametrize(
+    ("profile_path", "profile_name"),
+    [
+        ("profiles/examples/general-basic.yaml", "general-basic"),
+        ("profiles/examples/wechat-basic.yaml", "wechat-basic"),
+        ("profiles/examples/wechat-strict.yaml", "wechat-strict"),
+    ],
+)
+def test_cli_profile_validate_example_profiles_return_zero(
+    profile_path: str,
+    profile_name: str,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = main(["profile", "validate", profile_path])
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "Profile validation passed." in captured.out
+    assert f"Path: {profile_path}" in captured.out
+    assert f"Name: {profile_name}" in captured.out
+    assert "Enabled Rules: 2" in captured.out
+    assert "- forbidden_terms" in captured.out
+    assert "- absolute_claims" in captured.out
+    assert captured.err == ""
+
+
 def test_cli_profile_validate_missing_profile_returns_two(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],

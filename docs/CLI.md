@@ -96,6 +96,7 @@ by `review` or `batch`.
 ```bash
 uv run content-review profile validate profiles/wechat.yaml
 uv run content-review profile validate profiles/wechat.yaml --format json
+uv run content-review profile validate profiles/examples/wechat-strict.yaml
 ```
 
 Text output reports either `Profile validation passed.` or `Profile validation failed.`
@@ -124,7 +125,9 @@ Examples:
 
 ```bash
 uv run content-review review examples/article.md --profile examples/profile.yml --fail-on error
+uv run content-review review tests/fixtures/markdown/absolute_claims_article.md --profile profiles/examples/wechat-basic.yaml
 uv run content-review batch examples/batch/articles --profile examples/batch/profile.yml --recursive --fail-on warning
+uv run content-review batch examples/batch/articles --profile profiles/examples/wechat-strict.yaml --recursive --fail-on error
 ```
 
 Exit codes:
@@ -257,6 +260,11 @@ Example shape:
 - The CLI runs the default internal rule registry through the review pipeline.
 - The CLI automatically respects `forbidden_terms.allow_terms` and inline
   suppression comments without adding any suppression-specific flags.
+- Built-in example profiles live under `profiles/examples/` and must still be
+  passed by path, for example:
+  `uv run content-review review article.md --profile profiles/examples/general-basic.yaml`
+- Example profiles are starter templates only and do not guarantee legal,
+  advertising, medical, regulatory, or platform compliance.
 - The CLI does not add rewriting, diff tracking, watch mode, MCP, API, GUI, or report generation logic of its own.
 - If a profile references an unknown rule ID, the CLI prints a readable error and exits with code `2`.
 - Existing profiles continue to run `forbidden_terms` by default.
