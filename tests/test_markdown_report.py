@@ -57,8 +57,11 @@ def test_render_markdown_report_handles_zero_findings() -> None:
 
     report = render_markdown_report(result)
 
-    assert "- Findings: 0" in report
-    assert "No issues found." in report
+    assert "| Total Findings | 0 |" in report
+    assert "| Quality Gate | Not configured |" in report
+    assert "| critical | 0 |" in report
+    assert "| - | 0 |" in report
+    assert report.count("No findings.") == 2
 
 
 def test_render_markdown_report_handles_missing_location() -> None:
@@ -75,4 +78,22 @@ def test_render_markdown_report_handles_missing_location() -> None:
     report = render_markdown_report(result)
 
     assert "- Location: unavailable" in report
-    assert "- Matched: `保证赚钱`" in report
+    assert "| warning | forbidden_terms | - | - | 发现风险词：保证赚钱 | - |" in report
+    assert "- Matched Text: `保证赚钱`" in report
+
+
+def test_render_markdown_report_includes_quality_gate_summary() -> None:
+    finding = ReviewFinding(
+        rule_id="absolute_claims",
+        severity="error",
+        message="发现可能存在绝对化表述：全网最强",
+        matched_term="全网最强",
+        suggestion="建议改为更审慎的表述，或补充证据支持该结论。",
+    )
+    result = ReviewResult.from_findings([finding])
+
+    report = render_markdown_report(result, fail_on="error")
+
+    assert "| Quality Gate | Failed |" in report
+    assert "| Fail On | `error` |" in report
+    assert "| Matched Gate Findings | 1 |" in report

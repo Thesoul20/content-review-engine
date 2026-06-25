@@ -365,10 +365,21 @@ Example shape:
 ### Markdown
 
 Markdown output is intended for human-readable review reports.
-It consumes the canonical `ReviewResult` and renders a report with a summary section and per-finding details.
+It consumes the canonical `ReviewResult` and renders a deterministic report
+with:
+
+- A summary table
+- Severity counts in `critical`, `error`, `warning`, `info` order
+- Rule counts sorted by rule ID
+- A findings table
+- A detailed findings section
+- A clear `No findings.` empty state
+- Quality gate status, `Fail On`, and matched-gate count when `--fail-on` is used
 
 When `--output` is provided, the CLI writes the rendered output to the given file instead of printing it to stdout.
 If the write fails, the command exits with code `2`.
+If `--fail-on` causes a quality-gate failure, the Markdown report is still
+written first when possible and the command then exits with code `1`.
 
 Example shape:
 
@@ -377,19 +388,46 @@ Example shape:
 
 ## Summary
 
-- Document: `examples/article.md`
-- Profile: `examples/profile.yml`
-- Findings: 1
+| Field | Value |
+| --- | --- |
+| File | `examples/article.md` |
+| Profile | `examples/profile.yml` |
+| Total Findings | 1 |
+| Quality Gate | Failed |
+| Fail On | `warning` |
+| Matched Gate Findings | 1 |
+
+## Severity Counts
+
+| Severity | Count |
+| --- | ---: |
+| critical | 0 |
+| error | 0 |
+| warning | 1 |
+| info | 0 |
+
+## Rule Counts
+
+| Rule | Count |
+| --- | ---: |
+| forbidden_terms | 1 |
 
 ## Findings
+
+| Severity | Rule | Line | Column | Message | Suggestion |
+| --- | --- | ---: | ---: | --- | --- |
+| warning | forbidden_terms | 3 | 5 | 发现风险词：保证赚钱 | - |
+
+## Detailed Findings
 
 ### forbidden_terms
 
 - Severity: warning
 - Message: 发现风险词：保证赚钱
+- Matched Term: `保证赚钱`
 - Line: 3
 - Column: 5
-- Matched: `保证赚钱`
+- Matched Text: `保证赚钱`
 - Context: 这篇文章承诺保证赚钱。
 ```
 
@@ -435,7 +473,15 @@ Each item in `results` uses the canonical single-file `ReviewResult` shape.
 ### Markdown
 
 Batch Markdown output is intended for human-readable directory review reports.
-It consumes the canonical `BatchReviewResult` and renders a batch summary plus one section per reviewed file.
+It consumes the canonical `BatchReviewResult` and renders:
+
+- A batch summary table
+- Severity counts in `critical`, `error`, `warning`, `info` order
+- Rule counts sorted by rule ID
+- A `Files With Findings` table
+- A `Findings by File` section with deterministic per-file ordering
+- Clear `No findings.` empty states for clean batches
+- Quality gate status when `--fail-on` is used
 
 ## Example Files
 

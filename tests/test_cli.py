@@ -894,11 +894,14 @@ def test_cli_review_markdown_stdout_includes_report_sections(
 
     assert exit_code == 0
     assert captured.out.startswith("# Content Review Report\n")
-    assert "- Document: `tests/fixtures/markdown/forbidden_terms_article.md`" in captured.out
-    assert "- Profile: `tests/fixtures/profiles/default.yml`" in captured.out
-    assert "- Findings: 1" in captured.out
+    assert "| File | `tests/fixtures/markdown/forbidden_terms_article.md` |" in captured.out
+    assert "| Profile | `tests/fixtures/profiles/default.yml` |" in captured.out
+    assert "| Total Findings | 1 |" in captured.out
+    assert "| warning | 1 |" in captured.out
+    assert "| forbidden_terms | 1 |" in captured.out
+    assert "| warning | forbidden_terms | 1 | 8 | 发现风险词：绝对安全 | - |" in captured.out
     assert "- Context: # 测试文章 绝对安全" in captured.out
-    assert "- Matched: `绝对安全`" in captured.out
+    assert "- Matched Text: `绝对安全`" in captured.out
     assert captured.err == ""
 
 
@@ -930,11 +933,72 @@ def test_cli_review_markdown_output_file_writes_report(
     assert captured.err == ""
     output_text = output_path.read_text(encoding="utf-8")
     assert output_text.startswith("# Content Review Report\n")
-    assert "- Document: `tests/fixtures/markdown/forbidden_terms_article.md`" in output_text
-    assert "- Profile: `tests/fixtures/profiles/default.yml`" in output_text
-    assert "- Findings: 1" in output_text
+    assert "| File | `tests/fixtures/markdown/forbidden_terms_article.md` |" in output_text
+    assert "| Profile | `tests/fixtures/profiles/default.yml` |" in output_text
+    assert "| Total Findings | 1 |" in output_text
     assert "- Context: # 测试文章 绝对安全" in output_text
-    assert "- Matched: `绝对安全`" in output_text
+    assert "- Matched Text: `绝对安全`" in output_text
+
+
+def test_cli_review_markdown_output_includes_quality_gate_section(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    markdown_path = "tests/fixtures/markdown/forbidden_terms_article.md"
+    profile_path = "tests/fixtures/profiles/default.yml"
+
+    exit_code = main(
+        [
+            "review",
+            markdown_path,
+            "--profile",
+            profile_path,
+            "--format",
+            "markdown",
+            "--fail-on",
+            "warning",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    assert "| Quality Gate | Failed |" in captured.out
+    assert "| Fail On | `warning` |" in captured.out
+    assert "| Matched Gate Findings | 1 |" in captured.out
+    assert captured.err == ""
+
+
+def test_cli_review_markdown_output_file_is_written_before_quality_gate_failure(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    markdown_path = "tests/fixtures/markdown/forbidden_terms_article.md"
+    profile_path = "tests/fixtures/profiles/default.yml"
+    output_path = tmp_path / "review-report.md"
+
+    exit_code = main(
+        [
+            "review",
+            markdown_path,
+            "--profile",
+            profile_path,
+            "--format",
+            "markdown",
+            "--fail-on",
+            "warning",
+            "--output",
+            str(output_path),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    assert captured.out == ""
+    assert captured.err == ""
+    output_text = output_path.read_text(encoding="utf-8")
+    assert "| Quality Gate | Failed |" in output_text
+    assert "| Matched Gate Findings | 1 |" in output_text
 
 
 def test_cli_review_output_write_failure_returns_two(
@@ -1344,10 +1408,12 @@ def test_cli_batch_markdown_output_includes_report_sections(
     assert exit_code == 0
     assert captured.out.startswith("# Batch Content Review Report\n")
     assert "## Summary" in captured.out
-    assert "### 1. `tests/fixtures/batch/articles/clean.md`" in captured.out
-    assert "### 2. `tests/fixtures/batch/articles/forbidden.md`" in captured.out
-    assert "### 3. `tests/fixtures/batch/articles/nested/nested_forbidden.md`" in captured.out
-    assert "No issues found." in captured.out
+    assert "| Files Discovered | 3 |" in captured.out
+    assert "| Files With Findings | 2 |" in captured.out
+    assert "### `tests/fixtures/batch/articles/clean.md`" in captured.out
+    assert "### `tests/fixtures/batch/articles/forbidden.md`" in captured.out
+    assert "### `tests/fixtures/batch/articles/nested/nested_forbidden.md`" in captured.out
+    assert "No findings." in captured.out
     assert captured.err == ""
 
 
@@ -1380,10 +1446,73 @@ def test_cli_batch_markdown_output_file_writes_report(
     assert captured.err == ""
     output_text = output_path.read_text(encoding="utf-8")
     assert output_text.startswith("# Batch Content Review Report\n")
-    assert "### 1. `tests/fixtures/batch/articles/clean.md`" in output_text
-    assert "### 2. `tests/fixtures/batch/articles/forbidden.md`" in output_text
-    assert "### 3. `tests/fixtures/batch/articles/nested/nested_forbidden.md`" in output_text
-    assert "No issues found." in output_text
+    assert "### `tests/fixtures/batch/articles/clean.md`" in output_text
+    assert "### `tests/fixtures/batch/articles/forbidden.md`" in output_text
+    assert "### `tests/fixtures/batch/articles/nested/nested_forbidden.md`" in output_text
+    assert "No findings." in output_text
+
+
+def test_cli_batch_markdown_output_includes_quality_gate_section(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    input_dir = "tests/fixtures/batch/articles"
+    profile_path = "tests/fixtures/batch/profile.yml"
+
+    exit_code = main(
+        [
+            "batch",
+            input_dir,
+            "--profile",
+            profile_path,
+            "--recursive",
+            "--format",
+            "markdown",
+            "--fail-on",
+            "warning",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    assert "| Quality Gate | Failed |" in captured.out
+    assert "| Fail On | `warning` |" in captured.out
+    assert "| Matched Gate Findings | 2 |" in captured.out
+    assert captured.err == ""
+
+
+def test_cli_batch_markdown_output_file_is_written_before_quality_gate_failure(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    input_dir = "tests/fixtures/batch/articles"
+    profile_path = "tests/fixtures/batch/profile.yml"
+    output_path = tmp_path / "batch-report.md"
+
+    exit_code = main(
+        [
+            "batch",
+            input_dir,
+            "--profile",
+            profile_path,
+            "--recursive",
+            "--format",
+            "markdown",
+            "--fail-on",
+            "warning",
+            "--output",
+            str(output_path),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    assert captured.out == ""
+    assert captured.err == ""
+    output_text = output_path.read_text(encoding="utf-8")
+    assert "| Quality Gate | Failed |" in output_text
+    assert "| Matched Gate Findings | 2 |" in output_text
 
 
 def test_cli_batch_invalid_input_directory_returns_two(

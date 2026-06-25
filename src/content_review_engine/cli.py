@@ -213,11 +213,12 @@ def _render_output(
     review_result: ReviewResult,
     *,
     output_format: str,
+    fail_on: str | None = None,
 ) -> str:
     if output_format == "json":
         return _render_json_report(review_result)
     if output_format == "markdown":
-        return render_markdown_report(review_result)
+        return render_markdown_report(review_result, fail_on=fail_on)
     return _render_text_report(review_result)
 
 
@@ -274,11 +275,12 @@ def _render_batch_output(
     batch_result: BatchReviewResult,
     *,
     output_format: str,
+    fail_on: str | None = None,
 ) -> str:
     if output_format == "json":
         return _render_batch_json_report(batch_result)
     if output_format == "markdown":
-        return render_batch_markdown_report(batch_result)
+        return render_batch_markdown_report(batch_result, fail_on=fail_on)
     return _render_batch_text_report(batch_result)
 
 
@@ -403,6 +405,7 @@ def _run_review_command(args: argparse.Namespace) -> int:
     rendered_output = _render_output(
         review_result,
         output_format=args.format,
+        fail_on=args.fail_on,
     )
     output_exit_code = _write_or_print_output(rendered_output, args.output)
     if output_exit_code != 0:
@@ -425,6 +428,7 @@ def _run_batch_command(args: argparse.Namespace) -> int:
     rendered_output = _render_batch_output(
         batch_result,
         output_format=args.format,
+        fail_on=args.fail_on,
     )
     output_exit_code = _write_or_print_output(rendered_output, args.output)
     if output_exit_code != 0:

@@ -81,6 +81,15 @@ Use `batch` to review a directory of Markdown files in one CI step:
 uv run content-review batch articles --profile profiles/examples/wechat-strict.yaml --recursive --fail-on error
 ```
 
+To keep a human-readable CI artifact, write the Markdown report to a file:
+
+```bash
+uv run content-review batch articles --profile profiles/examples/wechat-strict.yaml --recursive --fail-on error --format markdown --output artifacts/content-review-report.md
+```
+
+When the quality gate fails with exit code `1`, the command still writes the
+Markdown report first when the output path is writable.
+
 The example uses `articles` as a placeholder content directory. Change it to
 match your repository layout, for example:
 
@@ -123,6 +132,9 @@ Workflow example:
 
 In GitHub Actions, exit code `0` passes the step. Exit code `1` or `2` fails
 the step.
+If you also use `--format markdown --output ...`, exit code `1` still means the
+report should already be available as an artifact unless the file write itself
+failed.
 
 ## Notes And Limitations
 

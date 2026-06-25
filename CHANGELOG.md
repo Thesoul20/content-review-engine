@@ -8,6 +8,51 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0024
+
+### Added
+
+- Added structured Markdown report sections for both `review` and `batch`:
+  summary, severity counts, rule counts, findings tables, and detailed
+  findings.
+- Added quality-gate reporting to Markdown output when `--fail-on` is used,
+  including gate status, threshold, and matched-gate count.
+- Added deterministic batch Markdown sections for files with findings and
+  per-file findings details.
+- Added Markdown renderer and CLI tests for quality-gate sections, clear
+  no-finding states, and writing report files before exit code `1`.
+
+### Changed
+
+- Improved Markdown empty states to use clear `No findings.` messaging while
+  keeping suppressed findings excluded from reports.
+- Kept single-file and batch JSON output schemas unchanged.
+- Kept existing text output behavior unchanged.
+- Kept `profile list`, `profile init`, `profile validate`, `review`, `batch`,
+  suppression behavior, `forbidden_terms`, `absolute_claims`, and `--fail-on`
+  exit-code rules unchanged.
+- Updated `docs/CLI.md`, `docs/CI.md`, and `PROJECT_STATE.md` for the improved
+  Markdown report behavior.
+
+### Not Added
+
+- No new review rules.
+- No LLM review.
+- No auto-fix behavior.
+- No HTML report.
+- No PDF report.
+- No DOCX report.
+- No SARIF output.
+- No GitHub PR comments.
+- No GitHub annotations.
+- No GitHub Checks API integration.
+- No new JSON schema.
+- No API server.
+- No MCP server.
+- No frontend.
+- No database persistence.
+- No publishing integration.
+
 ## TASK-0023
 
 ### Added

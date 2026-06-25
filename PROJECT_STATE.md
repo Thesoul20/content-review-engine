@@ -25,6 +25,9 @@ The project currently has Markdown input handling, profile loading, standalone p
 - A minimal review pipeline has been implemented.
 - A minimal Markdown report renderer has been implemented.
 - The CLI can export Markdown review reports.
+- The CLI can export structured Markdown review reports with summaries,
+  severity counts, rule counts, detailed findings, batch per-file sections,
+  and quality-gate status.
 - The project is packaged so `uv run content-review` resolves the console script.
 - The CLI supports automation-friendly quality gates with `--fail-on`.
 - The `forbidden_terms` rule supports literal `allow_terms` in rule-style YAML configuration.
@@ -49,6 +52,22 @@ The project currently has Markdown input handling, profile loading, standalone p
 - No active implementation task.
 
 ## Recent Completion
+
+- TASK-0024 is complete.
+- Improved `content-review review --format markdown` and
+  `content-review batch --format markdown` to render structured Markdown
+  reports with summary tables, severity counts, rule counts, detailed findings,
+  deterministic per-file batch sections, and clear `No findings.` empty
+  states.
+- Markdown reports now include quality-gate status when `--fail-on` is used
+  and still write to `--output` before returning exit code `1` when the gate
+  fails.
+- Added Markdown rendering tests and CLI Markdown output tests covering
+  quality-gate sections, empty states, and report-file writes.
+- Updated CLI and CI documentation for improved Markdown report usage.
+- Kept `profile list`, `profile init`, `profile validate`, `review`, `batch`,
+  JSON schema, text output, suppression behavior, `forbidden_terms`,
+  `absolute_claims`, and `--fail-on` exit-code rules unchanged.
 
 - TASK-0023 is complete.
 - Added a documented GitHub Actions example at
