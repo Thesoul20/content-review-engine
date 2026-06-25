@@ -8,6 +8,45 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0023
+
+### Added
+
+- Added a copyable GitHub Actions CI example at
+  `docs/examples/github-actions/content-review.yml`.
+- Added `docs/CI.md` describing profile validation, batch review,
+  `--fail-on error`, path customization, CI exit codes, and workflow
+  limitations.
+- Added lightweight tests to ensure the CI example and CI documentation exist
+  and contain the key automation commands.
+
+### Changed
+
+- Updated `docs/CLI.md` with CI-oriented usage, profile validation as a first
+  CI step, and exit-code behavior for automation.
+- Updated `docs/PROFILES.md` with CI-oriented profile usage, profile path and
+  articles path customization guidance, and compliance limitations.
+- Kept `profile list`, `profile init`, `profile validate`, `review`, `batch`,
+  `--fail-on`, suppression, `forbidden_terms`, and `absolute_claims` behavior
+  unchanged.
+
+### Not Added
+
+- No new review rules.
+- No LLM review.
+- No auto-fix behavior.
+- No GitHub PR comments.
+- No GitHub annotations.
+- No SARIF output.
+- No GitHub Checks API integration.
+- No Marketplace Action.
+- No remote profile loading.
+- No API server.
+- No MCP server.
+- No frontend.
+- No database persistence.
+- No publishing integration.
+
 ## TASK-0022
 
 ### Added

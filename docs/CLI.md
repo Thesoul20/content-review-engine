@@ -114,6 +114,9 @@ Exit codes:
 2 = profile is invalid, missing, unreadable, or cannot be parsed
 ```
 
+This command is a good first CI step before `review` or `batch`.
+In GitHub Actions, exit code `0` passes the step and exit code `2` fails it.
+
 ## Profile Initialization
 
 Create a new editable profile from a built-in template:
@@ -246,6 +249,36 @@ Exit codes:
 
 If `--fail-on` is omitted, successful commands preserve the existing behavior and exit with code `0` even when findings are present.
 Invalid `--fail-on` values are rejected; valid values are only `info`, `warning`, `error`, and `critical`.
+
+## CI Usage
+
+The repository includes a copyable GitHub Actions example at:
+
+`docs/examples/github-actions/content-review.yml`
+
+Typical CI flow:
+
+```bash
+uv run content-review profile validate profiles/examples/wechat-strict.yaml
+uv run content-review batch articles --profile profiles/examples/wechat-strict.yaml --recursive --fail-on error
+```
+
+To customize the workflow:
+
+- Change the profile path from `profiles/examples/wechat-strict.yaml` to your
+  own file such as `profiles/my-wechat.yaml`.
+- Change the articles path from `articles` to your content directory such as
+  `content/posts` or `docs/articles`.
+
+Exit code behavior in CI:
+
+```text
+profile validate: 0 = valid, 2 = invalid or unreadable
+batch with --fail-on: 0 = pass, 1 = quality gate failed, 2 = command or configuration error
+```
+
+The example workflow is a deterministic automation example only. It does not
+guarantee legal, advertising, medical, regulatory, or platform compliance.
 
 ## Output Formats
 

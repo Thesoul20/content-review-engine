@@ -1,0 +1,40 @@
+name: Content Review
+
+on:
+  pull_request:
+    paths:
+      - "articles/**/*.md"
+      - "profiles/**/*.yaml"
+      - "profiles/**/*.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "articles/**/*.md"
+      - "profiles/**/*.yaml"
+      - "profiles/**/*.yml"
+
+jobs:
+  content-review:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install project
+        run: uv sync
+
+      - name: Validate review profile
+        run: uv run content-review profile validate profiles/examples/wechat-strict.yaml
+
+      - name: Run batch content review
+        run: uv run content-review batch articles --profile profiles/examples/wechat-strict.yaml --recursive --fail-on error

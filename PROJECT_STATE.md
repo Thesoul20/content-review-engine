@@ -39,6 +39,8 @@ The project currently has Markdown input handling, profile loading, standalone p
   through `content-review profile init`.
 - The CLI can list the built-in profile templates through
   `content-review profile list`.
+- The repository includes a documented GitHub Actions CI example that validates
+  a profile and runs batch review with `--fail-on error`.
 
 ---
 
@@ -47,6 +49,17 @@ The project currently has Markdown input handling, profile loading, standalone p
 - No active implementation task.
 
 ## Recent Completion
+
+- TASK-0023 is complete.
+- Added a documented GitHub Actions example at
+  `docs/examples/github-actions/content-review.yml`.
+- Added `docs/CI.md` covering profile validation, batch review, CI exit codes,
+  path customization, and workflow limitations.
+- Added lightweight tests that ensure the CI example and CI documentation
+  exist and include the key automation commands.
+- Kept `profile list`, `profile init`, `profile validate`, `review`, `batch`,
+  `--fail-on`, suppression, `forbidden_terms`, and `absolute_claims` behavior
+  unchanged.
 
 - TASK-0022 is complete.
 - Added `content-review profile list` with `--format text|json`.

@@ -168,6 +168,33 @@ uv run content-review batch examples/batch/articles --profile profiles/examples/
 uv run content-review batch articles --profile profiles/my-wechat.yaml --recursive --fail-on error
 ```
 
+## Use Profiles In CI
+
+The repository includes a GitHub Actions example at:
+
+`docs/examples/github-actions/content-review.yml`
+
+A practical CI flow is:
+
+```bash
+uv run content-review profile validate profiles/my-wechat.yaml
+uv run content-review batch articles --profile profiles/my-wechat.yaml --recursive --fail-on error
+```
+
+To adapt the example:
+
+- Change the profile path if your profile is not under `profiles/`.
+- Change the articles path if your Markdown content is not under `articles/`.
+
+Exit code behavior for CI:
+
+- `profile validate`: `0` means valid, `2` means invalid or unreadable.
+- `batch --fail-on error`: `0` means pass, `1` means findings met the quality
+  gate, `2` means command or configuration error.
+
+Built-in examples and initialized profiles are starting points only. They do
+not guarantee legal, advertising, medical, regulatory, or platform compliance.
+
 ## Customization
 
 Common edits:
