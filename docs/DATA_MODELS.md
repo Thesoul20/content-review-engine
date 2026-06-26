@@ -211,13 +211,17 @@ Example:
 
 ---
 
-## ProfileValidationError
+## ProfileValidationIssue
 
-`ProfileValidationError` stores one human-readable validation failure message.
+`ProfileValidationIssue` stores one structured validation issue for a review
+profile.
 
 | Field | Required | Description |
 |---|---|---|
+| `path` | Yes | Stable location such as `regex_rules[0].pattern` or `<yaml>` |
+| `code` | Yes | Stable issue code such as `invalid_regex_pattern` |
 | `message` | Yes | Readable validation error message |
+| `suggestion` | No | Optional actionable fix suggestion |
 
 ---
 
@@ -262,7 +266,7 @@ The stable schema version is `profile-validation-result.v1`.
 | `valid` | Yes | Whether the profile is valid |
 | `path` | Yes | Path that was validated |
 | `profile` | No | Optional `ProfileValidationProfileSummary` for valid profiles |
-| `errors` | Yes | List of `ProfileValidationError` items |
+| `errors` | Yes | List of `ProfileValidationIssue` items |
 
 Example:
 

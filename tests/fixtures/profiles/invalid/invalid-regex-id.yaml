@@ -1,0 +1,7 @@
+name: invalid-regex-id
+target_platform: wechat
+regex_rules:
+  - id: 123_rule
+    pattern: "foo"
+    severity: warning
+    message: "Broken id."

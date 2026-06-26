@@ -1,0 +1,7 @@
+name: empty-regex-message
+target_platform: wechat
+regex_rules:
+  - id: missing_message
+    pattern: "foo"
+    severity: warning
+    message: "   "

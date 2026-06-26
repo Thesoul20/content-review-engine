@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import yaml
-from pydantic import ValidationError
-
-from content_review_engine.config.profiles import load_profile
+from content_review_engine.config.profiles import (
+    ProfileValidationFailed,
+    _load_profile_with_context,
+)
 from content_review_engine.core.models import (
-    ProfileValidationError,
+    ProfileValidationIssue,
     ProfileValidationProfileSummary,
     ProfileValidationResult,
     ProfileValidationRuleSummary,
@@ -18,20 +18,18 @@ from content_review_engine.rules.registry import build_default_rule_registry
 _KNOWN_RULE_IDS = set(build_default_rule_registry().list_rule_ids())
 
 
-def _error(message: str) -> ProfileValidationError:
-    return ProfileValidationError(message=message)
-
-
-def _format_validation_error(error: ValidationError) -> list[str]:
-    messages: list[str] = []
-    for item in error.errors():
-        location = ".".join(str(part) for part in item.get("loc", ()))
-        message = item.get("msg", "Validation error")
-        if location:
-            messages.append(f"{location}: {message}")
-        else:
-            messages.append(message)
-    return messages
+def _error(
+    path: str,
+    code: str,
+    message: str,
+    suggestion: str | None = None,
+) -> ProfileValidationIssue:
+    return ProfileValidationIssue(
+        path=path,
+        code=code,
+        message=message,
+        suggestion=suggestion,
+    )
 
 
 def _rule_severity(rule_id: str, profile: ReviewProfile) -> str:
@@ -65,31 +63,32 @@ def _add_rule_summary(
 def _unknown_rule_ids(
     raw_data: object,
     profile: ReviewProfile,
-) -> list[str]:
-    unknown_rule_ids: list[str] = []
-    seen_rule_ids: set[str] = set()
+) -> list[tuple[str, str]]:
+    unknown_rule_ids: list[tuple[str, str]] = []
+    seen_rule_ids: set[tuple[str, str]] = set()
     regex_rule_ids = {regex_rule.id for regex_rule in profile.regex_rules}
 
-    def add_unknown(rule_id: str) -> None:
-        if rule_id in seen_rule_ids:
+    def add_unknown(path: str, rule_id: str) -> None:
+        item = (path, rule_id)
+        if item in seen_rule_ids:
             return
-        seen_rule_ids.add(rule_id)
-        unknown_rule_ids.append(rule_id)
+        seen_rule_ids.add(item)
+        unknown_rule_ids.append(item)
 
     if isinstance(raw_data, dict):
         raw_rules = raw_data.get("rules")
         if isinstance(raw_rules, list):
-            for rule_config in raw_rules:
+            for index, rule_config in enumerate(raw_rules):
                 if not isinstance(rule_config, dict):
                     continue
                 rule_id = rule_config.get("id")
                 if isinstance(rule_id, str) and rule_id not in _KNOWN_RULE_IDS:
-                    add_unknown(rule_id)
+                    add_unknown(f"rules[{index}].id", rule_id)
 
     if profile.enabled_rules is not None:
-        for rule_id in profile.enabled_rules:
+        for index, rule_id in enumerate(profile.enabled_rules):
             if rule_id not in _KNOWN_RULE_IDS and rule_id not in regex_rule_ids:
-                add_unknown(rule_id)
+                add_unknown(f"enabled_rules[{index}]", rule_id)
 
     return unknown_rule_ids
 
@@ -183,64 +182,13 @@ def validate_profile(path: str | Path) -> ProfileValidationResult:
     profile_path = Path(path)
     path_text = str(profile_path)
 
-    if not profile_path.exists():
-        return ProfileValidationResult(
-            valid=False,
-            path=path_text,
-            errors=[_error(f"Profile file not found: {profile_path}")],
-        )
-
-    if profile_path.suffix.lower() not in {".yaml", ".yml"}:
-        return ProfileValidationResult(
-            valid=False,
-            path=path_text,
-            errors=[_error(f"Expected a YAML profile file, got: {profile_path.suffix}")],
-        )
-
     try:
-        raw_text = profile_path.read_text(encoding="utf-8")
-    except OSError as exc:
+        profile, raw_data = _load_profile_with_context(profile_path)
+    except ProfileValidationFailed as exc:
         return ProfileValidationResult(
             valid=False,
             path=path_text,
-            errors=[_error(f"Profile file is not readable: {profile_path}")],
-        )
-
-    try:
-        raw_data = yaml.safe_load(raw_text)
-    except yaml.YAMLError as exc:
-        return ProfileValidationResult(
-            valid=False,
-            path=path_text,
-            errors=[_error(f"Invalid YAML: {exc}")],
-        )
-
-    if raw_data is None:
-        return ProfileValidationResult(
-            valid=False,
-            path=path_text,
-            errors=[_error(f"Profile file is empty: {profile_path}")],
-        )
-
-    try:
-        profile = load_profile(profile_path)
-    except FileNotFoundError as exc:
-        return ProfileValidationResult(
-            valid=False,
-            path=path_text,
-            errors=[_error(str(exc))],
-        )
-    except ValueError as exc:
-        return ProfileValidationResult(
-            valid=False,
-            path=path_text,
-            errors=[_error(str(exc))],
-        )
-    except ValidationError as exc:
-        return ProfileValidationResult(
-            valid=False,
-            path=path_text,
-            errors=[_error(message) for message in _format_validation_error(exc)],
+            errors=list(exc.issues),
         )
 
     unknown_rule_ids = _unknown_rule_ids(raw_data, profile)
@@ -248,7 +196,15 @@ def validate_profile(path: str | Path) -> ProfileValidationResult:
         return ProfileValidationResult(
             valid=False,
             path=path_text,
-            errors=[_error(f"unknown rule id: {rule_id}") for rule_id in unknown_rule_ids],
+            errors=[
+                _error(
+                    path,
+                    "unknown_rule_id",
+                    f"Unknown rule ID: {rule_id}.",
+                    "Use a built-in rule ID or remove the unsupported rule entry.",
+                )
+                for path, rule_id in unknown_rule_ids
+            ],
         )
 
     return ProfileValidationResult(

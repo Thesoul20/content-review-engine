@@ -1,0 +1,11 @@
+name: duplicate-regex-id
+target_platform: wechat
+regex_rules:
+  - id: repeated_rule
+    pattern: "foo"
+    severity: warning
+    message: "Foo."
+  - id: repeated_rule
+    pattern: "bar"
+    severity: error
+    message: "Bar."

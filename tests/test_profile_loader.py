@@ -1,9 +1,9 @@
 from pathlib import Path
 
 import pytest
-from pydantic import ValidationError
 
 from content_review_engine.config import load_profile
+from content_review_engine.config.profiles import ProfileValidationFailed
 
 
 def test_load_profile_from_yaml_file(tmp_path: Path) -> None:
@@ -44,39 +44,47 @@ def test_load_profile_from_string_path(tmp_path: Path) -> None:
 
 
 def test_load_profile_missing_file_raises(tmp_path: Path) -> None:
-    with pytest.raises(FileNotFoundError, match="Profile file not found"):
+    with pytest.raises(ProfileValidationFailed) as exc_info:
         load_profile(tmp_path / "missing.yaml")
+
+    assert exc_info.value.issues[0].code == "file_not_found"
 
 
 def test_load_profile_non_yaml_file_raises(tmp_path: Path) -> None:
     profile_path = tmp_path / "wechat.txt"
     profile_path.write_text("name: wechat", encoding="utf-8")
 
-    with pytest.raises(ValueError, match="Expected a YAML profile file"):
+    with pytest.raises(ProfileValidationFailed) as exc_info:
         load_profile(profile_path)
+
+    assert exc_info.value.issues[0].code == "invalid_file_extension"
 
 
 def test_load_profile_empty_yaml_raises(tmp_path: Path) -> None:
     profile_path = tmp_path / "empty.yaml"
     profile_path.write_text("", encoding="utf-8")
 
-    with pytest.raises(ValueError, match="Profile file is empty"):
+    with pytest.raises(ProfileValidationFailed) as exc_info:
         load_profile(profile_path)
+
+    assert exc_info.value.issues[0].code == "empty_profile"
 
 
 def test_load_profile_invalid_yaml_raises_value_error(tmp_path: Path) -> None:
     profile_path = tmp_path / "invalid.yaml"
     profile_path.write_text("name: [wechat", encoding="utf-8")
 
-    with pytest.raises(ValueError, match="Invalid YAML"):
+    with pytest.raises(ProfileValidationFailed) as exc_info:
         load_profile(profile_path)
+
+    assert exc_info.value.issues[0].code == "invalid_yaml"
 
 
 def test_load_profile_invalid_schema_raises_validation_error(tmp_path: Path) -> None:
     profile_path = tmp_path / "invalid.yaml"
     profile_path.write_text("name: wechat\n", encoding="utf-8")
 
-    with pytest.raises(ValidationError):
+    with pytest.raises(ProfileValidationFailed):
         load_profile(profile_path)
 
 
@@ -147,8 +155,10 @@ def test_load_profile_rejects_invalid_forbidden_terms_allow_terms(
         encoding="utf-8",
     )
 
-    with pytest.raises(ValueError, match="forbidden_terms.allow_terms"):
+    with pytest.raises(ProfileValidationFailed) as exc_info:
         load_profile(profile_path)
+
+    assert exc_info.value.issues[0].path == "forbidden_terms.allow_terms"
 
 
 def test_load_profile_with_absolute_claims_rule_configuration(
@@ -199,8 +209,10 @@ def test_load_profile_rejects_invalid_absolute_claims_terms(
         encoding="utf-8",
     )
 
-    with pytest.raises(ValueError, match="absolute_claims.terms"):
+    with pytest.raises(ProfileValidationFailed) as exc_info:
         load_profile(profile_path)
+
+    assert exc_info.value.issues[0].path == "absolute_claims.terms"
 
 
 def test_load_profile_rejects_invalid_absolute_claims_allow_terms(
@@ -222,8 +234,10 @@ def test_load_profile_rejects_invalid_absolute_claims_allow_terms(
         encoding="utf-8",
     )
 
-    with pytest.raises(ValueError, match="absolute_claims.allow_terms"):
+    with pytest.raises(ProfileValidationFailed) as exc_info:
         load_profile(profile_path)
+
+    assert exc_info.value.issues[0].path == "absolute_claims.allow_terms"
 
 
 def test_load_profile_rejects_invalid_absolute_claims_severity(
@@ -245,5 +259,7 @@ def test_load_profile_rejects_invalid_absolute_claims_severity(
         encoding="utf-8",
     )
 
-    with pytest.raises(ValueError, match="absolute_claims.severity"):
+    with pytest.raises(ProfileValidationFailed) as exc_info:
         load_profile(profile_path)
+
+    assert exc_info.value.issues[0].code == "invalid_severity"

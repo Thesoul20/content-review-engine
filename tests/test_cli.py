@@ -653,8 +653,10 @@ def test_cli_profile_validate_missing_profile_returns_two(
     captured = capsys.readouterr()
 
     assert exit_code == 2
-    assert "Profile validation failed." in captured.out
-    assert f"Path: {missing_path}" in captured.out
+    assert f"Profile validation failed: {missing_path}" in captured.out
+    assert "Issues: 1" in captured.out
+    assert "1. <file>" in captured.out
+    assert "Code: file_not_found" in captured.out
     assert "Profile file not found" in captured.out
     assert captured.err == ""
 
@@ -671,9 +673,12 @@ def test_cli_profile_validate_invalid_yaml_returns_two(
     captured = capsys.readouterr()
 
     assert exit_code == 2
-    assert "Profile validation failed." in captured.out
-    assert f"Path: {profile_path}" in captured.out
-    assert "Error: Invalid YAML:" in captured.out
+    assert f"Profile validation failed: {profile_path}" in captured.out
+    assert "Issues: 1" in captured.out
+    assert "1. <yaml>" in captured.out
+    assert "Code: invalid_yaml" in captured.out
+    assert "Failed to parse YAML profile:" in captured.out
+    assert "Suggestion: Check indentation, quoting, and list structure." in captured.out
     assert captured.err == ""
 
 
@@ -700,8 +705,11 @@ def test_cli_profile_validate_unknown_rule_returns_two(
     captured = capsys.readouterr()
 
     assert exit_code == 2
-    assert "Profile validation failed." in captured.out
-    assert "Error: unknown rule id: unknown_rule" in captured.out
+    assert f"Profile validation failed: {profile_path}" in captured.out
+    assert "Issues: 1" in captured.out
+    assert "1. rules[0].id" in captured.out
+    assert "Code: unknown_rule_id" in captured.out
+    assert "Unknown rule ID: unknown_rule." in captured.out
     assert captured.err == ""
 
 
@@ -735,9 +743,109 @@ def test_cli_profile_validate_invalid_terms_returns_two_and_json_error(
     assert payload["path"] == str(profile_path)
     assert payload["profile"] is None
     assert payload["errors"] == [
-        {"message": "absolute_claims.terms must be a list of strings"}
+        {
+            "path": "absolute_claims.terms",
+            "code": "invalid_string_list",
+            "message": "absolute_claims.terms must be a list of strings.",
+            "suggestion": "Use a YAML list of strings.",
+        }
     ]
     assert captured.err == ""
+
+
+def test_cli_profile_validate_renders_structured_issue_list(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    profile_path = "tests/fixtures/profiles/invalid/invalid-regex-pattern.yaml"
+
+    exit_code = main(["profile", "validate", profile_path])
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert f"Profile validation failed: {profile_path}" in captured.out
+    assert "Issues: 1" in captured.out
+    assert "1. regex_rules[0].pattern" in captured.out
+    assert "Code: invalid_regex_pattern" in captured.out
+    assert "Error: Invalid regex pattern:" in captured.out
+    assert "Suggestion: Check the regex syntax or escape special characters." in captured.out
+    assert "Traceback" not in captured.out
+    assert captured.err == ""
+
+
+def test_cli_profile_validate_renders_multiple_issues_without_traceback(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    profile_path = tmp_path / "multiple-issues.yaml"
+    profile_path.write_text(
+        "\n".join(
+            [
+                "name: multi-issue",
+                "target_platform: wechat",
+                "regex_rules:",
+                "  - id: 123_rule",
+                '    pattern: "["',
+                "    severity: warn",
+                '    message: "   "',
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    exit_code = main(["profile", "validate", str(profile_path)])
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert f"Profile validation failed: {profile_path}" in captured.out
+    assert "Issues: 4" in captured.out
+    assert "regex_rules[0].id" in captured.out
+    assert "regex_rules[0].pattern" in captured.out
+    assert "regex_rules[0].severity" in captured.out
+    assert "regex_rules[0].message" in captured.out
+    assert "Traceback" not in captured.out
+    assert captured.err == ""
+
+
+def test_cli_review_with_invalid_profile_fails_cleanly(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    markdown_path = "tests/fixtures/markdown/clean_article.md"
+    profile_path = "tests/fixtures/profiles/invalid/invalid-regex-pattern.yaml"
+
+    exit_code = main(["review", markdown_path, "--profile", profile_path])
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert captured.out == ""
+    assert f"Profile validation failed: {profile_path}" in captured.err
+    assert "Code: invalid_regex_pattern" in captured.err
+    assert "Traceback" not in captured.err
+
+
+def test_cli_batch_with_invalid_profile_fails_cleanly(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    profile_path = "tests/fixtures/profiles/invalid/invalid-case-sensitive.yaml"
+
+    exit_code = main(
+        [
+            "batch",
+            "examples/batch/articles",
+            "--profile",
+            profile_path,
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert captured.out == ""
+    assert f"Profile validation failed: {profile_path}" in captured.err
+    assert "Code: invalid_boolean" in captured.err
+    assert "Traceback" not in captured.err
 
 
 def test_cli_review_json_output_uses_canonical_review_result(

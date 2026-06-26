@@ -107,6 +107,11 @@ uv run content-review profile validate profiles/my-wechat.yaml --format json
 This checks that the YAML is readable, the profile shape is valid, and rule IDs
 are recognized.
 
+When validation fails, the CLI now prints structured issues with a path, stable
+code, readable error message, and fix suggestion. Common regex profile mistakes
+include invalid patterns, duplicate rule IDs, unknown severities such as
+`warn`, empty regex messages, and invalid `case_sensitive` values.
+
 ## 5. Review One Markdown File
 
 Use the sample article that already exists in the repository:

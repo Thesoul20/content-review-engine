@@ -1,0 +1,7 @@
+name: invalid-regex-pattern
+target_platform: wechat
+regex_rules:
+  - id: broken_pattern
+    pattern: "["
+    severity: warning
+    message: "Broken regex."

@@ -67,6 +67,10 @@ content. They help flag common risky wording patterns for review and do not
 provide legal, medical, advertising, regulatory, or platform compliance
 advice.
 
+Profile validation failures now return structured issue details with stable
+paths, codes, readable messages, and suggestions through
+`content-review profile validate`.
+
 ## Rule Reference
 
 See [docs/RULES.md](docs/RULES.md), the canonical rule system reference, for

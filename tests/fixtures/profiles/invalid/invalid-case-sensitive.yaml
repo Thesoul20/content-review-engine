@@ -1,0 +1,8 @@
+name: invalid-case-sensitive
+target_platform: wechat
+regex_rules:
+  - id: bad_case_sensitive
+    pattern: "foo"
+    severity: warning
+    message: "Bad case sensitivity."
+    case_sensitive: maybe

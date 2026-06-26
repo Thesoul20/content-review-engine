@@ -195,7 +195,31 @@ Validation behavior:
 - invalid regex patterns are rejected during profile loading and profile
   validation
 - duplicate regex rule IDs within `regex_rules` are rejected
+- invalid regex rule IDs, severities, empty messages, and invalid
+  `case_sensitive` values are reported with structured issue paths and codes
 - regex rules are optional and are not required in any profile
+
+Common profile validation mistakes:
+
+- invalid regex pattern:
+  `regex_rules[0].pattern` with code `invalid_regex_pattern`
+- duplicate regex rule ID:
+  `regex_rules[1].id` with code `duplicate_rule_id`
+- invalid severity such as `warn`:
+  `regex_rules[0].severity` with code `invalid_severity`
+- invalid boolean such as `case_sensitive: maybe`:
+  `regex_rules[0].case_sensitive` with code `invalid_boolean`
+
+Validate after editing:
+
+```bash
+uv run content-review profile validate profiles/my-wechat.yaml
+```
+
+The command keeps the same exit codes:
+
+- `0` for a valid profile
+- `2` for invalid, missing, unreadable, or unparsable profiles
 
 Execution behavior:
 

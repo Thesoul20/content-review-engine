@@ -1,0 +1,6 @@
+name: invalid-yaml
+target_platform: wechat
+regex_rules:
+  - id: broken
+    pattern: "foo"
+      severity: warning

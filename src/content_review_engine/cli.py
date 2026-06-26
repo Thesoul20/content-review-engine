@@ -11,8 +11,10 @@ from content_review_engine.config import (
     load_profile,
     validate_profile,
 )
+from content_review_engine.config.profiles import ProfileValidationFailed
 from content_review_engine.core.models import (
     BatchReviewResult,
+    ProfileValidationResult,
     ProfileTemplateListResult,
     ProfileTemplateSummary,
     ReviewResult,
@@ -285,13 +287,12 @@ def _render_batch_output(
 
 
 def _render_profile_validation_text(result) -> str:
-    lines = [
-        "Profile validation passed." if result.valid else "Profile validation failed.",
-        "",
-        f"Path: {result.path}",
-    ]
-
     if result.valid and result.profile is not None:
+        lines = [
+            "Profile validation passed.",
+            "",
+            f"Path: {result.path}",
+        ]
         lines.extend(
             [
                 f"Name: {result.profile.name}",
@@ -308,8 +309,24 @@ def _render_profile_validation_text(result) -> str:
             lines.append("- None")
         return "\n".join(lines)
 
-    for error in result.errors:
-        lines.append(f"Error: {error.message}")
+        return "\n".join(lines)
+
+    lines = [
+        f"Profile validation failed: {result.path}",
+        f"Issues: {len(result.errors)}",
+    ]
+
+    if result.errors:
+        lines.append("")
+
+    for index, error in enumerate(result.errors, start=1):
+        lines.append(f"{index}. {error.path}")
+        lines.append(f"   Code: {error.code}")
+        lines.append(f"   Error: {error.message}")
+        if error.suggestion:
+            lines.append(f"   Suggestion: {error.suggestion}")
+        if index != len(result.errors):
+            lines.append("")
 
     return "\n".join(lines)
 
@@ -451,6 +468,16 @@ def _run_profile_validate_command(args: argparse.Namespace) -> int:
     return 0 if validation_result.valid else 2
 
 
+def _render_profile_validation_exception(exc: ProfileValidationFailed) -> str:
+    return _render_profile_validation_text(
+        ProfileValidationResult(
+            valid=False,
+            path=exc.path,
+            errors=list(exc.issues),
+        )
+    )
+
+
 def _run_profile_init_command(args: argparse.Namespace) -> int:
     output_path = Path(args.output)
     parent_dir = output_path.parent
@@ -504,6 +531,9 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     except UnknownRuleError as exc:
         print(f"Error: {exc}", file=sys.stderr)
+        return 2
+    except ProfileValidationFailed as exc:
+        print(_render_profile_validation_exception(exc), file=sys.stderr)
         return 2
     except (FileNotFoundError, NotADirectoryError, ValueError, ValidationError) as exc:
         print(f"Error: {exc}", file=sys.stderr)

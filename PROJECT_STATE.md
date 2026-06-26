@@ -12,6 +12,9 @@ It also now includes a committed end-to-end demo workspace under
 `examples/demo/` with small demo articles, stable demo profiles, committed
 Markdown reports, and tests that exercise review, batch review, JSON output,
 quality gates, and suppression without changing runtime behavior.
+Profile validation failures are now also structured with stable issue paths,
+codes, readable messages, and optional suggestions for CLI and future adapter
+use.
 
 ---
 
@@ -81,6 +84,26 @@ quality gates, and suppression without changing runtime behavior.
 - No active implementation task.
 
 ## Recent Completion
+
+- TASK-0033 is complete.
+- Added structured profile validation issues with `path`, `code`, `message`,
+  and optional `suggestion`.
+- Added reusable profile-loading validation failures so `profile validate`,
+  `review`, and `batch` fail cleanly on invalid profiles without tracebacks for
+  normal user input errors.
+- Improved regex-rule and YAML validation feedback for invalid rule IDs,
+  duplicate rule IDs, invalid regex patterns, empty regex messages, invalid
+  `case_sensitive` values, invalid severities, and invalid YAML.
+- Added invalid profile fixtures plus validation and CLI rendering tests.
+- Updated README, quickstart, CLI, profile, and data-model documentation for
+  structured profile validation errors.
+- Kept deterministic review behavior unchanged.
+- Kept `regex_rules` matching behavior unchanged.
+- Kept suppression behavior unchanged.
+- Kept quality-gate semantics unchanged.
+- Kept Markdown report structure unchanged.
+- Kept JSON review output schema unchanged.
+- Added no LLM review, PydanticAI, API, MCP, or GUI behavior.
 
 - TASK-0032 is complete.
 - Added `examples/demo/` with short WeChat-style and technical-blog demo

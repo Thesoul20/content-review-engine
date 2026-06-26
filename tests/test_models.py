@@ -6,6 +6,7 @@ from content_review_engine.core.models import (
     BatchReviewSummary,
     ProfileTemplateListResult,
     ProfileTemplateSummary,
+    ProfileValidationIssue,
     ReviewDocumentMetadata,
     ReviewFinding,
     ReviewIssue,
@@ -34,6 +35,19 @@ def test_create_review_issue() -> None:
     assert issue.severity == "medium"
     assert issue.start_line == 1
     assert issue.end_line == 1
+
+
+def test_create_profile_validation_issue() -> None:
+    issue = ProfileValidationIssue(
+        path="regex_rules[0].pattern",
+        code="invalid_regex_pattern",
+        message="Invalid regex pattern: unterminated character set.",
+        suggestion="Check the regex syntax or escape special characters.",
+    )
+
+    assert issue.path == "regex_rules[0].pattern"
+    assert issue.code == "invalid_regex_pattern"
+    assert issue.suggestion == "Check the regex syntax or escape special characters."
 
 
 def test_create_review_summary_from_findings() -> None:

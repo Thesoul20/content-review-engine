@@ -1,0 +1,7 @@
+name: invalid-severity
+target_platform: wechat
+regex_rules:
+  - id: bad_severity
+    pattern: "foo"
+    severity: warn
+    message: "Bad severity."

@@ -8,6 +8,45 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0033
+
+### Added
+
+- Added structured profile validation issues with `path`, `code`, `message`,
+  and optional `suggestion`.
+- Added invalid profile fixtures under `tests/fixtures/profiles/invalid/` for
+  invalid regex IDs, duplicate regex IDs, invalid regex patterns, invalid
+  severities, empty regex messages, invalid `case_sensitive`, and invalid YAML.
+- Added `tests/test_profile_validation_errors.py` for structured validation
+  issue coverage.
+
+### Changed
+
+- Updated `src/content_review_engine/config/profiles.py` and
+  `src/content_review_engine/config/validation.py` so profile loading and
+  validation collect readable, actionable issues for common profile mistakes.
+- Updated `src/content_review_engine/cli.py` so `content-review profile validate`
+  renders issue counts, paths, codes, messages, and suggestions, and `review`
+  and `batch` fail cleanly on invalid profiles without tracebacks for normal
+  user input errors.
+- Updated CLI, profile, quickstart, README, data-model, project-state, and
+  changelog documentation for structured profile validation errors.
+- Updated existing CLI, profile-loader, regex-rule, and model tests for the
+  structured validation issue output.
+- Kept runtime review behavior unchanged.
+- Kept `regex_rules` matching behavior unchanged.
+- Kept suppression behavior unchanged.
+- Kept quality-gate semantics unchanged.
+- Kept Markdown report structure unchanged.
+- Kept JSON review output schema unchanged.
+
+### Not Added
+
+- No LLM-based review.
+- No PydanticAI integration.
+- No API, MCP, or GUI behavior.
+- No new rule types.
+
 ## TASK-0032
 
 ### Added

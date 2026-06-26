@@ -3,9 +3,9 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from pydantic import ValidationError
 
 from content_review_engine.config import load_profile, validate_profile
+from content_review_engine.config.profiles import ProfileValidationFailed
 from content_review_engine.core.quality_gate import quality_gate_failed
 from content_review_engine.core.models import ReviewProfile
 from content_review_engine.reports import render_markdown_report
@@ -69,8 +69,10 @@ def test_invalid_regex_pattern_fails_validation(tmp_path: Path) -> None:
         ),
     )
 
-    with pytest.raises(ValidationError, match="invalid regex pattern"):
+    with pytest.raises(ProfileValidationFailed) as exc_info:
         load_profile(profile_path)
+
+    assert exc_info.value.issues[0].code == "invalid_regex_pattern"
 
 
 def test_duplicate_regex_ids_fail_validation(tmp_path: Path) -> None:
@@ -93,8 +95,10 @@ def test_duplicate_regex_ids_fail_validation(tmp_path: Path) -> None:
         ),
     )
 
-    with pytest.raises(ValidationError, match="duplicate regex rule id"):
+    with pytest.raises(ProfileValidationFailed) as exc_info:
         load_profile(profile_path)
+
+    assert exc_info.value.issues[0].code == "duplicate_rule_id"
 
 
 def test_regex_rule_id_validation_rejects_invalid_format(tmp_path: Path) -> None:
@@ -116,7 +120,8 @@ def test_regex_rule_id_validation_rejects_invalid_format(tmp_path: Path) -> None
     validation_result = validate_profile(profile_path)
 
     assert validation_result.valid is False
-    assert "regex_rules.0.id" in validation_result.errors[0].message
+    assert validation_result.errors[0].path == "regex_rules[0].id"
+    assert validation_result.errors[0].code == "invalid_rule_id"
 
 
 def test_regex_rule_produces_finding_with_configured_rule_id_and_location() -> None:

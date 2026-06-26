@@ -145,8 +145,34 @@ uv run content-review profile validate profiles/examples/wechat-strict.yaml
 ```
 
 Text output reports either `Profile validation passed.` or `Profile validation failed.`
-JSON output uses `profile-validation-result.v1` and includes `schema_version`,
-`valid`, `path`, an optional `profile` summary, and an `errors` array.
+Structured failures now include an issue count and one entry per problem with:
+
+- `path`
+- `code`
+- `message`
+- optional `suggestion`
+
+Example failure output:
+
+```text
+Profile validation failed: profiles/wechat.yaml
+Issues: 2
+
+1. regex_rules[0].pattern
+   Code: invalid_regex_pattern
+   Error: Invalid regex pattern: unterminated character set at position 0.
+   Suggestion: Check the regex syntax or escape special characters.
+
+2. regex_rules[0].severity
+   Code: invalid_severity
+   Error: Unknown severity: warn.
+   Suggestion: Use one of: critical, error, warning, info.
+```
+
+JSON output still uses `profile-validation-result.v1` and includes
+`schema_version`, `valid`, `path`, an optional `profile` summary, and an
+`errors` array. Each `errors` item is now a structured validation issue object
+instead of a plain message string.
 
 Exit codes:
 
@@ -157,6 +183,7 @@ Exit codes:
 
 This command is a good first CI step before `review` or `batch`.
 In GitHub Actions, exit code `0` passes the step and exit code `2` fails it.
+The exit code semantics are unchanged.
 
 ## Profile Initialization
 

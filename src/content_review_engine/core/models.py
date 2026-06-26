@@ -123,8 +123,11 @@ class ReviewProfileMetadata(BaseModel):
     path: str | None = None
 
 
-class ProfileValidationError(BaseModel):
+class ProfileValidationIssue(BaseModel):
+    path: str
+    code: str
     message: str
+    suggestion: str | None = None
 
 
 class ProfileValidationRuleSummary(BaseModel):
@@ -146,7 +149,7 @@ class ProfileValidationResult(BaseModel):
     valid: bool
     path: str
     profile: ProfileValidationProfileSummary | None = None
-    errors: list[ProfileValidationError] = Field(default_factory=list)
+    errors: list[ProfileValidationIssue] = Field(default_factory=list)
 
 
 class ProfileTemplateSummary(BaseModel):
@@ -281,7 +284,7 @@ __all__ = [
     "BatchReviewSummary",
     "ReviewFinding",
     "ReviewIssue",
-    "ProfileValidationError",
+    "ProfileValidationIssue",
     "ProfileValidationProfileSummary",
     "ProfileValidationResult",
     "ProfileValidationRuleSummary",
