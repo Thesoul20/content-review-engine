@@ -30,21 +30,32 @@ The profile list command exposes the same built-in template registry used by `pr
 
 ## Experimental LLM Sidecar Review
 
-Single-file `review` now supports an explicit experimental mock-only LLM sidecar flow:
+Single-file `review` now supports an explicit experimental LLM sidecar flow:
 
 ```bash
 uv run content-review review article.md --profile profile.yaml --enable-llm --llm-output article.llm.json
 uv run content-review review article.md --profile profile.yaml --enable-llm --llm-provider mock --llm-output article.llm.json
+OPENAI_API_KEY=your-key uv run content-review review article.md --profile profile.yaml --enable-llm --llm-provider pydanticai-openai --llm-model gpt-4o-mini --llm-output article.llm.json
+LLM_GATEWAY_KEY=your-key uv run content-review review article.md --profile profile.yaml --enable-llm --llm-provider pydanticai-openai --llm-model gpt-4o-mini --llm-api-key-env LLM_GATEWAY_KEY --llm-base-url https://example.com/v1 --llm-output article.llm.json
 ```
 
 Current constraints:
 
 - this path is opt-in and disabled by default
 - only the single-file `review` command supports it
-- only `mock` is supported as the current `--llm-provider`
+- `--llm-provider` supports `mock` and `pydanticai-openai`
 - `--enable-llm` requires `--llm-output`
 - `--llm-output` without `--enable-llm` fails
 - `--llm-provider` without `--enable-llm` fails
+- `--llm-model` without `--enable-llm` fails
+- `--llm-api-key-env` without `--enable-llm` fails
+- `--llm-base-url` without `--enable-llm` fails
+- `--llm-provider pydanticai-openai` requires `--llm-model`
+- `--llm-provider pydanticai-openai` reads the API key from the environment
+  variable named by `--llm-api-key-env`, or `OPENAI_API_KEY` by default
+- the CLI does not support a plaintext `--llm-api-key` argument
+- `--llm-base-url` is optional and only configures an OpenAI-compatible
+  endpoint for `pydanticai-openai`
 - the LLM result is written as a separate UTF-8 JSON sidecar file using the existing `LLMReviewResult` serialization helper
 
 Current behavior guarantees:
@@ -55,6 +66,15 @@ Current behavior guarantees:
 - `--format markdown` does not add an LLM section
 - quality-gate evaluation still reads only deterministic findings
 - batch review behavior is unchanged and does not accept LLM flags
+
+Provider notes:
+
+- `mock` keeps the deterministic test-only behavior from TASK-0037 and does
+  not require `--llm-model`
+- `pydanticai-openai` uses the provider adapter in
+  `src/content_review_engine/llm/pydanticai.py`
+- the CLI only reads the API key environment variable after `--enable-llm` is
+  explicitly enabled
 
 ## Regex Rules
 

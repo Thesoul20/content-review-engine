@@ -12,6 +12,11 @@ from content_review_engine.llm.models import (
     LLMReviewResult,
     LLMReviewSummary,
 )
+from content_review_engine.llm.pydanticai import (
+    PYDANTICAI_OPENAI_PROMPT_VERSION,
+    PYDANTICAI_OPENAI_PROVIDER_NAME,
+    PydanticAIOpenAIReviewer,
+)
 from content_review_engine.llm.provider import LLMReviewer
 from content_review_engine.llm.runner import LLMReviewRunner
 from content_review_engine.llm.serialization import (
@@ -34,6 +39,9 @@ __all__ = [
     "LLMReviewer",
     "LLMReviewRunner",
     "MockLLMReviewer",
+    "PYDANTICAI_OPENAI_PROMPT_VERSION",
+    "PYDANTICAI_OPENAI_PROVIDER_NAME",
+    "PydanticAIOpenAIReviewer",
     "llm_review_finding_to_dict",
     "llm_review_result_to_dict",
     "llm_review_result_to_json",

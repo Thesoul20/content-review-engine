@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
@@ -32,8 +33,11 @@ from content_review_engine.core.serialization import (
 )
 from content_review_engine.llm import (
     LLMReviewRequest,
+    LLMReviewError,
     LLMReviewRunner,
     MockLLMReviewer,
+    PYDANTICAI_OPENAI_PROVIDER_NAME,
+    PydanticAIOpenAIReviewer,
     llm_review_result_to_json,
 )
 from content_review_engine.parser import read_markdown
@@ -56,9 +60,11 @@ def _parse_fail_on(value: str) -> str:
 
 def _parse_llm_provider(value: str) -> str:
     normalized = value.strip()
-    if normalized != "mock":
+    if normalized not in {"mock", PYDANTICAI_OPENAI_PROVIDER_NAME}:
         raise argparse.ArgumentTypeError(
-            f"Unsupported LLM provider: {value!r}. Only 'mock' is supported."
+            "Unsupported LLM provider: "
+            f"{value!r}. Supported providers are 'mock' and "
+            f"'{PYDANTICAI_OPENAI_PROVIDER_NAME}'."
         )
     return normalized
 
@@ -100,13 +106,34 @@ def build_parser() -> argparse.ArgumentParser:
     review_parser.add_argument(
         "--enable-llm",
         action="store_true",
-        help="Enable experimental mock-only LLM review sidecar output.",
+        help="Enable experimental LLM review sidecar output.",
     )
     review_parser.add_argument(
         "--llm-provider",
         type=_parse_llm_provider,
         default=None,
-        help="LLM provider for experimental sidecar review. Only 'mock' is supported.",
+        help=(
+            "LLM provider for experimental sidecar review. "
+            "Supported: 'mock', 'pydanticai-openai'."
+        ),
+    )
+    review_parser.add_argument(
+        "--llm-model",
+        default=None,
+        help="Model name for --llm-provider pydanticai-openai.",
+    )
+    review_parser.add_argument(
+        "--llm-api-key-env",
+        default=None,
+        help=(
+            "Environment variable name used to read the API key for "
+            "--llm-provider pydanticai-openai. Defaults to OPENAI_API_KEY."
+        ),
+    )
+    review_parser.add_argument(
+        "--llm-base-url",
+        default=None,
+        help="Optional OpenAI-compatible base URL for --llm-provider pydanticai-openai.",
     )
     review_parser.add_argument(
         "--llm-output",
@@ -446,10 +473,45 @@ def _validate_review_llm_args(args: argparse.Namespace) -> None:
             raise ValueError("--llm-output requires --enable-llm")
         if args.llm_provider is not None:
             raise ValueError("--llm-provider requires --enable-llm")
+        if args.llm_model is not None:
+            raise ValueError("--llm-model requires --enable-llm")
+        if args.llm_api_key_env is not None:
+            raise ValueError("--llm-api-key-env requires --enable-llm")
+        if args.llm_base_url is not None:
+            raise ValueError("--llm-base-url requires --enable-llm")
         return
 
     if args.llm_output is None:
         raise ValueError("--enable-llm requires --llm-output")
+
+    provider = args.llm_provider or "mock"
+    if provider == "mock":
+        return
+
+    if provider == PYDANTICAI_OPENAI_PROVIDER_NAME and args.llm_model is None:
+        raise ValueError(
+            "--llm-provider pydanticai-openai requires --llm-model"
+        )
+
+
+def _build_llm_reviewer(args: argparse.Namespace):
+    provider = args.llm_provider or "mock"
+    if provider == "mock":
+        return MockLLMReviewer()
+
+    api_key_env = args.llm_api_key_env or "OPENAI_API_KEY"
+    api_key = os.environ.get(api_key_env, "").strip()
+    if api_key == "":
+        raise ValueError(
+            "Environment variable "
+            f"{api_key_env!r} is required for --llm-provider pydanticai-openai"
+        )
+
+    return PydanticAIOpenAIReviewer(
+        model=args.llm_model,
+        api_key=api_key,
+        base_url=args.llm_base_url,
+    )
 
 
 def _build_llm_review_request(
@@ -471,20 +533,15 @@ def _run_llm_review_and_write_sidecar(
     markdown_text: str,
     markdown_path: str,
     profile_name: str,
-    provider: str,
+    reviewer,
     output_path: str,
 ) -> None:
-    if provider != "mock":
-        raise ValueError(
-            f"Unsupported LLM provider: {provider!r}. Only 'mock' is supported."
-        )
-
     request = _build_llm_review_request(
         markdown_text=markdown_text,
         markdown_path=markdown_path,
         profile_name=profile_name,
     )
-    runner = LLMReviewRunner(reviewer=MockLLMReviewer())
+    runner = LLMReviewRunner(reviewer=reviewer)
     llm_result = runner.run(request)
     Path(output_path).write_text(
         llm_review_result_to_json(llm_result),
@@ -494,6 +551,7 @@ def _run_llm_review_and_write_sidecar(
 
 def _run_review_command(args: argparse.Namespace) -> int:
     _validate_review_llm_args(args)
+    llm_reviewer = _build_llm_reviewer(args) if args.enable_llm else None
     markdown_text = read_markdown(args.markdown_file)
     profile = load_profile(args.profile)
     review_result = review_document(
@@ -515,7 +573,7 @@ def _run_review_command(args: argparse.Namespace) -> int:
             markdown_text=markdown_text,
             markdown_path=args.markdown_file,
             profile_name=profile.name,
-            provider=args.llm_provider or "mock",
+            reviewer=llm_reviewer,
             output_path=args.llm_output,
         )
     return _quality_gate_exit_code(
@@ -630,6 +688,7 @@ def main(argv: list[str] | None = None) -> int:
         FileNotFoundError,
         NotADirectoryError,
         OSError,
+        LLMReviewError,
         ValueError,
         ValidationError,
     ) as exc:

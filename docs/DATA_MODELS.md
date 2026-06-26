@@ -181,6 +181,8 @@ TASK-0034 does not merge it into current CLI JSON output, Markdown reports,
 batch results, suppression, or quality-gate behavior.
 TASK-0037 allows the single-file CLI `review` command to write it to a
 separate JSON sidecar file when LLM review is explicitly enabled.
+TASK-0038 allows the optional `pydanticai-openai` provider to generate
+structured output and convert it into the same `LLMReviewResult` sidecar model.
 
 | Field | Required | Description |
 |---|---|---|
@@ -227,6 +229,9 @@ Current guarantees:
 - the current Markdown report format is unchanged
 - the current quality gate does not count LLM findings
 - the current batch result schema is unchanged
+- provider-specific structured output is converted before serialization, so the
+  sidecar remains `LLMReviewResult`-shaped even when the provider uses
+  PydanticAI internally
 
 ---
 
@@ -273,7 +278,8 @@ Notes:
 
 - the initial boundary is synchronous to match the current project shape
 - adapters should return `LLMReviewResult`
-- TASK-0035 does not add any real provider implementation
+- current implementations are `MockLLMReviewer` and
+  `PydanticAIOpenAIReviewer`
 
 ---
 
@@ -343,6 +349,25 @@ Current behavior:
 - otherwise `review()` returns a new empty `LLMReviewResult`
 - it does not perform network access, prompt execution, or provider-specific
   behavior
+
+---
+
+## PydanticAIOpenAIReviewer
+
+`PydanticAIOpenAIReviewer` is the optional OpenAI-compatible provider adapter
+defined in `src/content_review_engine/llm/pydanticai.py`.
+
+Current behavior:
+
+- it implements the existing synchronous `LLMReviewer` interface
+- it accepts the existing `LLMReviewRequest` model as input
+- it uses PydanticAI internally only inside the provider layer
+- it converts provider output into the existing `LLMReviewResult` model before
+  sidecar serialization
+- provider execution failures map to `LLMProviderError`
+- structured output validation failures map to `LLMResponseValidationError`
+- it does not change the deterministic `ReviewResult` schema, Markdown report
+  structure, quality gate, or batch result schema
 
 ---
 

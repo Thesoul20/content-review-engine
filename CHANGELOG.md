@@ -8,6 +8,56 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0038
+
+### Added
+
+- Added `pydantic-ai-slim[openai]` as the minimal PydanticAI OpenAI-compatible
+  provider dependency.
+- Added `src/content_review_engine/llm/pydanticai.py` with
+  `PydanticAIOpenAIReviewer`, which implements `LLMReviewer` and converts
+  structured provider output into `LLMReviewResult`.
+- Added `tests/test_llm_pydanticai_provider.py` covering provider protocol
+  compatibility, empty and populated structured output mapping, schema-version
+  stability, provider failure mapping, validation failure mapping, and API-key
+  non-leakage.
+- Added CLI support for `--llm-provider pydanticai-openai`,
+  `--llm-model`, `--llm-api-key-env`, and optional `--llm-base-url` on the
+  single-file `review` command.
+- Added CLI tests covering the new provider flags, missing-model failure,
+  missing-API-key-env failure, mock compatibility, fake-provider success path,
+  sidecar creation, and main JSON isolation from LLM data.
+
+### Changed
+
+- Updated `src/content_review_engine/cli.py` to keep the existing sidecar-only
+  LLM flow while allowing either `MockLLMReviewer` or
+  `PydanticAIOpenAIReviewer`.
+- Updated `src/content_review_engine/llm/__init__.py` to export the new
+  provider symbols.
+- Updated `docs/CLI.md` to document `pydanticai-openai` usage, environment
+  variable API-key loading, and optional OpenAI-compatible `base_url`
+  configuration.
+- Updated `docs/ARCHITECTURE.md` to place PydanticAI strictly inside the LLM
+  provider layer and keep the deterministic review pipeline unchanged.
+- Updated `docs/DATA_MODELS.md` to document the conversion of provider output
+  into the existing `LLMReviewResult` sidecar model.
+- Updated `PROJECT_STATE.md` to record TASK-0038 completion.
+- Kept the canonical deterministic review JSON schema unchanged.
+- Kept the Markdown report structure unchanged.
+- Kept quality-gate semantics unchanged.
+- Kept batch review behavior unchanged.
+
+### Not Added
+
+- No LLM merge into the current `ReviewResult`.
+- No LLM section in the current Markdown report.
+- No quality-gate counting of LLM findings.
+- No batch LLM review.
+- No API, MCP, or GUI behavior.
+- No streaming, retry policy, cache, token accounting, cost tracking,
+  telemetry, or tracing integration.
+
 ## TASK-0037
 
 ### Added

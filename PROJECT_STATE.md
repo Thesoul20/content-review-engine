@@ -85,6 +85,33 @@ use.
 
 ## Recent Completion
 
+- TASK-0038 is complete.
+- Added `pydantic-ai-slim[openai]` and a new
+  `PydanticAIOpenAIReviewer` under `src/content_review_engine/llm/`.
+- Added `--llm-provider pydanticai-openai` support to the single-file
+  `content-review review` CLI command.
+- Added `--llm-model`, `--llm-api-key-env`, and optional `--llm-base-url`
+  for the `pydanticai-openai` sidecar path.
+- Kept `--llm-provider mock` behavior unchanged and still optional.
+- Reused the existing `LLMReviewRequest`, `LLMReviewRunner`,
+  `LLMReviewResult`, and `llm_review_result_to_json` sidecar flow.
+- Added provider tests covering interface compatibility, structured-output
+  mapping, empty findings, populated findings, schema-version stability,
+  provider error mapping, validation error mapping, and API-key non-leakage.
+- Added CLI tests covering the new provider flags, missing-model failure,
+  missing-API-key-env failure, mock compatibility, fake-provider success path,
+  sidecar creation, and main JSON isolation from LLM data.
+- Updated CLI, architecture, and data-model documentation for the
+  `pydanticai-openai` provider boundary.
+- Kept deterministic review behavior unchanged.
+- Kept current deterministic review JSON output schema unchanged.
+- Kept Markdown report structure unchanged.
+- Kept quality-gate semantics unchanged.
+- Kept batch review behavior unchanged and added no batch LLM support.
+- Added no LLM merge into `ReviewResult`, no API, no MCP, no GUI, no
+  streaming, no retry policy, no cache, no token accounting, no cost
+  tracking, no telemetry, and no tracing integration.
+
 - TASK-0037 is complete.
 - Added experimental mock-only LLM plumbing to the single-file
   `content-review review` CLI command behind explicit `--enable-llm`.

@@ -209,10 +209,12 @@ TASK-0034 adds only foundational future-facing LLM review data models under
 
 Current status:
 
-- the review engine remains deterministic
-- no provider integration exists yet
-- no PydanticAI integration exists yet
-- no LLM review execution path exists yet
+- the review engine remains deterministic for the main review pipeline
+- `src/content_review_engine/llm/pydanticai.py` now provides an optional real
+  `PydanticAIOpenAIReviewer` adapter
+- PydanticAI exists only in the LLM provider layer
+- the CLI can optionally route single-file sidecar review to `mock` or
+  `pydanticai-openai`
 - no LLM output is merged into the current `ReviewResult`
 - no quality-gate, suppression, report, or current JSON output behavior
   changes in this task
@@ -258,6 +260,9 @@ Current LLM provider-boundary status:
   `LLMReviewer` protocol
 - `src/content_review_engine/llm/mock.py` defines `MockLLMReviewer`, a
   deterministic adapter for tests and future wiring work
+- `src/content_review_engine/llm/pydanticai.py` defines
+  `PydanticAIOpenAIReviewer`, which maps structured PydanticAI output into the
+  existing `LLMReviewResult`
 
 TASK-0036 adds the runner boundary:
 
@@ -271,8 +276,8 @@ LLMReviewer
 LLMReviewResult
 ```
 
-TASK-0037 adds the first CLI plumbing for that boundary, but only for an
-explicit single-file opt-in sidecar flow:
+TASK-0037 and TASK-0038 add the first CLI plumbing for that boundary, but only
+for an explicit single-file opt-in sidecar flow:
 
 ```text
 content-review review
@@ -291,7 +296,7 @@ LLMReviewRequest
   ↓
 LLMReviewRunner
   ↓
-MockLLMReviewer
+MockLLMReviewer or PydanticAIOpenAIReviewer
   ↓
 LLMReviewResult
   ↓
@@ -305,8 +310,10 @@ Important current boundaries:
 - the current Markdown report structure does not read the LLM sidecar
 - the current quality gate does not read the LLM sidecar
 - batch review does not participate in this LLM path
-- no real provider routing, network calls, API keys, or SDK integrations
-  exist in this task
+- PydanticAI, OpenAI-compatible model configuration, and API-key environment
+  variable loading are confined to the provider-selection path for this sidecar
+- the deterministic review pipeline, canonical JSON schema, Markdown report,
+  and batch flow do not import PydanticAI
 
 TASK-0036 adds a dedicated execution boundary between request construction and
 provider invocation:
@@ -332,18 +339,17 @@ Current LLM runner status:
   injection
 - provider-layer `LLMReviewError` failures propagate unchanged
 - `MockLLMReviewer` remains the deterministic test adapter for the runner
-- the runner is not wired into the current deterministic review pipeline, CLI,
-  reports, batch review, suppression, or quality-gate flow
+- the runner is now wired only into the single-file CLI LLM sidecar flow
 - `src/content_review_engine/llm/errors.py` defines minimal future-facing LLM
   error types
 
 This layer is still isolated:
 
-- no real provider integration
-- no network access
-- no API keys or environment-variable configuration
-- no prompt-template execution
-- no CLI, report, batch, or deterministic pipeline integration
+- no merge into the deterministic `ReviewResult`
+- no Markdown report integration
+- no batch review integration
+- no quality-gate integration
+- no API, MCP, or GUI integration
 - no merged output with the current canonical `ReviewResult`
 
 Future tasks must still decide whether LLM findings are converted into
