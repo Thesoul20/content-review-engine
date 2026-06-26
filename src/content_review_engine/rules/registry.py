@@ -1,3 +1,9 @@
+"""Runtime registry for deterministic rule implementations.
+
+This module wires rule objects into the review pipeline and is separate from
+the descriptive metadata registry in ``content_review_engine.core.rule_registry``.
+"""
+
 from __future__ import annotations
 
 from content_review_engine.rules.absolute_claims import DEFAULT_ABSOLUTE_CLAIMS_RULE

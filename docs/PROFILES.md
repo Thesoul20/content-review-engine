@@ -114,6 +114,9 @@ Current implemented rule IDs that can be used in example profiles:
 
 Current built-in metadata for these rule IDs is centralized in
 `src/content_review_engine/core/rule_registry.py`.
+That metadata registry is descriptive only. It does not replace YAML profile
+configuration, does not decide which rules are enabled in a specific profile,
+and does not replace profile parsing in the current review pipeline.
 
 The built-in examples only use `forbidden_terms` and `absolute_claims` so they
 stay easy to read and customize.
@@ -233,6 +236,12 @@ fuzzy matching.
 
 Profiles define what the engine checks. Inline suppression is a separate
 document-level escape hatch for intentional exceptions.
+
+The metadata registry does not replace profile configuration. Profiles still
+control rule enablement, configured terms, rule-specific severity, and related
+document constraints for deterministic review. A future LLM semantic review
+layer would be a separate later architecture layer, not a replacement for the
+current profile format in TASK-0029.
 
 Example:
 

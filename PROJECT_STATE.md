@@ -61,6 +61,20 @@ The project currently has Markdown input handling, profile loading, standalone p
 
 ## Recent Completion
 
+- TASK-0029 is complete.
+- Documented the architectural boundary between the descriptive built-in rule
+  metadata registry in `src/content_review_engine/core/rule_registry.py` and
+  the deterministic execution registry in
+  `src/content_review_engine/rules/registry.py`.
+- Updated architecture, rule-system, data-model, and profile documentation to
+  keep metadata concerns separate from runtime rule execution and profile
+  configuration.
+- Positioned future LLM semantic review as a separate later layer that should
+  produce compatible findings if introduced later.
+- Added documentation tests that keep the registry boundary explicit.
+- Kept rule matching behavior, suppression behavior, CLI behavior, report
+  format, JSON schema, profile parsing, and exit code behavior unchanged.
+
 - TASK-0028 is complete.
 - Added `RuleDefinition` plus a centralized deterministic built-in rule
   metadata registry in `src/content_review_engine/core/rule_registry.py`.

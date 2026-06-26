@@ -44,6 +44,9 @@ Current built-in rule metadata is centralized in
 `src/content_review_engine/core/rule_registry.py`.
 The registry is descriptive only. It does not run rules, validate
 suppression comments, change profile parsing, or change output schemas.
+Deterministic runtime execution still lives in
+`src/content_review_engine/rules/registry.py`, which registers rule
+implementations for the review pipeline.
 
 Default enablement in the current registry:
 
@@ -54,6 +57,13 @@ Default enablement in the current registry:
 
 Opt-in rules become active through `rules:`-based profile configuration or
 explicit `enabled_rules`.
+
+`docs/RULES.md` remains the canonical user-facing rule reference.
+`src/content_review_engine/core/rule_registry.py` is the internal metadata
+source for current built-in rule descriptions, while
+`src/content_review_engine/rules/registry.py` remains execution-focused.
+If a future LLM semantic review layer is added, it should stay separate from
+the deterministic execution registry and produce compatible findings later.
 
 ## Current Built-in Rules
 
@@ -214,6 +224,8 @@ Limitations:
 This document is the canonical user-facing rule reference. Implementation and
 test coverage currently live here. The centralized built-in rule metadata
 registry lives at `src/content_review_engine/core/rule_registry.py`:
+runtime deterministic execution registry lives at
+`src/content_review_engine/rules/registry.py`.
 
 - `forbidden_terms`
   - implementation: `src/content_review_engine/rules/forbidden_terms.py`

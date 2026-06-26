@@ -8,6 +8,47 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0029
+
+### Added
+
+- Added documentation coverage in `tests/test_rule_registry_boundaries.py` for
+  the metadata-registry versus execution-registry boundary.
+- Added concise module docstrings to
+  `src/content_review_engine/core/rule_registry.py` and
+  `src/content_review_engine/rules/registry.py` so the separation is visible in
+  the code.
+
+### Changed
+
+- Updated `docs/ARCHITECTURE.md` to explain the boundary between the
+  descriptive rule metadata registry and the deterministic execution registry.
+- Updated `docs/RULES.md` to clarify that
+  `src/content_review_engine/core/rule_registry.py` is metadata-focused while
+  `src/content_review_engine/rules/registry.py` remains execution-focused.
+- Updated `docs/DATA_MODELS.md` to state that registry metadata does not change
+  the JSON output schema and that future LLM findings should remain compatible
+  with the existing finding model or a later compatible extension.
+- Updated `docs/PROFILES.md` to clarify that the metadata registry does not
+  replace profile configuration or profile parsing.
+- Updated `PROJECT_STATE.md` to record the completed boundary documentation
+  task.
+- Kept runtime rule matching behavior unchanged.
+- Kept suppression behavior unchanged.
+- Kept CLI behavior unchanged.
+- Kept Markdown report format unchanged.
+- Kept JSON schema unchanged.
+- Kept profile parsing behavior unchanged.
+- Kept exit-code behavior unchanged.
+
+### Not Added
+
+- No regex rule support.
+- No new review rule types.
+- No LLM-based review behavior.
+- No merged registry implementation.
+- No review-pipeline refactor.
+
 ## TASK-0028
 
 ### Added

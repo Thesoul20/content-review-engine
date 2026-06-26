@@ -1,3 +1,9 @@
+"""Descriptive metadata for built-in rule IDs.
+
+This module does not execute rules or participate directly in the runtime
+review pipeline.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

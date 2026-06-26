@@ -127,6 +127,75 @@ Current deterministic rules:
 - `markdown_structure`
 - `markdown_links_images`
 
+## Rule Registry Boundaries
+
+The current architecture intentionally keeps two rule registries with separate
+responsibilities.
+
+- `src/content_review_engine/core/rule_registry.py` is the metadata registry.
+  It describes known built-in `rule_id` values and small internal metadata
+  through `RuleDefinition`.
+- `src/content_review_engine/rules/registry.py` is the deterministic execution
+  registry. It registers runtime rule implementations, controls default
+  enablement, and participates in the review pipeline.
+
+Why both exist:
+
+- the metadata registry gives docs, tests, future CLI metadata display, and
+  profile guidance a stable descriptive source
+- the execution registry keeps runtime rule wiring explicit and operational
+- separating them avoids coupling user-facing rule descriptions to the runtime
+  rule objects too early
+
+The metadata registry is descriptive only. It does not execute rules, parse
+Markdown, match content, apply suppression, compute quality gates, or change
+JSON output schemas.
+
+The execution registry is operational. It decides which deterministic rule
+implementations run during review, but it is not the primary user-facing
+metadata source for docs or profile guidance.
+
+They should not be merged yet. The project only has one current deterministic
+execution path, but it already has multiple descriptive use cases for stable
+rule metadata. Keeping the registries separate preserves a clean boundary while
+the rule system grows.
+
+Future deterministic rules should register stable metadata in the metadata
+registry and register executable rule implementations in the execution
+registry. Adding one does not replace the responsibility of the other.
+
+Future LLM semantic review belongs as a separate later layer beside the
+deterministic execution path. It should not be mixed into
+`src/content_review_engine/rules/registry.py`. If added later, it should
+produce compatible findings so reports, quality gates, and other downstream
+consumers can keep a coherent result model.
+
+Current boundary in flow form:
+
+```text
+Markdown Input
+  ↓
+Profile Loading
+  ↓
+Deterministic Rule Execution Registry
+  ↓
+Rule Findings
+  ↓
+Optional Future LLM Semantic Review
+  ↓
+Merged Findings
+  ↓
+Reports / Quality Gate / Exit Codes
+```
+
+Metadata stays on a separate descriptive path:
+
+```text
+Rule Metadata Registry
+  ↓
+Docs / Tests / Future CLI metadata display / Profile guidance
+```
+
 Current review pipeline:
 
 - `review_document()` accepts already-loaded Markdown text and a loaded `ReviewProfile`.

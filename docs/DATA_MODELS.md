@@ -12,6 +12,9 @@ Current built-in rule metadata is centralized in
 `src/content_review_engine/core/rule_registry.py`.
 That registry is internal metadata only. It is not a field in the canonical
 review or batch JSON output schemas unless a future task explicitly exposes it.
+The deterministic execution registry in
+`src/content_review_engine/rules/registry.py` also does not change the JSON
+schema; it only decides which deterministic rule implementations run.
 
 ---
 
@@ -63,6 +66,11 @@ Character offsets are 0-based.
 `rule_id` is the stable identifier for the rule that produced the finding.
 For current built-in rules, descriptive metadata for that identifier is
 centralized in the core rule registry.
+That registry metadata does not add fields to `ReviewFinding`, `ReviewResult`,
+or `BatchReviewResult`.
+If a future LLM semantic review layer is added, it should map its findings into
+this finding model or a compatible extension introduced by a later task.
+TASK-0029 does not add an LLM-specific finding schema.
 
 | Field | Required | Description |
 |---|---|---|
@@ -105,6 +113,8 @@ ReviewFinding(
 the internal rule registry.
 
 It is not part of the canonical review-result JSON schema.
+It does not replace `ReviewFinding.rule_id`, and it does not appear in the
+current JSON output unless a future task explicitly exposes registry metadata.
 
 | Field | Required | Description |
 |---|---|---|
