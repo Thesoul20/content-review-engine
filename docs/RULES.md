@@ -6,9 +6,11 @@ The content review engine runs deterministic rules against Markdown content and
 returns structured findings in the core `ReviewResult` and `BatchReviewResult`
 models.
 
-This document explains the current rule model, supported built-in rule IDs,
-finding fields, severities, quality gates, suppression comments, batch
-aggregation behavior, reports, and current limitations.
+This document is the canonical reference for the content review rule system.
+
+It explains the current rule model, supported built-in rule IDs, finding
+fields, severities, quality gates, suppression comments, batch aggregation
+behavior, reports, and current limitations.
 
 ## What Is A Rule?
 
@@ -59,6 +61,7 @@ profile.
 Current behavior:
 
 - reads configured terms from the active profile
+- supports legacy top-level `forbidden_terms` profile input
 - ignores blank entries and duplicate configured entries
 - supports exact literal `allow_terms` exceptions
 - returns `warning` findings
@@ -199,6 +202,25 @@ Limitations:
 - focuses on simple Markdown syntax issues only
 - does not fetch or verify remote targets
 - does not inspect image content or accessibility beyond empty alt text
+- inline code spans are not specially excluded in the current version
+
+## Implementation And Tests
+
+This document is the canonical user-facing rule reference. Implementation and
+test coverage currently live here:
+
+- `forbidden_terms`
+  - implementation: `src/content_review_engine/rules/forbidden_terms.py`
+  - tests: `tests/test_forbidden_terms_rule.py`
+- `absolute_claims`
+  - implementation: `src/content_review_engine/rules/absolute_claims.py`
+  - tests: `tests/test_absolute_claims_rule.py`
+- `markdown_structure`
+  - implementation: `src/content_review_engine/rules/markdown_structure.py`
+  - tests: `tests/test_markdown_structure_rule.py`
+- `markdown_links_images`
+  - implementation: `src/content_review_engine/rules/markdown_links_images.py`
+  - tests: `tests/test_markdown_links_images_rule.py`
 
 ## Findings
 

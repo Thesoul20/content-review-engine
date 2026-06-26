@@ -4,7 +4,8 @@ For the end-to-end first-run workflow, see
 [docs/QUICKSTART.md](./QUICKSTART.md).
 
 For rule-system details such as supported `rule_id` values, severity ordering,
-suppression comments, counts, and quality gates, see [docs/RULES.md](./RULES.md).
+suppression comments, counts, and quality gates, see
+[docs/RULES.md](./RULES.md), the canonical rule reference.
 
 ## Purpose
 

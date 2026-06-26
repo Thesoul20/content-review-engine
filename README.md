@@ -59,6 +59,6 @@ Markdown reports, and CI-oriented exit codes.
 
 ## Rule Reference
 
-See [docs/RULES.md](docs/RULES.md) for the current rule system, supported rule
-IDs, severity ordering, suppression comments, rule counts, severity counts, and
-quality-gate behavior.
+See [docs/RULES.md](docs/RULES.md), the canonical rule system reference, for
+supported rule IDs, severity ordering, suppression comments, rule counts,
+severity counts, and quality-gate behavior.

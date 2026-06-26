@@ -4,7 +4,8 @@ For the complete local setup flow before CI, see
 [docs/QUICKSTART.md](./QUICKSTART.md).
 
 For the rule-system reference behind `--fail-on`, suppression comments, and
-severity ordering, see [docs/RULES.md](./RULES.md).
+severity ordering, see [docs/RULES.md](./RULES.md), the canonical rule
+reference.
 
 ## Purpose
 

@@ -8,6 +8,38 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0027
+
+### Added
+
+- Added documentation coverage that verifies `docs/RULES.md` is identified as
+  the canonical rule system reference.
+- Added documentation coverage that verifies `docs/REVIEW_RULES.md` is only a
+  compatibility stub pointing to `docs/RULES.md`.
+
+### Changed
+
+- Consolidated legacy rule documentation into `docs/RULES.md` and made its
+  canonical status explicit.
+- Migrated the remaining useful legacy details into `docs/RULES.md`,
+  including the legacy top-level `forbidden_terms` profile input note and the
+  current implementation/test path references for built-in rules.
+- Replaced `docs/REVIEW_RULES.md` with a short compatibility stub.
+- Updated `README.md`, `docs/QUICKSTART.md`, `docs/CLI.md`, `docs/PROFILES.md`,
+  and `docs/CI.md` to consistently point readers to `docs/RULES.md` as the
+  canonical rule reference.
+
+### Not Added
+
+- No new review rules.
+- No rule-matching changes.
+- No suppression changes.
+- No CLI contract changes.
+- No Markdown report structure changes.
+- No JSON schema changes.
+- No exit-code changes.
+- No LLM-based review.
+
 ## TASK-0026
 
 ### Added

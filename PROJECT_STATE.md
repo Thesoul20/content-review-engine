@@ -61,6 +61,19 @@ The project currently has Markdown input handling, profile loading, standalone p
 
 ## Recent Completion
 
+- TASK-0027 is complete.
+- Consolidated legacy rule documentation around `docs/RULES.md` as the
+  canonical rule system reference.
+- Migrated the remaining useful legacy details into `docs/RULES.md`,
+  specifically the legacy top-level `forbidden_terms` profile input note and
+  the implementation/test path references for the current built-in rules.
+- Replaced `docs/REVIEW_RULES.md` with a short compatibility stub that points
+  to `docs/RULES.md`.
+- Updated current user-facing docs and documentation tests so they consistently
+  point to `docs/RULES.md`.
+- Kept rule matching behavior, suppression behavior, CLI behavior, report
+  format, JSON schema, and exit code behavior unchanged.
+
 - TASK-0026 is complete.
 - Added `docs/RULES.md` as the dedicated rule system reference.
 - Documented the current built-in rule IDs:

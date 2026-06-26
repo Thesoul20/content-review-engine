@@ -5,7 +5,8 @@ from `uv sync` through `review`, `batch`, Markdown reports, and CI-oriented
 exit codes.
 
 For rule-system details such as supported `rule_id` values, severity ordering,
-suppression comments, counts, and quality gates, see [docs/RULES.md](./RULES.md).
+suppression comments, counts, and quality gates, see
+[docs/RULES.md](./RULES.md), the canonical rule reference.
 
 ## Current Command
 

@@ -10,9 +10,11 @@ def test_rules_doc_exists_and_covers_durable_rule_system_concepts() -> None:
     normalized = " ".join(content.split())
 
     assert "# Rule System" in content
+    assert "canonical reference for the content review rule system" in normalized
     assert "## What Is A Rule?" in content
     assert "## Rule IDs" in content
     assert "## Current Built-in Rules" in content
+    assert "## Implementation And Tests" in content
     assert "`forbidden_terms`" in content
     assert "`absolute_claims`" in content
     assert "`markdown_structure`" in content
@@ -31,6 +33,10 @@ def test_rules_doc_exists_and_covers_durable_rule_system_concepts() -> None:
     assert "--fail-on info" in content
     assert "content-review-disable-line absolute_claims" in content
     assert "content-review-disable-next-line forbidden_terms" in content
+    assert "supports legacy top-level `forbidden_terms` profile input" in content
+    assert "inline code spans are not specially excluded in the current version" in content
+    assert "src/content_review_engine/rules/forbidden_terms.py" in content
+    assert "tests/test_markdown_links_images_rule.py" in content
     assert "batch summary aggregates" in normalized
     assert "Markdown single-file reports include summary rows" in normalized
     assert "deterministic rules only" in normalized
@@ -52,3 +58,14 @@ def test_rule_reference_is_linked_from_user_facing_docs() -> None:
     assert "./RULES.md" in cli_doc
     assert "./RULES.md" in profiles_doc
     assert "./RULES.md" in ci_doc
+
+
+def test_legacy_review_rules_doc_is_a_stub_pointing_to_rules_doc() -> None:
+    legacy_doc = Path("docs/REVIEW_RULES.md").read_text(encoding="utf-8")
+    normalized = " ".join(legacy_doc.split())
+
+    assert "[Rule System](./RULES.md)" in legacy_doc
+    assert "canonical reference" in normalized
+    assert "stable `rule_id` values" in legacy_doc
+    assert "## Current Rules" not in legacy_doc
+    assert "## Planned Rules" not in legacy_doc
