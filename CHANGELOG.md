@@ -8,6 +8,54 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0039
+
+### Added
+
+- Added `--include-llm-report` to the single-file `content-review review`
+  command for explicitly appending an LLM section to `--format markdown`
+  output.
+- Added optional LLM Markdown section rendering with `## LLM Review`,
+  schema-version display, LLM severity counts, findings, and detailed LLM
+  finding output.
+- Added Markdown report tests covering backward compatibility, empty and
+  populated LLM sections, Markdown escaping, and deterministic-count
+  isolation.
+- Added CLI tests covering default Markdown stability, opt-in LLM report
+  rendering, invalid `--include-llm-report` combinations, sidecar retention,
+  JSON isolation, and quality-gate isolation.
+
+### Changed
+
+- Updated `src/content_review_engine/reports/markdown.py` so
+  `render_markdown_report` accepts an optional `LLMReviewResult` input while
+  preserving identical output when no LLM result is passed.
+- Updated `src/content_review_engine/cli.py` to validate
+  `--include-llm-report`, reuse the same LLM run for both Markdown rendering
+  and the required sidecar JSON, and keep batch behavior unchanged.
+- Updated `docs/CLI.md` to document `--include-llm-report`, its constraints,
+  and the continued requirement for `--llm-output`.
+- Updated `docs/ARCHITECTURE.md` to describe the presentation-only optional
+  LLM Markdown integration boundary.
+- Updated `docs/DATA_MODELS.md` to clarify that `LLMReviewResult` can be an
+  optional Markdown report input without changing `ReviewResult`.
+- Updated `PROJECT_STATE.md` to record TASK-0039 completion.
+- Kept the canonical deterministic review JSON schema unchanged.
+- Kept deterministic Markdown summary counts, rule counts, and finding order
+  unchanged.
+- Kept quality-gate semantics unchanged.
+- Kept batch review behavior unchanged.
+
+### Not Added
+
+- No `llm_review` field in the main review JSON output.
+- No LLM findings in deterministic quality gates, severity counts, or rule
+  counts.
+- No batch LLM report integration.
+- No API, MCP, or GUI behavior.
+- No streaming, retry policy, cache, token accounting, cost tracking,
+  telemetry, or tracing integration.
+
 ## TASK-0038
 
 ### Added

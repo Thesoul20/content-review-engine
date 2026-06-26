@@ -85,6 +85,28 @@ use.
 
 ## Recent Completion
 
+- TASK-0039 is complete.
+- Added optional single-file Markdown report integration for existing
+  `LLMReviewResult` output behind explicit `--include-llm-report`.
+- Extended `render_markdown_report` with a backward-compatible optional
+  `llm_result` input and added a dedicated appended `## LLM Review` section.
+- Added CLI validation so `--include-llm-report` only works with
+  `content-review review`, `--enable-llm`, and `--format markdown`.
+- Kept the required LLM sidecar JSON output through `--llm-output`.
+- Added Markdown report tests for empty and populated LLM sections, Markdown
+  escaping, and deterministic-count isolation.
+- Added CLI tests for default Markdown stability, opt-in LLM report rendering,
+  invalid argument combinations, JSON isolation, sidecar persistence, and
+  quality-gate isolation.
+- Updated CLI, architecture, and data-model documentation for the new
+  optional Markdown LLM section.
+- Kept deterministic review behavior unchanged.
+- Kept the canonical deterministic review JSON schema unchanged.
+- Kept quality-gate semantics unchanged.
+- Kept batch review behavior unchanged and added no batch LLM integration.
+- Added no API, MCP, GUI, streaming, retry policy, cache, token accounting,
+  cost tracking, telemetry, or tracing integration.
+
 - TASK-0038 is complete.
 - Added `pydantic-ai-slim[openai]` and a new
   `PydanticAIOpenAIReviewer` under `src/content_review_engine/llm/`.

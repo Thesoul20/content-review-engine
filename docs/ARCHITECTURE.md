@@ -215,9 +215,14 @@ Current status:
 - PydanticAI exists only in the LLM provider layer
 - the CLI can optionally route single-file sidecar review to `mock` or
   `pydanticai-openai`
+- the single-file Markdown report can now optionally append a separate
+  `LLMReviewResult` section when `--format markdown`, `--enable-llm`, and
+  `--include-llm-report` are all enabled
 - no LLM output is merged into the current `ReviewResult`
-- no quality-gate, suppression, report, or current JSON output behavior
-  changes in this task
+- no LLM output is merged into deterministic severity counts, rule counts, or
+  quality-gate evaluation
+- batch review still has no LLM report integration
+- the canonical deterministic JSON output schema remains unchanged
 
 The intended future boundary is:
 
@@ -236,6 +241,32 @@ Future Merge Layer
   ↓
 Combined Report
 ```
+
+Current single-file Markdown report boundary:
+
+```text
+ReviewResult
+  ↓
+Deterministic Markdown report sections
+
+LLMReviewResult sidecar
+  ↓ optional explicit CLI opt-in
+LLM Markdown section
+
+Deterministic Markdown report + optional appended LLM section
+```
+
+The optional Markdown integration is a presentation-only adapter boundary:
+
+- `render_markdown_report` can accept `llm_result: LLMReviewResult | None`
+- `None` preserves the existing deterministic Markdown output exactly
+- a provided `LLMReviewResult` appends `## LLM Review` after the deterministic
+  sections
+- LLM findings do not mutate `ReviewResult`
+- LLM findings do not affect deterministic summary counts, rule counts, or
+  `--fail-on`
+- the separate `LLMReviewResult` JSON sidecar is still written and remains the
+  machine-readable contract
 
 The current `LLMReviewFinding`, `LLMReviewSummary`, and `LLMReviewResult`
 models exist so later tasks can add provider adapters, prompt versioning, and

@@ -11,6 +11,7 @@ from content_review_engine.core.quality_gate import (
     quality_gate_failed,
     severity_rank,
 )
+from content_review_engine.llm.models import LLMReviewFinding, LLMReviewResult
 
 _MARKDOWN_SEVERITY_ORDER: tuple[str, ...] = ("critical", "error", "warning", "info")
 
@@ -172,6 +173,133 @@ def _append_detailed_findings(
         lines.append("")
 
 
+def _llm_severity_counts(
+    llm_result: LLMReviewResult,
+) -> dict[str, int]:
+    counts = {severity: 0 for severity in _MARKDOWN_SEVERITY_ORDER}
+    for finding in llm_result.findings:
+        counts[finding.severity] = counts.get(finding.severity, 0) + 1
+    return counts
+
+
+def _append_llm_summary(
+    lines: list[str],
+    llm_result: LLMReviewResult,
+) -> None:
+    summary_rows = [
+        ("Schema Version", _escape_cell(llm_result.schema_version)),
+        ("Provider", _escape_cell(llm_result.provider)),
+        ("Model", _escape_cell(llm_result.model)),
+        ("Prompt Version", _escape_cell(llm_result.prompt_version)),
+        ("Profile Name", _escape_cell(llm_result.profile_name)),
+        ("Total Findings", str(len(llm_result.findings))),
+    ]
+    lines.extend(
+        [
+            "### LLM Summary",
+            "",
+            "| Field | Value |",
+            "| --- | --- |",
+        ]
+    )
+    for label, value in summary_rows:
+        lines.append(f"| {label} | {value} |")
+    lines.append("")
+
+
+def _append_llm_severity_counts(
+    lines: list[str],
+    llm_result: LLMReviewResult,
+) -> None:
+    lines.extend(
+        [
+            "### LLM Severity Counts",
+            "",
+            "| Severity | Count |",
+            "| --- | ---: |",
+        ]
+    )
+    severity_counts = _llm_severity_counts(llm_result)
+    for severity in _MARKDOWN_SEVERITY_ORDER:
+        lines.append(f"| {severity} | {severity_counts[severity]} |")
+    lines.append("")
+
+
+def _append_llm_findings_table(
+    lines: list[str],
+    llm_result: LLMReviewResult,
+) -> None:
+    lines.extend(["### LLM Findings", ""])
+
+    if not llm_result.findings:
+        lines.append("No LLM findings.")
+        lines.append("")
+        return
+
+    lines.extend(
+        [
+            "| Severity | Rule | Message | Suggestion |",
+            "| --- | --- | --- | --- |",
+        ]
+    )
+    for finding in llm_result.findings:
+        lines.append(
+            "| "
+            f"{finding.severity} | "
+            f"{_escape_cell(finding.rule_id)} | "
+            f"{_escape_cell(finding.message)} | "
+            f"{_escape_cell(finding.suggestion)} |"
+        )
+    lines.append("")
+
+
+def _append_llm_finding_detail(
+    lines: list[str],
+    finding: LLMReviewFinding,
+    *,
+    index: int,
+) -> None:
+    lines.extend(
+        [
+            f"#### LLM Finding {index}",
+            "",
+            f"- Severity: {finding.severity}",
+            f"- Rule: {_format_inline_code(finding.rule_id)}",
+            f"- Message: {_escape_cell(finding.message)}",
+        ]
+    )
+    if finding.line is not None:
+        location = f"line {finding.line}"
+        if finding.column is not None:
+            location += f", column {finding.column}"
+        if finding.end_line is not None and finding.end_column is not None:
+            location += f" to line {finding.end_line}, column {finding.end_column}"
+        lines.append(f"- Location: {location}")
+    if finding.matched_text is not None:
+        lines.append(f"- Matched Text: {_format_inline_code(finding.matched_text)}")
+    if finding.category is not None:
+        lines.append(f"- Category: {_escape_cell(finding.category)}")
+    if finding.rationale is not None:
+        lines.append(f"- Rationale: {_escape_cell(finding.rationale)}")
+    if finding.confidence is not None:
+        lines.append(f"- Confidence: {finding.confidence}")
+    if finding.suggestion is not None:
+        lines.append(f"- Suggestion: {_escape_cell(finding.suggestion)}")
+    lines.append("")
+
+
+def render_llm_review_markdown_section(llm_result: LLMReviewResult) -> str:
+    lines = ["## LLM Review", ""]
+    _append_llm_summary(lines, llm_result)
+    _append_llm_severity_counts(lines, llm_result)
+    _append_llm_findings_table(lines, llm_result)
+    if llm_result.findings:
+        lines.extend(["### LLM Detailed Findings", ""])
+        for index, finding in enumerate(llm_result.findings, start=1):
+            _append_llm_finding_detail(lines, finding, index=index)
+    return "\n".join(lines).rstrip()
+
+
 def _quality_gate_rows(
     severity_counts: dict[str, int],
     *,
@@ -193,6 +321,7 @@ def render_markdown_report(
     result: ReviewResult,
     *,
     fail_on: str | None = None,
+    llm_result: LLMReviewResult | None = None,
 ) -> str:
     document_label = _format_inline_code(
         result.document.path if result.document is not None else None
@@ -216,6 +345,8 @@ def render_markdown_report(
     _append_rule_counts(lines, result.findings)
     _append_findings_table(lines, result.findings, heading="## Findings")
     _append_detailed_findings(lines, result.findings, heading="## Detailed Findings")
+    if llm_result is not None:
+        lines.extend(["", render_llm_review_markdown_section(llm_result)])
     return "\n".join(lines).rstrip()
 
 
@@ -297,5 +428,6 @@ def render_batch_markdown_report(
 __all__ = [
     "REVIEW_SUMMARY_SEVERITIES",
     "render_batch_markdown_report",
+    "render_llm_review_markdown_section",
     "render_markdown_report",
 ]

@@ -34,6 +34,7 @@ from content_review_engine.core.serialization import (
 from content_review_engine.llm import (
     LLMReviewRequest,
     LLMReviewError,
+    LLMReviewResult,
     LLMReviewRunner,
     MockLLMReviewer,
     PYDANTICAI_OPENAI_PROVIDER_NAME,
@@ -138,6 +139,11 @@ def build_parser() -> argparse.ArgumentParser:
     review_parser.add_argument(
         "--llm-output",
         help="Write the experimental LLM review result JSON sidecar to a file.",
+    )
+    review_parser.add_argument(
+        "--include-llm-report",
+        action="store_true",
+        help="Append the LLM review result to --format markdown output.",
     )
 
     profile_parser = subparsers.add_parser(
@@ -273,11 +279,16 @@ def _render_output(
     *,
     output_format: str,
     fail_on: str | None = None,
+    llm_result: LLMReviewResult | None = None,
 ) -> str:
     if output_format == "json":
         return _render_json_report(review_result)
     if output_format == "markdown":
-        return render_markdown_report(review_result, fail_on=fail_on)
+        return render_markdown_report(
+            review_result,
+            fail_on=fail_on,
+            llm_result=llm_result,
+        )
     return _render_text_report(review_result)
 
 
@@ -479,10 +490,14 @@ def _validate_review_llm_args(args: argparse.Namespace) -> None:
             raise ValueError("--llm-api-key-env requires --enable-llm")
         if args.llm_base_url is not None:
             raise ValueError("--llm-base-url requires --enable-llm")
+        if args.include_llm_report:
+            raise ValueError("--include-llm-report requires --enable-llm")
         return
 
     if args.llm_output is None:
         raise ValueError("--enable-llm requires --llm-output")
+    if args.include_llm_report and args.format != "markdown":
+        raise ValueError("--include-llm-report requires --format markdown")
 
     provider = args.llm_provider or "mock"
     if provider == "mock":
@@ -528,21 +543,27 @@ def _build_llm_review_request(
     )
 
 
-def _run_llm_review_and_write_sidecar(
+def _run_llm_review(
     *,
     markdown_text: str,
     markdown_path: str,
     profile_name: str,
     reviewer,
-    output_path: str,
-) -> None:
+) -> LLMReviewResult:
     request = _build_llm_review_request(
         markdown_text=markdown_text,
         markdown_path=markdown_path,
         profile_name=profile_name,
     )
     runner = LLMReviewRunner(reviewer=reviewer)
-    llm_result = runner.run(request)
+    return runner.run(request)
+
+
+def _write_llm_sidecar(
+    *,
+    llm_result: LLMReviewResult,
+    output_path: str,
+) -> None:
     Path(output_path).write_text(
         llm_review_result_to_json(llm_result),
         encoding="utf-8",
@@ -560,20 +581,26 @@ def _run_review_command(args: argparse.Namespace) -> int:
         document_path=args.markdown_file,
         profile_path=args.profile,
     )
+    llm_result = None
+    if args.enable_llm:
+        llm_result = _run_llm_review(
+            markdown_text=markdown_text,
+            markdown_path=args.markdown_file,
+            profile_name=profile.name,
+            reviewer=llm_reviewer,
+        )
     rendered_output = _render_output(
         review_result,
         output_format=args.format,
         fail_on=args.fail_on,
+        llm_result=llm_result if args.include_llm_report else None,
     )
     output_exit_code = _write_or_print_output(rendered_output, args.output)
     if output_exit_code != 0:
         return output_exit_code
     if args.enable_llm:
-        _run_llm_review_and_write_sidecar(
-            markdown_text=markdown_text,
-            markdown_path=args.markdown_file,
-            profile_name=profile.name,
-            reviewer=llm_reviewer,
+        _write_llm_sidecar(
+            llm_result=llm_result,
             output_path=args.llm_output,
         )
     return _quality_gate_exit_code(

@@ -9,6 +9,7 @@ from content_review_engine.core.models import (
     ReviewResult,
     SourceSpan,
 )
+from content_review_engine.llm.models import LLMReviewFinding, LLMReviewResult
 from content_review_engine.reports import render_markdown_report
 
 FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures"
@@ -97,3 +98,91 @@ def test_render_markdown_report_includes_quality_gate_summary() -> None:
     assert "| Quality Gate | Failed |" in report
     assert "| Fail On | `error` |" in report
     assert "| Matched Gate Findings | 1 |" in report
+
+
+def test_render_markdown_report_with_empty_llm_result_appends_empty_section() -> None:
+    finding = ReviewFinding(
+        rule_id="forbidden_terms",
+        severity="warning",
+        message="发现风险词：绝对安全",
+        matched_term="绝对安全",
+        matched_text="绝对安全",
+    )
+    result = ReviewResult.from_findings([finding])
+
+    report = render_markdown_report(result, llm_result=LLMReviewResult())
+
+    assert "## LLM Review" in report
+    assert "| Schema Version | llm-review-result.v1 |" in report
+    assert "| Total Findings | 0 |" in report
+    assert "### LLM Findings" in report
+    assert "No LLM findings." in report
+    assert "| warning | 1 |" in report
+    assert "| forbidden_terms | 1 |" in report
+    assert "llm_semantic_risk" not in report
+
+
+def test_render_markdown_report_with_llm_findings_keeps_deterministic_counts_unchanged() -> None:
+    finding = ReviewFinding(
+        rule_id="forbidden_terms",
+        severity="warning",
+        message="发现风险词：绝对安全",
+        matched_term="绝对安全",
+        matched_text="绝对安全",
+    )
+    result = ReviewResult.from_findings([finding])
+    llm_result = LLMReviewResult(
+        provider="mock",
+        findings=(
+            LLMReviewFinding(
+                rule_id="llm_semantic_risk",
+                severity="critical",
+                message="Semantic concern detected.",
+                suggestion="Revise the claim.",
+                line=12,
+                column=3,
+                end_line=12,
+                end_column=9,
+                matched_text="guaranteed",
+                rationale="The statement appears unsupported.",
+                category="semantic-risk",
+                confidence=0.8,
+            ),
+        ),
+    )
+
+    report = render_markdown_report(result, llm_result=llm_result)
+    deterministic_section = report.split("## LLM Review", maxsplit=1)[0]
+
+    assert "| warning | 1 |" in report
+    assert "| critical | 0 |" in report
+    assert "| forbidden_terms | 1 |" in report
+    assert "| llm_semantic_risk |" not in deterministic_section
+    assert "## LLM Review" in report
+    assert "| Provider | mock |" in report
+    assert "| Total Findings | 1 |" in report
+    assert "| critical | 1 |" in report
+    assert "| critical | llm_semantic_risk | Semantic concern detected. | Revise the claim. |" in report
+    assert "### LLM Detailed Findings" in report
+    assert "- Location: line 12, column 3 to line 12, column 9" in report
+    assert "- Matched Text: `guaranteed`" in report
+    assert "- Rationale: The statement appears unsupported." in report
+    assert "- Confidence: 0.8" in report
+
+
+def test_render_markdown_report_llm_section_escapes_markdown_table_cells() -> None:
+    result = ReviewResult.from_findings([])
+    llm_result = LLMReviewResult(
+        findings=(
+            LLMReviewFinding(
+                rule_id="llm|overclaim",
+                severity="warning",
+                message="A | B",
+                suggestion="Line 1\nLine 2",
+            ),
+        ),
+    )
+
+    report = render_markdown_report(result, llm_result=llm_result)
+
+    assert r"| warning | llm\|overclaim | A \| B | Line 1<br>Line 2 |" in report

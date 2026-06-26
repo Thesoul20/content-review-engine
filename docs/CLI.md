@@ -14,7 +14,7 @@ suppression comments, counts, and quality gates, see
 ## Current Command
 
 ```bash
-uv run content-review review <markdown_file> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--fail-on info|warning|error|critical]
+uv run content-review review <markdown_file> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--fail-on info|warning|error|critical] [--enable-llm --llm-output <file> [--llm-provider mock|pydanticai-openai] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>] [--include-llm-report]]
 uv run content-review batch <input_dir> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--recursive] [--pattern "*.md"] [--fail-on info|warning|error|critical]
 uv run content-review profile validate <profile_file> [--format text|json]
 uv run content-review profile init --template <general-basic|general-publishing|health-content|marketing-copy|technical-blog|wechat-basic|wechat-article|wechat-strict> --output <profile_file> [--force]
@@ -35,6 +35,7 @@ Single-file `review` now supports an explicit experimental LLM sidecar flow:
 ```bash
 uv run content-review review article.md --profile profile.yaml --enable-llm --llm-output article.llm.json
 uv run content-review review article.md --profile profile.yaml --enable-llm --llm-provider mock --llm-output article.llm.json
+uv run content-review review article.md --profile profile.yaml --format markdown --enable-llm --llm-output article.llm.json --include-llm-report
 OPENAI_API_KEY=your-key uv run content-review review article.md --profile profile.yaml --enable-llm --llm-provider pydanticai-openai --llm-model gpt-4o-mini --llm-output article.llm.json
 LLM_GATEWAY_KEY=your-key uv run content-review review article.md --profile profile.yaml --enable-llm --llm-provider pydanticai-openai --llm-model gpt-4o-mini --llm-api-key-env LLM_GATEWAY_KEY --llm-base-url https://example.com/v1 --llm-output article.llm.json
 ```
@@ -50,6 +51,10 @@ Current constraints:
 - `--llm-model` without `--enable-llm` fails
 - `--llm-api-key-env` without `--enable-llm` fails
 - `--llm-base-url` without `--enable-llm` fails
+- `--include-llm-report` without `--enable-llm` fails
+- `--include-llm-report` requires `--format markdown`
+- `--include-llm-report` fails for `--format json`
+- `--include-llm-report` fails for `--format text`
 - `--llm-provider pydanticai-openai` requires `--llm-model`
 - `--llm-provider pydanticai-openai` reads the API key from the environment
   variable named by `--llm-api-key-env`, or `OPENAI_API_KEY` by default
@@ -57,13 +62,19 @@ Current constraints:
 - `--llm-base-url` is optional and only configures an OpenAI-compatible
   endpoint for `pydanticai-openai`
 - the LLM result is written as a separate UTF-8 JSON sidecar file using the existing `LLMReviewResult` serialization helper
+- `--include-llm-report` only affects single-file Markdown report rendering and
+  does not replace the required `--llm-output` sidecar JSON
 
 Current behavior guarantees:
 
 - default CLI behavior is unchanged when LLM flags are omitted
 - the main deterministic review output remains the canonical `ReviewResult`
 - `--format json` does not add an `llm_review` field
-- `--format markdown` does not add an LLM section
+- `--format markdown` does not add an LLM section unless
+  `--enable-llm` and `--include-llm-report` are both enabled
+- when enabled, the optional LLM Markdown section is appended after the
+  deterministic report and does not change deterministic counts or finding
+  order
 - quality-gate evaluation still reads only deterministic findings
 - batch review behavior is unchanged and does not accept LLM flags
 

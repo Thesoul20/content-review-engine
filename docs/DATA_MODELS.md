@@ -183,6 +183,9 @@ TASK-0037 allows the single-file CLI `review` command to write it to a
 separate JSON sidecar file when LLM review is explicitly enabled.
 TASK-0038 allows the optional `pydanticai-openai` provider to generate
 structured output and convert it into the same `LLMReviewResult` sidecar model.
+TASK-0039 also allows single-file Markdown report rendering to accept
+`LLMReviewResult` as an optional additional input for human-readable output,
+without changing the canonical deterministic `ReviewResult` schema.
 
 | Field | Required | Description |
 |---|---|---|
@@ -222,11 +225,24 @@ LLMReviewResult JSON
   = separate optional sidecar file
 ```
 
+Current optional Markdown report boundary:
+
+```text
+ReviewResult
+  = canonical deterministic report input
+
+LLMReviewResult
+  = optional appended Markdown section input only
+```
+
 Current guarantees:
 
 - `LLMReviewResult` is not embedded inside `ReviewResult`
 - the main `review-result.v1` schema is unchanged
-- the current Markdown report format is unchanged
+- the deterministic Markdown report sections are unchanged unless a caller
+  explicitly passes `LLMReviewResult` into the renderer
+- the optional Markdown LLM section is presentation-only and does not alter
+  deterministic counts or finding order
 - the current quality gate does not count LLM findings
 - the current batch result schema is unchanged
 - provider-specific structured output is converted before serialization, so the
