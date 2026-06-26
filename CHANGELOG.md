@@ -8,6 +8,50 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0040
+
+### Added
+
+- Added `--enable-llm` support to `content-review batch`.
+- Added batch `--llm-output-dir` for writing per-file `LLMReviewResult` JSON
+  sidecars.
+- Added batch `--llm-provider`, `--llm-model`, `--llm-api-key-env`, and
+  optional `--llm-base-url`.
+- Added batch CLI tests covering mock sidecar output, recursive relative path
+  preservation, stable LLM schema version, default empty mock findings,
+  invalid flag combinations, unsupported providers, fake
+  `pydanticai-openai` success, quality-gate isolation, and friendly sidecar
+  write failures.
+
+### Changed
+
+- Updated `src/content_review_engine/cli.py` so batch review can reuse the
+  existing `LLMReviewRunner`, `LLMReviewRequest`, provider construction, and
+  `llm_review_result_to_json` helper for separate per-file sidecars.
+- Updated `docs/CLI.md` to document batch LLM sidecar usage, argument rules,
+  output path behavior, and batch isolation guarantees.
+- Updated `docs/ARCHITECTURE.md` to describe the batch
+  `BatchReviewResult + per-file LLM sidecar` data flow.
+- Updated `docs/DATA_MODELS.md` to clarify that batch LLM output remains one
+  independent `LLMReviewResult` sidecar per reviewed file.
+- Updated `PROJECT_STATE.md` to record TASK-0040 completion.
+- Kept the canonical deterministic batch JSON schema unchanged.
+- Kept batch Markdown report structure unchanged.
+- Kept deterministic batch summary counts, rule counts, and finding order
+  unchanged.
+- Kept quality-gate semantics unchanged.
+- Kept single-file review behavior unchanged.
+
+### Not Added
+
+- No `llm_review` field in batch JSON output.
+- No batch LLM section in Markdown reports.
+- No batch aggregate LLM report.
+- No LLM findings in deterministic batch summary counts or quality gates.
+- No API, MCP, or GUI behavior.
+- No streaming, retry policy, cache, token accounting, cost tracking,
+  telemetry, or tracing integration.
+
 ## TASK-0039
 
 ### Added

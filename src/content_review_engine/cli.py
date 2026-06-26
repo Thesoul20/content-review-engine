@@ -238,6 +238,43 @@ def build_parser() -> argparse.ArgumentParser:
         choices=SEVERITY_ORDER,
         help="Exit with code 1 when findings are at or above the severity threshold.",
     )
+    batch_parser.add_argument(
+        "--enable-llm",
+        action="store_true",
+        help="Enable experimental per-file LLM review sidecar output.",
+    )
+    batch_parser.add_argument(
+        "--llm-provider",
+        type=_parse_llm_provider,
+        default=None,
+        help=(
+            "LLM provider for experimental sidecar review. "
+            "Supported: 'mock', 'pydanticai-openai'."
+        ),
+    )
+    batch_parser.add_argument(
+        "--llm-output-dir",
+        default=None,
+        help="Write experimental per-file LLM review JSON sidecars under this directory.",
+    )
+    batch_parser.add_argument(
+        "--llm-model",
+        default=None,
+        help="Model name for --llm-provider pydanticai-openai.",
+    )
+    batch_parser.add_argument(
+        "--llm-api-key-env",
+        default=None,
+        help=(
+            "Environment variable name used to read the API key for "
+            "--llm-provider pydanticai-openai. Defaults to OPENAI_API_KEY."
+        ),
+    )
+    batch_parser.add_argument(
+        "--llm-base-url",
+        default=None,
+        help="Optional OpenAI-compatible base URL for --llm-provider pydanticai-openai.",
+    )
 
     return parser
 
@@ -509,6 +546,33 @@ def _validate_review_llm_args(args: argparse.Namespace) -> None:
         )
 
 
+def _validate_batch_llm_args(args: argparse.Namespace) -> None:
+    if not args.enable_llm:
+        if args.llm_output_dir is not None:
+            raise ValueError("--llm-output-dir requires --enable-llm")
+        if args.llm_provider is not None:
+            raise ValueError("--llm-provider requires --enable-llm")
+        if args.llm_model is not None:
+            raise ValueError("--llm-model requires --enable-llm")
+        if args.llm_api_key_env is not None:
+            raise ValueError("--llm-api-key-env requires --enable-llm")
+        if args.llm_base_url is not None:
+            raise ValueError("--llm-base-url requires --enable-llm")
+        return
+
+    if args.llm_output_dir is None:
+        raise ValueError("--enable-llm requires --llm-output-dir")
+
+    provider = args.llm_provider or "mock"
+    if provider == "mock":
+        return
+
+    if provider == PYDANTICAI_OPENAI_PROVIDER_NAME and args.llm_model is None:
+        raise ValueError(
+            "--llm-provider pydanticai-openai requires --llm-model"
+        )
+
+
 def _build_llm_reviewer(args: argparse.Namespace):
     provider = args.llm_provider or "mock"
     if provider == "mock":
@@ -563,11 +627,62 @@ def _write_llm_sidecar(
     *,
     llm_result: LLMReviewResult,
     output_path: str,
+    create_parent_dirs: bool = False,
 ) -> None:
-    Path(output_path).write_text(
-        llm_review_result_to_json(llm_result),
-        encoding="utf-8",
-    )
+    sidecar_path = Path(output_path)
+    if create_parent_dirs:
+        sidecar_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        sidecar_path.write_text(
+            llm_review_result_to_json(llm_result),
+            encoding="utf-8",
+        )
+    except OSError as exc:
+        raise ValueError(
+            f"Failed to write LLM sidecar: {sidecar_path}: {exc}"
+        ) from exc
+
+
+def _build_batch_llm_sidecar_path(
+    *,
+    input_dir: str,
+    llm_output_dir: str,
+    markdown_path: str,
+) -> Path:
+    relative_path = Path(markdown_path).relative_to(Path(input_dir))
+    return Path(llm_output_dir) / Path(f"{relative_path.as_posix()}.llm-review.json")
+
+
+def _write_batch_llm_sidecars(
+    *,
+    batch_result: BatchReviewResult,
+    input_dir: str,
+    llm_output_dir: str,
+    profile_name: str,
+    reviewer,
+) -> None:
+    for review_result in batch_result.results:
+        document = review_result.document
+        if document is None:
+            continue
+        markdown_path = document.path
+        markdown_text = read_markdown(markdown_path)
+        llm_result = _run_llm_review(
+            markdown_text=markdown_text,
+            markdown_path=markdown_path,
+            profile_name=profile_name,
+            reviewer=reviewer,
+        )
+        sidecar_path = _build_batch_llm_sidecar_path(
+            input_dir=input_dir,
+            llm_output_dir=llm_output_dir,
+            markdown_path=markdown_path,
+        )
+        _write_llm_sidecar(
+            llm_result=llm_result,
+            output_path=str(sidecar_path),
+            create_parent_dirs=True,
+        )
 
 
 def _run_review_command(args: argparse.Namespace) -> int:
@@ -610,6 +725,8 @@ def _run_review_command(args: argparse.Namespace) -> int:
 
 
 def _run_batch_command(args: argparse.Namespace) -> int:
+    _validate_batch_llm_args(args)
+    llm_reviewer = _build_llm_reviewer(args) if args.enable_llm else None
     profile = load_profile(args.profile)
     batch_result = review_markdown_directory(
         Path(args.input_dir),
@@ -626,6 +743,14 @@ def _run_batch_command(args: argparse.Namespace) -> int:
     output_exit_code = _write_or_print_output(rendered_output, args.output)
     if output_exit_code != 0:
         return output_exit_code
+    if args.enable_llm:
+        _write_batch_llm_sidecars(
+            batch_result=batch_result,
+            input_dir=args.input_dir,
+            llm_output_dir=args.llm_output_dir,
+            profile_name=profile.name,
+            reviewer=llm_reviewer,
+        )
     return _quality_gate_exit_code(
         batch_result.summary.severity_counts,
         args.fail_on,

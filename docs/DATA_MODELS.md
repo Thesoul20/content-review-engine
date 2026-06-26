@@ -186,6 +186,9 @@ structured output and convert it into the same `LLMReviewResult` sidecar model.
 TASK-0039 also allows single-file Markdown report rendering to accept
 `LLMReviewResult` as an optional additional input for human-readable output,
 without changing the canonical deterministic `ReviewResult` schema.
+TASK-0040 also allows the batch CLI command to emit one independent
+`LLMReviewResult` sidecar per reviewed Markdown file, while keeping the batch
+result schema unchanged.
 
 | Field | Required | Description |
 |---|---|---|
@@ -225,6 +228,16 @@ LLMReviewResult JSON
   = separate optional sidecar file
 ```
 
+Current batch CLI sidecar boundary:
+
+```text
+BatchReviewResult JSON
+  = canonical deterministic batch output
+
+Each reviewed Markdown file
+  = separate optional LLMReviewResult sidecar JSON
+```
+
 Current optional Markdown report boundary:
 
 ```text
@@ -245,6 +258,11 @@ Current guarantees:
   deterministic counts or finding order
 - the current quality gate does not count LLM findings
 - the current batch result schema is unchanged
+- batch sidecars do not add an `llm_review` field to `BatchReviewResult`
+- batch sidecars do not change batch summary counts, deterministic finding
+  order, or batch Markdown report structure
+- batch sidecar files preserve the input path relative to the batch input
+  directory and append `.llm-review.json`
 - provider-specific structured output is converted before serialization, so the
   sidecar remains `LLMReviewResult`-shaped even when the provider uses
   PydanticAI internally

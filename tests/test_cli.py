@@ -2218,6 +2218,536 @@ def test_cli_batch_json_output_uses_canonical_batch_result(
     assert captured.err == ""
 
 
+def test_cli_batch_enable_llm_writes_mock_sidecars_without_changing_batch_json(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    input_dir = "tests/fixtures/batch/articles"
+    profile_path = "tests/fixtures/batch/profile.yml"
+    review_output_path = tmp_path / "batch.json"
+    llm_output_dir = tmp_path / "llm-sidecars"
+
+    exit_code = main(
+        [
+            "batch",
+            input_dir,
+            "--profile",
+            profile_path,
+            "--recursive",
+            "--format",
+            "json",
+            "--output",
+            str(review_output_path),
+            "--enable-llm",
+            "--llm-output-dir",
+            str(llm_output_dir),
+        ]
+    )
+
+    captured = capsys.readouterr()
+    review_payload = json.loads(review_output_path.read_text(encoding="utf-8"))
+    clean_sidecar = llm_output_dir / "clean.md.llm-review.json"
+    forbidden_sidecar = llm_output_dir / "forbidden.md.llm-review.json"
+    nested_sidecar = llm_output_dir / "nested" / "nested_forbidden.md.llm-review.json"
+
+    assert exit_code == 0
+    assert captured.out == ""
+    assert captured.err == ""
+    assert review_payload["schema_version"] == "batch-review-result.v1"
+    assert "llm_review" not in review_payload
+    assert clean_sidecar.exists()
+    assert forbidden_sidecar.exists()
+    assert nested_sidecar.exists()
+    assert json.loads(clean_sidecar.read_text(encoding="utf-8")) == {
+        "schema_version": "llm-review-result.v1",
+        "findings": [],
+    }
+    assert json.loads(forbidden_sidecar.read_text(encoding="utf-8")) == {
+        "schema_version": "llm-review-result.v1",
+        "findings": [],
+    }
+    assert json.loads(nested_sidecar.read_text(encoding="utf-8")) == {
+        "schema_version": "llm-review-result.v1",
+        "findings": [],
+    }
+
+
+def test_cli_batch_enable_llm_preserves_relative_sidecar_paths_for_recursive_input(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    input_dir = "tests/fixtures/batch/articles"
+    profile_path = "tests/fixtures/batch/profile.yml"
+    llm_output_dir = tmp_path / "llm-sidecars"
+
+    exit_code = main(
+        [
+            "batch",
+            input_dir,
+            "--profile",
+            profile_path,
+            "--recursive",
+            "--enable-llm",
+            "--llm-output-dir",
+            str(llm_output_dir),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert captured.err == ""
+    assert (llm_output_dir / "clean.md.llm-review.json").exists()
+    assert (llm_output_dir / "forbidden.md.llm-review.json").exists()
+    assert (llm_output_dir / "nested" / "nested_forbidden.md.llm-review.json").exists()
+
+
+def test_cli_batch_markdown_output_does_not_include_llm_section_when_llm_is_enabled(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    input_dir = "tests/fixtures/batch/articles"
+    profile_path = "tests/fixtures/batch/profile.yml"
+    llm_output_dir = tmp_path / "llm-sidecars"
+
+    exit_code = main(
+        [
+            "batch",
+            input_dir,
+            "--profile",
+            profile_path,
+            "--recursive",
+            "--format",
+            "markdown",
+            "--enable-llm",
+            "--llm-output-dir",
+            str(llm_output_dir),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "## LLM Review" not in captured.out
+    assert captured.err == ""
+
+
+def test_cli_batch_enable_llm_requires_llm_output_dir(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    input_dir = "tests/fixtures/batch/articles"
+    profile_path = "tests/fixtures/batch/profile.yml"
+
+    exit_code = main(
+        [
+            "batch",
+            input_dir,
+            "--profile",
+            profile_path,
+            "--enable-llm",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert captured.out == ""
+    assert "Error: --enable-llm requires --llm-output-dir" in captured.err
+
+
+def test_cli_batch_llm_output_dir_requires_enable_llm(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    input_dir = "tests/fixtures/batch/articles"
+    profile_path = "tests/fixtures/batch/profile.yml"
+
+    exit_code = main(
+        [
+            "batch",
+            input_dir,
+            "--profile",
+            profile_path,
+            "--llm-output-dir",
+            str(tmp_path / "llm-sidecars"),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert captured.out == ""
+    assert "Error: --llm-output-dir requires --enable-llm" in captured.err
+
+
+def test_cli_batch_llm_provider_requires_enable_llm(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    input_dir = "tests/fixtures/batch/articles"
+    profile_path = "tests/fixtures/batch/profile.yml"
+
+    exit_code = main(
+        [
+            "batch",
+            input_dir,
+            "--profile",
+            profile_path,
+            "--llm-provider",
+            "mock",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert captured.out == ""
+    assert "Error: --llm-provider requires --enable-llm" in captured.err
+
+
+def test_cli_batch_llm_model_requires_enable_llm(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    input_dir = "tests/fixtures/batch/articles"
+    profile_path = "tests/fixtures/batch/profile.yml"
+
+    exit_code = main(
+        [
+            "batch",
+            input_dir,
+            "--profile",
+            profile_path,
+            "--llm-model",
+            "gpt-4o-mini",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert captured.out == ""
+    assert "Error: --llm-model requires --enable-llm" in captured.err
+
+
+def test_cli_batch_llm_api_key_env_requires_enable_llm(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    input_dir = "tests/fixtures/batch/articles"
+    profile_path = "tests/fixtures/batch/profile.yml"
+
+    exit_code = main(
+        [
+            "batch",
+            input_dir,
+            "--profile",
+            profile_path,
+            "--llm-api-key-env",
+            "OPENAI_API_KEY",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert captured.out == ""
+    assert "Error: --llm-api-key-env requires --enable-llm" in captured.err
+
+
+def test_cli_batch_llm_base_url_requires_enable_llm(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    input_dir = "tests/fixtures/batch/articles"
+    profile_path = "tests/fixtures/batch/profile.yml"
+
+    exit_code = main(
+        [
+            "batch",
+            input_dir,
+            "--profile",
+            profile_path,
+            "--llm-base-url",
+            "https://example.com/v1",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert captured.out == ""
+    assert "Error: --llm-base-url requires --enable-llm" in captured.err
+
+
+def test_cli_batch_rejects_unsupported_llm_provider(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    input_dir = "tests/fixtures/batch/articles"
+    profile_path = "tests/fixtures/batch/profile.yml"
+
+    exit_code = main(
+        [
+            "batch",
+            input_dir,
+            "--profile",
+            profile_path,
+            "--enable-llm",
+            "--llm-provider",
+            "openai",
+            "--llm-output-dir",
+            str(tmp_path / "llm-sidecars"),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert captured.out == ""
+    assert "Unsupported LLM provider: 'openai'." in captured.err
+
+
+def test_cli_batch_pydanticai_provider_requires_llm_model(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    input_dir = "tests/fixtures/batch/articles"
+    profile_path = "tests/fixtures/batch/profile.yml"
+    monkeypatch.setenv("OPENAI_API_KEY", "secret-key")
+
+    exit_code = main(
+        [
+            "batch",
+            input_dir,
+            "--profile",
+            profile_path,
+            "--recursive",
+            "--enable-llm",
+            "--llm-provider",
+            "pydanticai-openai",
+            "--llm-output-dir",
+            str(tmp_path / "llm-sidecars"),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert captured.out == ""
+    assert (
+        "Error: --llm-provider pydanticai-openai requires --llm-model"
+        in captured.err
+    )
+
+
+def test_cli_batch_pydanticai_provider_requires_api_key_env(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    input_dir = "tests/fixtures/batch/articles"
+    profile_path = "tests/fixtures/batch/profile.yml"
+    monkeypatch.delenv("MISSING_OPENAI_KEY", raising=False)
+
+    exit_code = main(
+        [
+            "batch",
+            input_dir,
+            "--profile",
+            profile_path,
+            "--recursive",
+            "--enable-llm",
+            "--llm-provider",
+            "pydanticai-openai",
+            "--llm-model",
+            "gpt-4o-mini",
+            "--llm-api-key-env",
+            "MISSING_OPENAI_KEY",
+            "--llm-output-dir",
+            str(tmp_path / "llm-sidecars"),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert captured.out == ""
+    assert "Environment variable 'MISSING_OPENAI_KEY' is required" in captured.err
+
+
+def test_cli_batch_pydanticai_provider_writes_sidecars_with_fake_provider(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    input_dir = "tests/fixtures/batch/articles"
+    profile_path = "tests/fixtures/batch/profile.yml"
+    review_output_path = tmp_path / "batch.json"
+    llm_output_dir = tmp_path / "llm-sidecars"
+    monkeypatch.setenv("OPENAI_API_KEY", "secret-key")
+
+    from content_review_engine.llm import LLMReviewFinding, LLMReviewResult, LLMReviewSummary
+
+    class FakePydanticAIReviewer:
+        def __init__(self, *, model: str, api_key: str, base_url: str | None = None) -> None:
+            self.model = model
+            self.api_key = api_key
+            self.base_url = base_url
+
+        def review(self, request):  # type: ignore[no-untyped-def]
+            assert request.profile_name == "batch-default"
+            assert request.review_goal == "semantic_review"
+            return LLMReviewResult(
+                provider="pydanticai-openai",
+                model=self.model,
+                prompt_version="pydanticai-openai.v1",
+                profile_name=request.profile_name,
+                findings=(
+                    LLMReviewFinding(
+                        rule_id="llm_semantic_risk",
+                        severity="warning",
+                        message="Possible unsupported claim.",
+                    ),
+                ),
+                summary=LLMReviewSummary(
+                    overall_risk="medium",
+                    summary="One semantic finding per file.",
+                ),
+            )
+
+    monkeypatch.setattr(
+        "content_review_engine.cli.PydanticAIOpenAIReviewer",
+        FakePydanticAIReviewer,
+    )
+
+    exit_code = main(
+        [
+            "batch",
+            input_dir,
+            "--profile",
+            profile_path,
+            "--recursive",
+            "--format",
+            "json",
+            "--output",
+            str(review_output_path),
+            "--enable-llm",
+            "--llm-provider",
+            "pydanticai-openai",
+            "--llm-model",
+            "gpt-4o-mini",
+            "--llm-base-url",
+            "https://example.com/v1",
+            "--llm-output-dir",
+            str(llm_output_dir),
+        ]
+    )
+
+    captured = capsys.readouterr()
+    review_payload = json.loads(review_output_path.read_text(encoding="utf-8"))
+    llm_payload = json.loads(
+        (llm_output_dir / "nested" / "nested_forbidden.md.llm-review.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert exit_code == 0
+    assert captured.out == ""
+    assert captured.err == ""
+    assert review_payload["schema_version"] == "batch-review-result.v1"
+    assert "llm_review" not in review_payload
+    assert llm_payload["schema_version"] == "llm-review-result.v1"
+    assert llm_payload["provider"] == "pydanticai-openai"
+    assert llm_payload["model"] == "gpt-4o-mini"
+    assert llm_payload["findings"][0]["rule_id"] == "llm_semantic_risk"
+
+
+def test_cli_batch_quality_gate_ignores_llm_findings(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    input_dir = tmp_path / "articles"
+    input_dir.mkdir()
+    (input_dir / "clean.md").write_text("正常内容。", encoding="utf-8")
+    profile_path = "tests/fixtures/batch/profile.yml"
+    llm_output_dir = tmp_path / "llm-sidecars"
+
+    from content_review_engine.llm import LLMReviewFinding, LLMReviewResult
+
+    def fake_review(self, request):  # type: ignore[no-untyped-def]
+        del self, request
+        return LLMReviewResult(
+            findings=(
+                LLMReviewFinding(
+                    rule_id="llm_critical_issue",
+                    severity="critical",
+                    message="Critical semantic issue.",
+                ),
+            )
+        )
+
+    monkeypatch.setattr("content_review_engine.llm.mock.MockLLMReviewer.review", fake_review)
+
+    exit_code = main(
+        [
+            "batch",
+            str(input_dir),
+            "--profile",
+            profile_path,
+            "--fail-on",
+            "warning",
+            "--enable-llm",
+            "--llm-output-dir",
+            str(llm_output_dir),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "Files with findings: 0" in captured.out
+    assert "Findings: 0" in captured.out
+    assert captured.err == ""
+
+
+def test_cli_batch_sidecar_write_failure_returns_friendly_error(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    input_dir = "tests/fixtures/batch/articles"
+    profile_path = "tests/fixtures/batch/profile.yml"
+    output_path = tmp_path / "batch.txt"
+    original_write_text = Path.write_text
+
+    def fail_write_text(self, data: str, encoding: str | None = None) -> int:
+        if self.name.endswith(".llm-review.json"):
+            raise OSError("disk full")
+        return original_write_text(self, data, encoding=encoding)
+
+    monkeypatch.setattr(Path, "write_text", fail_write_text)
+
+    exit_code = main(
+        [
+            "batch",
+            input_dir,
+            "--profile",
+            profile_path,
+            "--output",
+            str(output_path),
+            "--enable-llm",
+            "--llm-output-dir",
+            str(tmp_path / "llm-sidecars"),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert captured.out == ""
+    assert "Error: Failed to write LLM sidecar:" in captured.err
+    assert "disk full" in captured.err
+
+
 def test_cli_batch_markdown_output_includes_report_sections(
     capsys: pytest.CaptureFixture[str],
 ) -> None:

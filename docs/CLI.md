@@ -15,7 +15,7 @@ suppression comments, counts, and quality gates, see
 
 ```bash
 uv run content-review review <markdown_file> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--fail-on info|warning|error|critical] [--enable-llm --llm-output <file> [--llm-provider mock|pydanticai-openai] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>] [--include-llm-report]]
-uv run content-review batch <input_dir> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--recursive] [--pattern "*.md"] [--fail-on info|warning|error|critical]
+uv run content-review batch <input_dir> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--recursive] [--pattern "*.md"] [--fail-on info|warning|error|critical] [--enable-llm --llm-output-dir <dir> [--llm-provider mock|pydanticai-openai] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>]]
 uv run content-review profile validate <profile_file> [--format text|json]
 uv run content-review profile init --template <general-basic|general-publishing|health-content|marketing-copy|technical-blog|wechat-basic|wechat-article|wechat-strict> --output <profile_file> [--force]
 uv run content-review profile list [--format text|json]
@@ -40,7 +40,7 @@ OPENAI_API_KEY=your-key uv run content-review review article.md --profile profil
 LLM_GATEWAY_KEY=your-key uv run content-review review article.md --profile profile.yaml --enable-llm --llm-provider pydanticai-openai --llm-model gpt-4o-mini --llm-api-key-env LLM_GATEWAY_KEY --llm-base-url https://example.com/v1 --llm-output article.llm.json
 ```
 
-Current constraints:
+Single-file `review` constraints:
 
 - this path is opt-in and disabled by default
 - only the single-file `review` command supports it
@@ -86,6 +86,65 @@ Provider notes:
   `src/content_review_engine/llm/pydanticai.py`
 - the CLI only reads the API key environment variable after `--enable-llm` is
   explicitly enabled
+
+## Experimental Batch LLM Sidecar Review
+
+Batch `review` also supports an explicit experimental per-file LLM sidecar
+flow:
+
+```bash
+uv run content-review batch articles --profile profile.yaml --recursive --enable-llm --llm-output-dir llm-sidecars
+uv run content-review batch articles --profile profile.yaml --recursive --enable-llm --llm-provider mock --llm-output-dir llm-sidecars
+OPENAI_API_KEY=your-key uv run content-review batch articles --profile profile.yaml --recursive --enable-llm --llm-provider pydanticai-openai --llm-model gpt-4o-mini --llm-output-dir llm-sidecars
+LLM_GATEWAY_KEY=your-key uv run content-review batch articles --profile profile.yaml --recursive --enable-llm --llm-provider pydanticai-openai --llm-model gpt-4o-mini --llm-api-key-env LLM_GATEWAY_KEY --llm-base-url https://example.com/v1 --llm-output-dir llm-sidecars
+```
+
+Batch constraints:
+
+- this path is opt-in and disabled by default
+- `--enable-llm` requires `--llm-output-dir`
+- `--llm-output-dir` without `--enable-llm` fails
+- `--llm-provider` without `--enable-llm` fails
+- `--llm-model` without `--enable-llm` fails
+- `--llm-api-key-env` without `--enable-llm` fails
+- `--llm-base-url` without `--enable-llm` fails
+- `--llm-provider` supports `mock` and `pydanticai-openai`
+- `--llm-provider mock` does not require `--llm-model`
+- `--llm-provider mock` does not read any API key
+- `--llm-provider pydanticai-openai` requires `--llm-model`
+- `--llm-provider pydanticai-openai` reads the API key from the environment
+  variable named by `--llm-api-key-env`, or `OPENAI_API_KEY` by default
+- `--llm-base-url` is optional and only configures an OpenAI-compatible
+  endpoint for `pydanticai-openai`
+- the CLI does not support a plaintext `--llm-api-key` argument
+- the batch command writes one separate UTF-8 `LLMReviewResult` JSON sidecar
+  per successfully reviewed Markdown file using the existing serialization
+  helper
+
+Sidecar path rule:
+
+```text
+articles/post-a.md
+  -> llm-sidecars/post-a.md.llm-review.json
+
+articles/nested/post-b.md
+  -> llm-sidecars/nested/post-b.md.llm-review.json
+```
+
+The path is computed relative to the batch input directory. Parent
+directories are created automatically under `--llm-output-dir`.
+
+Batch behavior guarantees:
+
+- default batch behavior is unchanged when LLM flags are omitted
+- the main batch JSON output remains the canonical `BatchReviewResult`
+- `--format json` does not add an `llm_review` field
+- `--format markdown` does not add a `## LLM Review` section
+- batch summary counts do not include LLM findings
+- deterministic severity counts and rule counts are unchanged
+- deterministic finding order is unchanged
+- quality-gate evaluation still reads only deterministic findings
+- no batch aggregate LLM report is produced
 
 ## Regex Rules
 

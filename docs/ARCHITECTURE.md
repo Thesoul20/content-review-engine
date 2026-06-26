@@ -213,15 +213,16 @@ Current status:
 - `src/content_review_engine/llm/pydanticai.py` now provides an optional real
   `PydanticAIOpenAIReviewer` adapter
 - PydanticAI exists only in the LLM provider layer
-- the CLI can optionally route single-file sidecar review to `mock` or
-  `pydanticai-openai`
+- the CLI can optionally route single-file and batch sidecar review to `mock`
+  or `pydanticai-openai`
 - the single-file Markdown report can now optionally append a separate
   `LLMReviewResult` section when `--format markdown`, `--enable-llm`, and
   `--include-llm-report` are all enabled
 - no LLM output is merged into the current `ReviewResult`
 - no LLM output is merged into deterministic severity counts, rule counts, or
   quality-gate evaluation
-- batch review still has no LLM report integration
+- batch review now supports per-file `LLMReviewResult` sidecars only and still
+  has no LLM report integration
 - the canonical deterministic JSON output schema remains unchanged
 
 The intended future boundary is:
@@ -257,6 +258,41 @@ Deterministic Markdown report + optional appended LLM section
 ```
 
 The optional Markdown integration is a presentation-only adapter boundary:
+
+Current batch sidecar boundary:
+
+```text
+Batch Markdown discovery
+  ↓
+Deterministic batch review
+  ↓
+BatchReviewResult
+  = canonical deterministic batch output
+
+Per reviewed Markdown file:
+  Markdown content
+    ↓
+  LLMReviewRequest
+    ↓
+  LLMReviewRunner
+    ↓
+  MockLLMReviewer or PydanticAIOpenAIReviewer
+    ↓
+  LLMReviewResult
+    ↓
+  Separate sidecar JSON under --llm-output-dir
+```
+
+Current batch path guarantees:
+
+- batch LLM sidecars are opt-in and generated only when `--enable-llm` is set
+- each reviewed Markdown file gets an independent `LLMReviewResult` JSON
+  sidecar
+- the sidecar path preserves the file path relative to the batch input
+  directory and appends `.llm-review.json`
+- the canonical `BatchReviewResult` schema is unchanged
+- batch Markdown reports remain deterministic-only
+- batch quality gates still read only deterministic findings
 
 - `render_markdown_report` can accept `llm_result: LLMReviewResult | None`
 - `None` preserves the existing deterministic Markdown output exactly

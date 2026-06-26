@@ -85,6 +85,30 @@ use.
 
 ## Recent Completion
 
+- TASK-0040 is complete.
+- Added explicit batch CLI LLM sidecar support behind `--enable-llm`.
+- Added batch `--llm-output-dir`, `--llm-provider`, `--llm-model`,
+  `--llm-api-key-env`, and optional `--llm-base-url`.
+- Reused the existing `LLMReviewRunner`, `LLMReviewRequest`,
+  `MockLLMReviewer`, `PydanticAIOpenAIReviewer`, and
+  `llm_review_result_to_json` sidecar flow for batch review.
+- Added per-file batch LLM sidecar JSON output that preserves each reviewed
+  Markdown file's path relative to the batch input directory and appends
+  `.llm-review.json`.
+- Added CLI tests covering batch mock sidecars, recursive relative-path
+  sidecars, schema-version stability, empty mock findings, unsupported and
+  invalid flag combinations, fake-provider success, quality-gate isolation,
+  and sidecar write failure handling.
+- Updated CLI, architecture, and data-model documentation for batch LLM
+  sidecar behavior and boundaries.
+- Kept the canonical deterministic batch JSON schema unchanged.
+- Kept batch Markdown report structure unchanged.
+- Kept batch summary counts and deterministic finding order unchanged.
+- Kept quality-gate semantics unchanged.
+- Kept single-file review behavior unchanged.
+- Added no API, MCP, GUI, streaming, retry policy, cache, token accounting,
+  cost tracking, telemetry, or tracing integration.
+
 - TASK-0039 is complete.
 - Added optional single-file Markdown report integration for existing
   `LLMReviewResult` output behind explicit `--include-llm-report`.
