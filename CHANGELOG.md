@@ -8,6 +8,41 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0031
+
+### Added
+
+- Added five practical built-in example/template profiles:
+  `general-publishing`, `wechat-article`, `marketing-copy`,
+  `technical-blog`, and `health-content`.
+- Added profile-specific `regex_rules` to those templates for placeholders,
+  exaggerated claims, guarantee-like wording, pressure tactics, unresolved
+  draft markers, treatment guarantees, and self-diagnosis risks.
+- Added `tests/test_profile_templates.py` to cover template discovery,
+  validation, regex-rule presence, and conservative limitation wording.
+
+### Changed
+
+- Updated `src/content_review_engine/config/templates.py` so the new example
+  profiles are discoverable through the existing built-in template registry.
+- Updated CLI, profile, quickstart, README, project-state, and changelog
+  documentation for the expanded template set and their intended use cases.
+- Extended existing example-profile, CLI, quickstart, and serialization tests
+  to include the new templates.
+- Kept deterministic rule behavior unchanged.
+- Kept `regex_rules` behavior unchanged.
+- Kept suppression behavior unchanged.
+- Kept quality-gate semantics unchanged.
+- Kept Markdown report structure unchanged.
+- Kept JSON output schema unchanged.
+
+### Not Added
+
+- No LLM-based review.
+- No PydanticAI integration.
+- No API, MCP, or GUI behavior.
+- No compliance guarantees.
+
 ## TASK-0030
 
 ### Added

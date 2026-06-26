@@ -43,7 +43,7 @@ uv run content-review --help
 
 ## 2. List Available Profile Templates
 
-Inspect the built-in starter templates:
+Inspect the built-in starter and real-world templates:
 
 ```bash
 uv run content-review profile list
@@ -53,7 +53,12 @@ Expected template names:
 
 ```text
 general-basic
+general-publishing
+health-content
+marketing-copy
+technical-blog
 wechat-basic
+wechat-article
 wechat-strict
 ```
 
@@ -77,6 +82,11 @@ If you want a stricter quality gate for CI, initialize the strict variant:
 ```bash
 uv run content-review profile init --template wechat-strict --output profiles/my-wechat-strict.yaml
 ```
+
+If you want to start from a practical publishing-oriented template instead of a
+minimal starter, initialize one of the real-world templates such as
+`general-publishing`, `marketing-copy`, `technical-blog`, `health-content`, or
+`wechat-article`.
 
 The generated file is normal YAML. After initialization, edit it like any other
 local config file.
@@ -181,8 +191,8 @@ do not count toward summaries or `--fail-on`.
 
 ## 10. Customize The Profile
 
-The example templates are only starting points. Update terms, allowlists, and
-severity to match your workflow.
+The example templates are only starting points. Update terms, allowlists,
+severity, and regex patterns to match your workflow.
 
 Example customization aligned with the built-in WeChat profiles:
 

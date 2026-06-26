@@ -15,6 +15,11 @@ def test_quickstart_exists_and_covers_core_commands() -> None:
     assert "uv run content-review profile validate" in content
     assert "uv run content-review review" in content
     assert "uv run content-review batch" in content
+    assert "general-publishing" in content
+    assert "wechat-article" in content
+    assert "marketing-copy" in content
+    assert "technical-blog" in content
+    assert "health-content" in content
     assert "--fail-on" in content
     assert "--format markdown --output" in content
     assert "content-review-disable-line absolute_claims" in content

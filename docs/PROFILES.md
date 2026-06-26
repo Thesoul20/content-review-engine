@@ -22,16 +22,21 @@ customize them for their own publication workflow.
 
 ## Example Profiles
 
-The repository now includes three built-in example profiles:
+The repository now includes eight built-in example profiles:
 
 - `profiles/examples/general-basic.yaml`
+- `profiles/examples/general-publishing.yaml`
+- `profiles/examples/health-content.yaml`
+- `profiles/examples/marketing-copy.yaml`
+- `profiles/examples/technical-blog.yaml`
 - `profiles/examples/wechat-basic.yaml`
+- `profiles/examples/wechat-article.yaml`
 - `profiles/examples/wechat-strict.yaml`
 
 These files are committed examples and test fixtures. They are not discovered
 automatically at runtime. Use them by passing the profile path explicitly.
 
-The same three profiles are also exposed as built-in templates through
+The same example profiles are also exposed as built-in templates through
 `content-review profile init`.
 
 Discover the available built-in templates with:
@@ -47,21 +52,36 @@ Create a new editable profile file from a built-in template:
 
 ```bash
 uv run content-review profile init --template general-basic --output profiles/general.yaml
+uv run content-review profile init --template general-publishing --output profiles/publishing.yaml
+uv run content-review profile init --template health-content --output profiles/health.yaml
+uv run content-review profile init --template marketing-copy --output profiles/marketing.yaml
+uv run content-review profile init --template technical-blog --output profiles/technical.yaml
 uv run content-review profile init --template wechat-basic --output profiles/my-wechat.yaml
+uv run content-review profile init --template wechat-article --output profiles/wechat-article.yaml
 uv run content-review profile init --template wechat-strict --output profiles/wechat-strict.yaml
 ```
 
 Supported template names:
 
 - `general-basic`
+- `general-publishing`
+- `health-content`
+- `marketing-copy`
+- `technical-blog`
 - `wechat-basic`
+- `wechat-article`
 - `wechat-strict`
 
 `content-review profile list` and `content-review profile init` use the same
 built-in template registry. The displayed order is deterministic:
 
 - `general-basic`
+- `general-publishing`
+- `health-content`
+- `marketing-copy`
+- `technical-blog`
 - `wechat-basic`
+- `wechat-article`
 - `wechat-strict`
 
 Generated profiles are starting points. They do not guarantee compliance with
@@ -122,8 +142,10 @@ That metadata registry is descriptive only. It does not replace YAML profile
 configuration, does not decide which rules are enabled in a specific profile,
 and does not replace profile parsing in the current review pipeline.
 
-The built-in examples only use `forbidden_terms` and `absolute_claims` so they
-stay easy to read and customize.
+Some built-in examples only use `forbidden_terms` and `absolute_claims`.
+The real-world templates also demonstrate `markdown_structure`,
+`markdown_links_images`, and profile-configured `regex_rules` so users can
+start from practical publishing checks without changing Python code.
 
 Initialized profiles use the same YAML content as the built-in examples at the
 time they are created. After initialization, the new file is a normal local
@@ -181,12 +203,49 @@ profile-defined and dynamic.
 - Keeps `absolute_claims` at `warning`.
 - Avoids WeChat-specific assumptions.
 
+`general-publishing.yaml`
+
+- General-purpose publishing profile for common Markdown workflows.
+- Enables `markdown_structure` and `markdown_links_images`.
+- Adds regex checks for draft placeholders and overconfident wording.
+- Helps flag common risky wording patterns for review.
+
+`health-content.yaml`
+
+- Cautious health-content profile for general educational drafts.
+- Uses regex checks for treatment guarantees, self-diagnosis language, and
+  unresolved source placeholders.
+- Does not provide legal, medical, advertising, regulatory, or platform
+  compliance advice.
+
+`marketing-copy.yaml`
+
+- Marketing-oriented profile for guarantee-like wording, pressure tactics, and
+  unverifiable superlatives.
+- Uses `regex_rules` to flag riskier promotional phrasing while keeping the
+  messages conservative.
+- Does not claim advertising or legal compliance.
+
+`technical-blog.yaml`
+
+- Technical writing profile for unresolved draft markers, unfinished examples,
+  and absolute technical claims.
+- Enables structure and link checks in addition to term-based rules.
+- Intended as a practical publishing review baseline, not a correctness proof.
+
 `wechat-basic.yaml`
 
 - Starter profile for WeChat article drafts and public posts.
 - Uses WeChat-oriented title and paragraph defaults.
 - Treats `forbidden_terms` as `error` and `absolute_claims` as `warning`.
 - Includes one `allow_terms` example: `唯一标识符`.
+
+`wechat-article.yaml`
+
+- Public-account article profile for cautious public-facing draft review.
+- Adds regex checks for exaggerated claims, engagement bait, and unfinished
+  article placeholders.
+- Helps flag common risky wording patterns for review.
 
 `wechat-strict.yaml`
 
@@ -195,13 +254,31 @@ profile-defined and dynamic.
 - Raises `absolute_claims` to `error`.
 - Intended to work well with `--fail-on error`.
 
+## Real-World Template Use Cases
+
+- `general-publishing`: common publishing risks, placeholders, overconfident
+  wording, and basic Markdown hygiene.
+- `wechat-article`: WeChat article wording, exaggerated claims, engagement
+  bait, placeholders, and Markdown hygiene.
+- `marketing-copy`: guarantee-like wording, unverifiable superlatives, and
+  pressure tactics that may need editorial review.
+- `technical-blog`: TODO or FIXME markers, unresolved examples, and absolute
+  technical claims.
+- `health-content`: cautious health wording, treatment guarantees,
+  self-diagnosis risks, and missing source placeholders.
+
 ## Validate A Profile
 
 Validate before using a profile in review or batch:
 
 ```bash
 uv run content-review profile validate profiles/examples/general-basic.yaml
+uv run content-review profile validate profiles/examples/general-publishing.yaml
+uv run content-review profile validate profiles/examples/health-content.yaml
+uv run content-review profile validate profiles/examples/marketing-copy.yaml
+uv run content-review profile validate profiles/examples/technical-blog.yaml
 uv run content-review profile validate profiles/examples/wechat-basic.yaml
+uv run content-review profile validate profiles/examples/wechat-article.yaml
 uv run content-review profile validate profiles/examples/wechat-strict.yaml
 uv run content-review profile validate profiles/my-wechat.yaml
 ```
@@ -254,6 +331,7 @@ Exit code behavior for CI:
 
 Built-in examples and initialized profiles are starting points only. They do
 not guarantee legal, advertising, medical, regulatory, or platform compliance.
+They help flag common risky wording patterns for review.
 
 ## Customization
 

@@ -1,0 +1,53 @@
+name: health-content
+target_platform: health
+tone: cautious and clear
+max_title_length: 48
+max_paragraph_length: 220
+
+rules:
+  - id: forbidden_terms
+    enabled: true
+    severity: error
+    terms:
+      - 违规词
+      - 敏感词
+      - 禁用词
+    allow_terms: []
+
+  - id: absolute_claims
+    enabled: true
+    severity: warning
+    terms:
+      - 根治
+      - 永不复发
+      - 绝对安全
+      - 零风险
+      - 100% 有效
+      - 立刻见效
+      - 保证治好
+    allow_terms: []
+
+  - id: markdown_links_images
+    enabled: true
+
+regex_rules:
+  - id: treatment_guarantee
+    pattern: "根治|包治|保证治好|药到病除|立刻见效"
+    severity: error
+    message: "This wording may imply a guaranteed treatment outcome."
+    suggestion: "Use cautious wording and encourage review by qualified professionals where appropriate."
+    case_sensitive: false
+
+  - id: self_diagnosis_risk
+    pattern: "自行诊断|不用就医|无需医生|自己判断病情"
+    severity: warning
+    message: "This wording may encourage self-diagnosis or skipping professional care."
+    suggestion: "Encourage readers to seek qualified professional evaluation for personal medical questions."
+    case_sensitive: false
+
+  - id: health_placeholder
+    pattern: "待补研究|待补来源|待补医生审核|待补参考文献"
+    severity: warning
+    message: "Health-related drafts should replace placeholder source notes before publishing."
+    suggestion: "Add the missing source or remove the unsupported statement."
+    case_sensitive: false

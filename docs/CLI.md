@@ -14,7 +14,7 @@ suppression comments, counts, and quality gates, see
 uv run content-review review <markdown_file> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--fail-on info|warning|error|critical]
 uv run content-review batch <input_dir> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--recursive] [--pattern "*.md"] [--fail-on info|warning|error|critical]
 uv run content-review profile validate <profile_file> [--format text|json]
-uv run content-review profile init --template <general-basic|wechat-basic|wechat-strict> --output <profile_file> [--force]
+uv run content-review profile init --template <general-basic|general-publishing|health-content|marketing-copy|technical-blog|wechat-basic|wechat-article|wechat-strict> --output <profile_file> [--force]
 uv run content-review profile list [--format text|json]
 ```
 
@@ -161,7 +161,12 @@ Create a new editable profile from a built-in template:
 
 ```bash
 uv run content-review profile init --template general-basic --output profiles/general.yaml
+uv run content-review profile init --template general-publishing --output profiles/publishing.yaml
+uv run content-review profile init --template health-content --output profiles/health.yaml
+uv run content-review profile init --template marketing-copy --output profiles/marketing.yaml
+uv run content-review profile init --template technical-blog --output profiles/technical.yaml
 uv run content-review profile init --template wechat-basic --output profiles/my-wechat.yaml
+uv run content-review profile init --template wechat-article --output profiles/wechat-article.yaml
 uv run content-review profile init --template wechat-strict --output profiles/wechat-strict.yaml --force
 ```
 
@@ -169,7 +174,12 @@ Supported templates:
 
 ```text
 general-basic
+general-publishing
+health-content
+marketing-copy
+technical-blog
 wechat-basic
+wechat-article
 wechat-strict
 ```
 
@@ -215,8 +225,23 @@ Available profile templates:
 - general-basic
   General-purpose starter profile for public-facing content.
 
+- general-publishing
+  Conservative publishing profile with placeholder and overclaim checks.
+
+- health-content
+  Cautious health-content profile for risky treatment wording review.
+
+- marketing-copy
+  Marketing copy profile for pressure tactics and guarantee-like wording.
+
+- technical-blog
+  Technical blog profile for unresolved draft markers and absolute claims.
+
 - wechat-basic
   Basic WeChat article profile with moderate checks.
+
+- wechat-article
+  WeChat article profile with cautious regex checks for public-facing drafts.
 
 - wechat-strict
   Stricter WeChat profile intended for batch checks and CI gates.
@@ -237,8 +262,28 @@ JSON output uses `profile-template-list.v1` and includes only summary metadata:
       "description": "General-purpose starter profile for public-facing content."
     },
     {
+      "name": "general-publishing",
+      "description": "Conservative publishing profile with placeholder and overclaim checks."
+    },
+    {
+      "name": "health-content",
+      "description": "Cautious health-content profile for risky treatment wording review."
+    },
+    {
+      "name": "marketing-copy",
+      "description": "Marketing copy profile for pressure tactics and guarantee-like wording."
+    },
+    {
+      "name": "technical-blog",
+      "description": "Technical blog profile for unresolved draft markers and absolute claims."
+    },
+    {
       "name": "wechat-basic",
       "description": "Basic WeChat article profile with moderate checks."
+    },
+    {
+      "name": "wechat-article",
+      "description": "WeChat article profile with cautious regex checks for public-facing drafts."
     },
     {
       "name": "wechat-strict",

@@ -1,0 +1,54 @@
+name: technical-blog
+target_platform: technical
+tone: precise and practical
+max_title_length: 64
+max_paragraph_length: 260
+
+rules:
+  - id: forbidden_terms
+    enabled: true
+    severity: error
+    terms:
+      - 违规词
+      - 敏感词
+      - 禁用词
+    allow_terms: []
+
+  - id: absolute_claims
+    enabled: true
+    severity: warning
+    terms:
+      - 永不失败
+      - 完全兼容
+      - 绝对安全
+      - 零风险
+      - 唯一正确
+    allow_terms: []
+
+  - id: markdown_structure
+    enabled: true
+
+  - id: markdown_links_images
+    enabled: true
+
+regex_rules:
+  - id: unresolved_draft_marker
+    pattern: "TODO|FIXME|TBD|待补充|待验证"
+    severity: warning
+    message: "Resolve draft markers before publishing the technical post."
+    suggestion: "Replace the marker with completed guidance or remove it."
+    case_sensitive: false
+
+  - id: unresolved_example
+    pattern: "示例待补|截图待补|benchmark 待补|基准待补"
+    severity: info
+    message: "This draft still references an unfinished example or benchmark."
+    suggestion: "Add the missing example, screenshot, or benchmark details."
+    case_sensitive: false
+
+  - id: absolute_technical_claim
+    pattern: "永远不会|绝不会|100% 兼容|没有任何性能损耗"
+    severity: warning
+    message: "This technical claim may be too absolute for a general blog post."
+    suggestion: "Qualify the claim and describe scope, tradeoffs, or test conditions."
+    case_sensitive: false

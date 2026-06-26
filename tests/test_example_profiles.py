@@ -11,7 +11,12 @@ EXAMPLE_PROFILES_DIR = Path(__file__).resolve().parent.parent / "profiles" / "ex
 def test_load_all_example_profiles() -> None:
     expected = {
         "general-basic.yaml": ("general-basic", "general"),
+        "general-publishing.yaml": ("general-publishing", "general"),
+        "health-content.yaml": ("health-content", "health"),
+        "marketing-copy.yaml": ("marketing-copy", "marketing"),
+        "technical-blog.yaml": ("technical-blog", "technical"),
         "wechat-basic.yaml": ("wechat-basic", "wechat"),
+        "wechat-article.yaml": ("wechat-article", "wechat"),
         "wechat-strict.yaml": ("wechat-strict", "wechat"),
     }
 
@@ -20,8 +25,17 @@ def test_load_all_example_profiles() -> None:
 
         assert profile.name == name
         assert profile.target_platform == target_platform
-        assert profile.enabled_rules == ["forbidden_terms", "absolute_claims"]
+        assert "forbidden_terms" in (profile.enabled_rules or [])
+        assert "absolute_claims" in (profile.enabled_rules or [])
         assert profile.absolute_claims_terms
+        if filename in {
+            "general-publishing.yaml",
+            "health-content.yaml",
+            "marketing-copy.yaml",
+            "technical-blog.yaml",
+            "wechat-article.yaml",
+        }:
+            assert profile.regex_rules
 
 
 def test_review_document_with_wechat_basic_example_profile() -> None:

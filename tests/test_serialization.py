@@ -111,6 +111,10 @@ def test_profile_template_list_result_to_json_uses_canonical_shape() -> None:
                 description="General-purpose starter profile for public-facing content.",
             ),
             ProfileTemplateSummary(
+                name="general-publishing",
+                description="Conservative publishing profile with placeholder and overclaim checks.",
+            ),
+            ProfileTemplateSummary(
                 name="wechat-basic",
                 description="Basic WeChat article profile with moderate checks.",
             ),
@@ -125,6 +129,10 @@ def test_profile_template_list_result_to_json_uses_canonical_shape() -> None:
             {
                 "name": "general-basic",
                 "description": "General-purpose starter profile for public-facing content.",
+            },
+            {
+                "name": "general-publishing",
+                "description": "Conservative publishing profile with placeholder and overclaim checks.",
             },
             {
                 "name": "wechat-basic",

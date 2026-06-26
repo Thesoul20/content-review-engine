@@ -41,6 +41,10 @@ profile-defined rule IDs.
 - The repository includes built-in example profiles under `profiles/examples/`
   that validate through the existing profile validation command and can be used
   directly with `review` and `batch`.
+- The built-in profile template system includes practical real-world
+  templates for general publishing, WeChat articles, marketing copy,
+  technical blogs, and health content, using existing deterministic rules and
+  optional `regex_rules`.
 - The CLI can initialize a new YAML review profile from a built-in template
   through `content-review profile init`.
 - The CLI can list the built-in profile templates through
@@ -69,6 +73,29 @@ profile-defined rule IDs.
 - No active implementation task.
 
 ## Recent Completion
+
+- TASK-0031 is complete.
+- Added five practical built-in example/template profiles:
+  `general-publishing`, `wechat-article`, `marketing-copy`,
+  `technical-blog`, and `health-content`.
+- Reused existing built-in rules plus profile-configured `regex_rules` to flag
+  common placeholders, exaggerated claims, guarantee-like wording, pressure
+  tactics, unresolved draft markers, and health-related caution cases.
+- Kept template discovery and initialization on the existing registry-driven
+  `profile list` and `profile init` path.
+- Added tests for template discovery, initialization, validation, regex rule
+  presence, and conservative documentation wording.
+- Updated profile, quickstart, CLI, README, project state, and changelog
+  documentation for the expanded template set and their limitations.
+- Kept deterministic rule matching behavior unchanged.
+- Kept `regex_rules` behavior unchanged.
+- Kept suppression syntax unchanged.
+- Kept quality-gate semantics unchanged.
+- Kept Markdown report structure unchanged.
+- Kept JSON output schema unchanged.
+- Added no LLM review, PydanticAI, API, MCP, or GUI behavior.
+- Added no legal, medical, advertising, regulatory, or platform compliance
+  guarantees.
 
 - TASK-0030 is complete.
 - Added optional `regex_rules` support to `ReviewProfile`.

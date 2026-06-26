@@ -29,9 +29,34 @@ _BUILTIN_PROFILE_TEMPLATES: tuple[ProfileTemplate, ...] = (
         path=_EXAMPLE_PROFILES_DIR / "general-basic.yaml",
     ),
     ProfileTemplate(
+        name="general-publishing",
+        description="Conservative publishing profile with placeholder and overclaim checks.",
+        path=_EXAMPLE_PROFILES_DIR / "general-publishing.yaml",
+    ),
+    ProfileTemplate(
+        name="health-content",
+        description="Cautious health-content profile for risky treatment wording review.",
+        path=_EXAMPLE_PROFILES_DIR / "health-content.yaml",
+    ),
+    ProfileTemplate(
+        name="marketing-copy",
+        description="Marketing copy profile for pressure tactics and guarantee-like wording.",
+        path=_EXAMPLE_PROFILES_DIR / "marketing-copy.yaml",
+    ),
+    ProfileTemplate(
+        name="technical-blog",
+        description="Technical blog profile for unresolved draft markers and absolute claims.",
+        path=_EXAMPLE_PROFILES_DIR / "technical-blog.yaml",
+    ),
+    ProfileTemplate(
         name="wechat-basic",
         description="Basic WeChat article profile with moderate checks.",
         path=_EXAMPLE_PROFILES_DIR / "wechat-basic.yaml",
+    ),
+    ProfileTemplate(
+        name="wechat-article",
+        description="WeChat article profile with cautious regex checks for public-facing drafts.",
+        path=_EXAMPLE_PROFILES_DIR / "wechat-article.yaml",
     ),
     ProfileTemplate(
         name="wechat-strict",

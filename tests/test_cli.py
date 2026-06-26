@@ -299,8 +299,18 @@ def test_cli_profile_list_text_output(
     assert "Available profile templates:" in captured.out
     assert "- general-basic" in captured.out
     assert "General-purpose starter profile for public-facing content." in captured.out
+    assert "- general-publishing" in captured.out
+    assert "Conservative publishing profile with placeholder and overclaim checks." in captured.out
+    assert "- health-content" in captured.out
+    assert "Cautious health-content profile for risky treatment wording review." in captured.out
+    assert "- marketing-copy" in captured.out
+    assert "Marketing copy profile for pressure tactics and guarantee-like wording." in captured.out
+    assert "- technical-blog" in captured.out
+    assert "Technical blog profile for unresolved draft markers and absolute claims." in captured.out
     assert "- wechat-basic" in captured.out
     assert "Basic WeChat article profile with moderate checks." in captured.out
+    assert "- wechat-article" in captured.out
+    assert "WeChat article profile with cautious regex checks for public-facing drafts." in captured.out
     assert "- wechat-strict" in captured.out
     assert "Stricter WeChat profile intended for batch checks and CI gates." in captured.out
     assert (
@@ -327,8 +337,28 @@ def test_cli_profile_list_json_output_uses_canonical_schema(
                 "description": "General-purpose starter profile for public-facing content.",
             },
             {
+                "name": "general-publishing",
+                "description": "Conservative publishing profile with placeholder and overclaim checks.",
+            },
+            {
+                "name": "health-content",
+                "description": "Cautious health-content profile for risky treatment wording review.",
+            },
+            {
+                "name": "marketing-copy",
+                "description": "Marketing copy profile for pressure tactics and guarantee-like wording.",
+            },
+            {
+                "name": "technical-blog",
+                "description": "Technical blog profile for unresolved draft markers and absolute claims.",
+            },
+            {
                 "name": "wechat-basic",
                 "description": "Basic WeChat article profile with moderate checks.",
+            },
+            {
+                "name": "wechat-article",
+                "description": "WeChat article profile with cautious regex checks for public-facing drafts.",
             },
             {
                 "name": "wechat-strict",
@@ -344,7 +374,12 @@ def test_cli_profile_list_json_output_uses_canonical_schema(
     ("template_name", "expected_name", "expected_platform"),
     [
         ("general-basic", "general-basic", "general"),
+        ("general-publishing", "general-publishing", "general"),
+        ("health-content", "health-content", "health"),
+        ("marketing-copy", "marketing-copy", "marketing"),
+        ("technical-blog", "technical-blog", "technical"),
         ("wechat-basic", "wechat-basic", "wechat"),
+        ("wechat-article", "wechat-article", "wechat"),
         ("wechat-strict", "wechat-strict", "wechat"),
     ],
 )
@@ -412,7 +447,12 @@ def test_cli_profile_init_unknown_template_returns_two(
     assert exit_code == 2
     assert "invalid choice" in captured.err
     assert "general-basic" in captured.err
+    assert "general-publishing" in captured.err
+    assert "health-content" in captured.err
+    assert "marketing-copy" in captured.err
+    assert "technical-blog" in captured.err
     assert "wechat-basic" in captured.err
+    assert "wechat-article" in captured.err
     assert "wechat-strict" in captured.err
     assert captured.out == ""
     assert not output_path.exists()

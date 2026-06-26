@@ -1,0 +1,57 @@
+name: wechat-article
+target_platform: wechat
+tone: clear and professional
+max_title_length: 32
+max_paragraph_length: 220
+
+rules:
+  - id: forbidden_terms
+    enabled: true
+    severity: error
+    terms:
+      - 违规词
+      - 敏感词
+      - 禁用词
+    allow_terms: []
+
+  - id: absolute_claims
+    enabled: true
+    severity: warning
+    terms:
+      - 全网最强
+      - 行业第一
+      - 绝对安全
+      - 永久有效
+      - 零风险
+      - 保证成功
+      - 唯一选择
+    allow_terms:
+      - 唯一标识符
+
+  - id: markdown_structure
+    enabled: true
+
+  - id: markdown_links_images
+    enabled: true
+
+regex_rules:
+  - id: exaggerated_claims
+    pattern: "唯一|第一|最强|绝对|100%|永久|彻底"
+    severity: warning
+    message: "Avoid absolute or exaggerated claims in public-facing articles."
+    suggestion: "Use more cautious, evidence-based wording."
+    case_sensitive: false
+
+  - id: engagement_bait
+    pattern: "不看后悔|震惊|速看|赶紧收藏|全网都在"
+    severity: info
+    message: "This phrase may sound like engagement bait."
+    suggestion: "Consider using a clearer and more professional title or transition."
+    case_sensitive: false
+
+  - id: article_placeholder
+    pattern: "待补图|待补链接|待补案例|这里补充"
+    severity: warning
+    message: "Remove unfinished article placeholders before publishing."
+    suggestion: "Replace the placeholder with final article content."
+    case_sensitive: false
