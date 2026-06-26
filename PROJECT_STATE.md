@@ -85,6 +85,24 @@ use.
 
 ## Recent Completion
 
+- TASK-0035 is complete.
+- Added future-facing `LLMReviewRequest`, a synchronous `LLMReviewer`
+  provider protocol, minimal LLM error types, and a deterministic
+  `MockLLMReviewer` under `src/content_review_engine/llm/`.
+- Added tests for request validation, provider protocol compatibility, mock
+  reviewer default and configured behavior, serialization of mock results, and
+  the LLM error hierarchy.
+- Updated architecture and data-model documentation to describe the future LLM
+  provider boundary and deterministic mock adapter.
+- Kept deterministic review behavior unchanged.
+- Kept `regex_rules` behavior unchanged.
+- Kept suppression behavior unchanged.
+- Kept quality-gate semantics unchanged.
+- Kept Markdown report structure unchanged.
+- Kept current review JSON output schema unchanged.
+- Added no real provider integration, no PydanticAI, no API keys, no prompt
+  templates, no CLI LLM behavior, and no API, MCP, or GUI behavior.
+
 - TASK-0034 is complete.
 - Added future-facing `LLMReviewFinding`, `LLMReviewSummary`, and
   `LLMReviewResult` models under `src/content_review_engine/llm/` with the

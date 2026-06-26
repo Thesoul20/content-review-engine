@@ -81,10 +81,49 @@ class LLMReviewResult(BaseModel):
         return _validate_optional_non_empty(value, info.field_name)
 
 
+class LLMReviewRequest(BaseModel):
+    content: str
+    profile_name: str | None = None
+    content_path: str | None = None
+    review_goal: str | None = None
+    metadata: dict[str, str] | None = None
+
+    @field_validator("content")
+    @classmethod
+    def validate_content(cls, value: str) -> str:
+        normalized = value.strip()
+        if normalized == "":
+            raise ValueError("content must not be empty")
+        return normalized
+
+    @field_validator("profile_name", "content_path", "review_goal")
+    @classmethod
+    def validate_optional_non_empty(cls, value: str | None, info) -> str | None:
+        return _validate_optional_non_empty(value, info.field_name)
+
+    @field_validator("metadata")
+    @classmethod
+    def validate_metadata(cls, value: dict[str, str] | None) -> dict[str, str] | None:
+        if value is None:
+            return None
+
+        normalized_metadata: dict[str, str] = {}
+        for key, item_value in value.items():
+            normalized_key = key.strip()
+            normalized_value = item_value.strip()
+            if normalized_key == "":
+                raise ValueError("metadata keys must not be empty")
+            if normalized_value == "":
+                raise ValueError(f"metadata value for '{normalized_key}' must not be empty")
+            normalized_metadata[normalized_key] = normalized_value
+        return normalized_metadata
+
+
 __all__ = [
     "LLM_OVERALL_RISK_VALUES",
     "LLM_REVIEW_RESULT_SCHEMA_VERSION",
     "LLMReviewFinding",
+    "LLMReviewRequest",
     "LLMReviewResult",
     "LLMReviewSummary",
 ]

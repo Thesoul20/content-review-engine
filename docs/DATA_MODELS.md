@@ -210,6 +210,81 @@ Future tasks must still decide:
 
 ---
 
+## LLMReviewRequest
+
+`LLMReviewRequest` stores the future provider-facing input for one semantic
+review pass.
+
+It is not part of the current deterministic `ReviewResult` JSON output.
+TASK-0035 adds it only to stabilize the future provider boundary and test
+shape.
+
+| Field | Required | Description |
+|---|---|---|
+| `content` | Yes | Markdown or plain text content to review; must not be empty |
+| `profile_name` | No | Optional semantic-review profile label |
+| `content_path` | No | Optional source path for adapter context |
+| `review_goal` | No | Optional short goal such as unsupported-claim review |
+| `metadata` | No | Optional string-to-string metadata map for adapter context |
+
+Notes:
+
+- `content` is trimmed and must not be empty
+- optional string fields, if provided, must not be empty strings
+- metadata keys and values must not be empty after trimming
+- the model does not include provider-specific options, API keys, or runtime
+  transport settings
+
+---
+
+## LLMReviewer
+
+`LLMReviewer` is the future provider interface for semantic review execution.
+
+Current shape:
+
+```python
+class LLMReviewer(Protocol):
+    def review(self, request: LLMReviewRequest) -> LLMReviewResult:
+        ...
+```
+
+Notes:
+
+- the initial boundary is synchronous to match the current project shape
+- adapters should return `LLMReviewResult`
+- TASK-0035 does not add any real provider implementation
+
+---
+
+## LLM Review Errors
+
+The future LLM adapter boundary now defines minimal error types in
+`src/content_review_engine/llm/errors.py`.
+
+| Type | Description |
+|---|---|
+| `LLMReviewError` | Base exception for future LLM review failures |
+| `LLMProviderError` | Provider adapter failure, such as transport or upstream execution failure |
+| `LLMResponseValidationError` | Provider output could not be validated as an `LLMReviewResult` |
+
+---
+
+## MockLLMReviewer
+
+`MockLLMReviewer` is a deterministic test adapter defined in
+`src/content_review_engine/llm/mock.py`.
+
+Current behavior:
+
+- if constructed with `result=...`, `review()` returns that configured
+  `LLMReviewResult`
+- otherwise `review()` returns a new empty `LLMReviewResult`
+- it does not perform network access, prompt execution, or provider-specific
+  behavior
+
+---
+
 ## RuleDefinition
 
 `RuleDefinition` stores descriptive metadata for one current built-in rule in

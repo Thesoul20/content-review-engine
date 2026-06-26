@@ -238,6 +238,38 @@ Combined Report
 The current `LLMReviewFinding`, `LLMReviewSummary`, and `LLMReviewResult`
 models exist so later tasks can add provider adapters, prompt versioning, and
 conversion logic without changing the current deterministic review contract.
+
+TASK-0035 adds the next provider-facing boundary:
+
+```text
+Markdown content
+  ↓
+LLMReviewRequest
+  ↓
+LLMReviewer
+  ↓
+LLMReviewResult
+```
+
+Current LLM provider-boundary status:
+
+- `src/content_review_engine/llm/models.py` defines `LLMReviewRequest`
+- `src/content_review_engine/llm/provider.py` defines a small synchronous
+  `LLMReviewer` protocol
+- `src/content_review_engine/llm/mock.py` defines `MockLLMReviewer`, a
+  deterministic adapter for tests and future wiring work
+- `src/content_review_engine/llm/errors.py` defines minimal future-facing LLM
+  error types
+
+This layer is still isolated:
+
+- no real provider integration
+- no network access
+- no API keys or environment-variable configuration
+- no prompt-template execution
+- no CLI, report, batch, or deterministic pipeline integration
+- no merged output with the current canonical `ReviewResult`
+
 Future tasks must still decide whether LLM findings are converted into
 `ReviewFinding`, whether they participate in quality gates, how suppression
 works for them, and how confidence and rationale are displayed.

@@ -8,6 +8,51 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0035
+
+### Added
+
+- Added `LLMReviewRequest` to `src/content_review_engine/llm/models.py` for
+  future provider-facing semantic review input.
+- Added `src/content_review_engine/llm/provider.py` with a synchronous
+  `LLMReviewer` protocol returning `LLMReviewResult`.
+- Added `src/content_review_engine/llm/errors.py` with
+  `LLMReviewError`, `LLMProviderError`, and
+  `LLMResponseValidationError`.
+- Added `src/content_review_engine/llm/mock.py` with a deterministic
+  `MockLLMReviewer` that returns either a configured `LLMReviewResult` or an
+  empty default result.
+- Added `tests/test_llm_provider.py` covering request validation, provider
+  protocol compatibility, mock reviewer behavior, serialization, and the error
+  hierarchy.
+
+### Changed
+
+- Updated `src/content_review_engine/llm/__init__.py` to export the new public
+  LLM provider-boundary types.
+- Updated `docs/ARCHITECTURE.md` to document the future
+  `LLMReviewRequest -> LLMReviewer -> LLMReviewResult` boundary and the mock
+  adapter.
+- Updated `docs/DATA_MODELS.md` to document `LLMReviewRequest`,
+  `LLMReviewer`, LLM error types, and `MockLLMReviewer`.
+- Updated `PROJECT_STATE.md` to record TASK-0035 completion.
+- Kept runtime review behavior unchanged.
+- Kept deterministic rule behavior unchanged.
+- Kept `regex_rules` matching behavior unchanged.
+- Kept suppression behavior unchanged.
+- Kept quality-gate semantics unchanged.
+- Kept Markdown report structure unchanged.
+- Kept current review JSON output schema unchanged.
+
+### Not Added
+
+- No real provider integration.
+- No PydanticAI integration.
+- No API keys or environment-variable configuration.
+- No prompt templates.
+- No CLI, API, MCP, or GUI LLM behavior.
+- No merged LLM findings in the current `ReviewResult` output.
+
 ## TASK-0034
 
 ### Added
