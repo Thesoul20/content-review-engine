@@ -71,6 +71,9 @@ source for current built-in rule descriptions, while
 `src/content_review_engine/rules/registry.py` remains execution-focused.
 If a future LLM semantic review layer is added, it should stay separate from
 the deterministic execution registry and produce compatible findings later.
+Future LLM finding IDs should also remain clearly identifiable, for example by
+using namespaced or `llm_`-prefixed rule IDs. They are not executed by the
+current deterministic rule system.
 
 ## Current Built-in Rules
 

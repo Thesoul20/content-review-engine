@@ -202,6 +202,46 @@ Rule Metadata Registry
 Docs / Tests / Future CLI metadata display / Profile guidance
 ```
 
+## Future LLM Review Layer
+
+TASK-0034 adds only foundational future-facing LLM review data models under
+`src/content_review_engine/llm/`.
+
+Current status:
+
+- the review engine remains deterministic
+- no provider integration exists yet
+- no PydanticAI integration exists yet
+- no LLM review execution path exists yet
+- no LLM output is merged into the current `ReviewResult`
+- no quality-gate, suppression, report, or current JSON output behavior
+  changes in this task
+
+The intended future boundary is:
+
+```text
+Markdown Input
+  ↓
+Deterministic Rule Review
+  ↓
+Rule Findings
+  ↓
+Future Optional LLM Semantic Review
+  ↓
+LLMReviewResult
+  ↓
+Future Merge Layer
+  ↓
+Combined Report
+```
+
+The current `LLMReviewFinding`, `LLMReviewSummary`, and `LLMReviewResult`
+models exist so later tasks can add provider adapters, prompt versioning, and
+conversion logic without changing the current deterministic review contract.
+Future tasks must still decide whether LLM findings are converted into
+`ReviewFinding`, whether they participate in quality gates, how suppression
+works for them, and how confidence and rationale are displayed.
+
 Current review pipeline:
 
 - `review_document()` accepts already-loaded Markdown text and a loaded `ReviewProfile`.

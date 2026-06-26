@@ -8,6 +8,44 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0034
+
+### Added
+
+- Added `src/content_review_engine/llm/models.py` with future-facing
+  `LLMReviewFinding`, `LLMReviewSummary`, and `LLMReviewResult` models.
+- Added the stable future LLM result schema version
+  `llm-review-result.v1`.
+- Added `src/content_review_engine/llm/serialization.py` with explicit LLM
+  serialization helpers matching the existing project style.
+- Added `tests/test_llm_models.py` covering valid and invalid LLM model data
+  and stable serialization behavior.
+
+### Changed
+
+- Updated `docs/ARCHITECTURE.md` to document the future optional LLM review
+  layer and its conversion boundary.
+- Updated `docs/DATA_MODELS.md` to document the new LLM model types,
+  validation rules, and their separation from the current deterministic review
+  output.
+- Updated `docs/RULES.md` to clarify that future LLM finding IDs should stay
+  distinct from deterministic rule execution.
+- Updated `PROJECT_STATE.md` to record TASK-0034 completion.
+- Kept runtime review behavior unchanged.
+- Kept deterministic rule behavior unchanged.
+- Kept `regex_rules` matching behavior unchanged.
+- Kept suppression behavior unchanged.
+- Kept quality-gate semantics unchanged.
+- Kept Markdown report structure unchanged.
+- Kept current review JSON output schema unchanged.
+
+### Not Added
+
+- No LLM provider integration.
+- No PydanticAI integration.
+- No prompt execution or prompt templates.
+- No CLI, API, MCP, or GUI LLM behavior.
+
 ## TASK-0033
 
 ### Added

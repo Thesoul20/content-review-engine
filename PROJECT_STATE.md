@@ -85,6 +85,24 @@ use.
 
 ## Recent Completion
 
+- TASK-0034 is complete.
+- Added future-facing `LLMReviewFinding`, `LLMReviewSummary`, and
+  `LLMReviewResult` models under `src/content_review_engine/llm/` with the
+  stable schema version `llm-review-result.v1`.
+- Added LLM serialization helpers that follow the existing explicit helper
+  style without changing the current deterministic JSON output schema.
+- Added tests for valid and invalid LLM model construction and serialization.
+- Updated architecture, data-model, and rule documentation to place a future
+  LLM semantic review layer behind a separate conversion and merge boundary.
+- Kept deterministic review behavior unchanged.
+- Kept `regex_rules` behavior unchanged.
+- Kept suppression behavior unchanged.
+- Kept quality-gate semantics unchanged.
+- Kept Markdown report structure unchanged.
+- Kept current review JSON output schema unchanged.
+- Added no provider integration, no PydanticAI, no API, no MCP, and no GUI
+  behavior.
+
 - TASK-0033 is complete.
 - Added structured profile validation issues with `path`, `code`, `message`,
   and optional `suggestion`.

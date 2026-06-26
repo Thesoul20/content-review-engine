@@ -4,9 +4,15 @@
 
 This document records the core data models used by the content review engine.
 
-The implementation source of truth is `src/content_review_engine/core/models.py`.
+The deterministic core model source of truth is
+`src/content_review_engine/core/models.py`.
+The future-facing LLM model source of truth is
+`src/content_review_engine/llm/models.py`.
 
-Canonical JSON serialization helpers live in `src/content_review_engine/core/serialization.py`.
+Canonical deterministic JSON serialization helpers live in
+`src/content_review_engine/core/serialization.py`.
+Future-facing LLM serialization helpers live in
+`src/content_review_engine/llm/serialization.py`.
 
 Current built-in rule metadata is centralized in
 `src/content_review_engine/core/rule_registry.py`.
@@ -111,6 +117,96 @@ For profile-configured regex findings:
 - `matched_term` stores the configured regex pattern
 - `matched_text` stores the exact matched substring
 - `location` follows the existing 1-based line and column conventions
+
+---
+
+## LLMReviewFinding
+
+`LLMReviewFinding` stores one future semantic-review finding from a later
+optional LLM review layer.
+
+It is not part of the current canonical `ReviewResult` JSON output.
+TASK-0034 adds the model only. It does not execute LLM review, merge LLM
+findings into deterministic results, or change current report behavior.
+
+| Field | Required | Description |
+|---|---|---|
+| `rule_id` | Yes | Stable LLM finding identifier such as `llm_semantic_risk` |
+| `severity` | Yes | Canonical finding severity: `info`, `warning`, `error`, or `critical` |
+| `message` | Yes | Human-readable finding summary |
+| `suggestion` | No | Optional rewrite or remediation guidance |
+| `rationale` | No | Optional explanation for why the semantic issue was flagged |
+| `confidence` | No | Optional confidence score constrained to `0.0 <= x <= 1.0` |
+| `line` | No | Optional 1-based start line |
+| `column` | No | Optional 1-based start column |
+| `end_line` | No | Optional 1-based end line |
+| `end_column` | No | Optional 1-based end column |
+| `matched_text` | No | Optional text span associated with the finding |
+| `category` | No | Optional semantic category label |
+
+Notes:
+
+- `severity` reuses the existing canonical deterministic finding severity
+  values
+- `rule_id` and `message` must be non-empty strings
+- optional string fields, if provided, must not be empty strings
+- location fields follow the existing 1-based line and column conventions
+
+---
+
+## LLMReviewSummary
+
+`LLMReviewSummary` stores optional future article-level semantic review
+summary data.
+
+It is not part of the current canonical `ReviewResult` JSON output.
+
+| Field | Required | Description |
+|---|---|---|
+| `overall_risk` | No | Optional summary risk bucket: `low`, `medium`, `high`, or `unknown` |
+| `summary` | No | Optional short summary of the semantic review |
+| `recommended_action` | No | Optional high-level follow-up recommendation |
+| `confidence` | No | Optional confidence score constrained to `0.0 <= x <= 1.0` |
+
+---
+
+## LLMReviewResult
+
+`LLMReviewResult` stores one future optional LLM review pass.
+
+The stable schema version is `llm-review-result.v1`.
+
+It is distinct from the current deterministic `ReviewResult`.
+TASK-0034 does not merge it into current CLI JSON output, Markdown reports,
+batch results, suppression, or quality-gate behavior.
+
+| Field | Required | Description |
+|---|---|---|
+| `schema_version` | Yes | Stable future LLM result schema version |
+| `provider` | No | Optional provider label for a future adapter |
+| `model` | No | Optional model identifier for a future adapter |
+| `prompt_version` | No | Optional prompt or prompt-template version label |
+| `profile_name` | No | Optional future semantic-review profile name |
+| `findings` | Yes | Tuple of `LLMReviewFinding`, default empty |
+| `summary` | No | Optional `LLMReviewSummary` |
+| `metadata` | No | Optional string metadata map |
+
+Future conversion boundary:
+
+```text
+LLMReviewFinding
+  ↓ future conversion
+ReviewFinding-compatible output
+  ↓ future merge
+ReviewResult / reports / quality gate
+```
+
+Future tasks must still decide:
+
+- whether LLM findings are converted into `ReviewFinding`
+- whether LLM findings participate in quality gates
+- how inline suppression should work for LLM findings
+- how confidence and rationale should appear in reports or adapters
 
 ---
 
