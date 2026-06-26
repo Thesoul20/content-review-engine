@@ -28,6 +28,34 @@ The profile validation command reuses the existing profile loader and registry c
 The profile init command creates a new editable YAML profile from one built-in template and keeps validation on the existing loader path.
 The profile list command exposes the same built-in template registry used by `profile init` and returns either text output or a canonical `profile-template-list.v1` JSON payload.
 
+## Experimental LLM Sidecar Review
+
+Single-file `review` now supports an explicit experimental mock-only LLM sidecar flow:
+
+```bash
+uv run content-review review article.md --profile profile.yaml --enable-llm --llm-output article.llm.json
+uv run content-review review article.md --profile profile.yaml --enable-llm --llm-provider mock --llm-output article.llm.json
+```
+
+Current constraints:
+
+- this path is opt-in and disabled by default
+- only the single-file `review` command supports it
+- only `mock` is supported as the current `--llm-provider`
+- `--enable-llm` requires `--llm-output`
+- `--llm-output` without `--enable-llm` fails
+- `--llm-provider` without `--enable-llm` fails
+- the LLM result is written as a separate UTF-8 JSON sidecar file using the existing `LLMReviewResult` serialization helper
+
+Current behavior guarantees:
+
+- default CLI behavior is unchanged when LLM flags are omitted
+- the main deterministic review output remains the canonical `ReviewResult`
+- `--format json` does not add an `llm_review` field
+- `--format markdown` does not add an LLM section
+- quality-gate evaluation still reads only deterministic findings
+- batch review behavior is unchanged and does not accept LLM flags
+
 ## Regex Rules
 
 Profiles can define optional deterministic `regex_rules`:

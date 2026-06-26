@@ -171,6 +171,197 @@ def test_cli_review_without_findings_prints_zero_findings(
     assert captured.err == ""
 
 
+def test_cli_review_enable_llm_writes_mock_sidecar_without_changing_main_json(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    markdown_path = "tests/fixtures/markdown/clean_article.md"
+    profile_path = "tests/fixtures/profiles/default.yml"
+    review_output_path = tmp_path / "review.json"
+    llm_output_path = tmp_path / "review.llm.json"
+
+    exit_code = main(
+        [
+            "review",
+            markdown_path,
+            "--profile",
+            profile_path,
+            "--format",
+            "json",
+            "--output",
+            str(review_output_path),
+            "--enable-llm",
+            "--llm-output",
+            str(llm_output_path),
+        ]
+    )
+
+    captured = capsys.readouterr()
+    review_payload = json.loads(review_output_path.read_text(encoding="utf-8"))
+    llm_payload = json.loads(llm_output_path.read_text(encoding="utf-8"))
+
+    assert exit_code == 0
+    assert captured.out == ""
+    assert captured.err == ""
+    assert review_payload["schema_version"] == "review-result.v1"
+    assert "llm_review" not in review_payload
+    assert llm_payload["schema_version"] == "llm-review-result.v1"
+    assert llm_payload["findings"] == []
+
+
+def test_cli_review_enable_llm_builds_request_from_current_input(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    markdown_path = "tests/fixtures/markdown/clean_article.md"
+    profile_path = "tests/fixtures/profiles/default.yml"
+    llm_output_path = tmp_path / "review.llm.json"
+    captured_request: dict[str, object] = {}
+
+    from content_review_engine.llm import LLMReviewResult
+
+    def fake_review(self, request):  # type: ignore[no-untyped-def]
+        del self
+        captured_request["content"] = request.content
+        captured_request["profile_name"] = request.profile_name
+        captured_request["content_path"] = request.content_path
+        captured_request["review_goal"] = request.review_goal
+        return LLMReviewResult()
+
+    monkeypatch.setattr("content_review_engine.llm.mock.MockLLMReviewer.review", fake_review)
+
+    exit_code = main(
+        [
+            "review",
+            markdown_path,
+            "--profile",
+            profile_path,
+            "--enable-llm",
+            "--llm-provider",
+            "mock",
+            "--llm-output",
+            str(llm_output_path),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert captured.err == ""
+    assert captured_request == {
+        "content": (
+            "# 内容审核工作流\n\n"
+            "内容审核帮助团队保持表达一致。\n\n"
+            "## 复核流程\n\n"
+            "先写草稿，再检查措辞和结构。"
+        ),
+        "profile_name": "default",
+        "content_path": markdown_path,
+        "review_goal": "semantic_review",
+    }
+
+
+def test_cli_review_enable_llm_requires_llm_output(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    markdown_path = "tests/fixtures/markdown/clean_article.md"
+    profile_path = "tests/fixtures/profiles/default.yml"
+
+    exit_code = main(
+        [
+            "review",
+            markdown_path,
+            "--profile",
+            profile_path,
+            "--enable-llm",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert captured.out == ""
+    assert "Error: --enable-llm requires --llm-output" in captured.err
+
+
+def test_cli_review_llm_output_requires_enable_llm(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    markdown_path = "tests/fixtures/markdown/clean_article.md"
+    profile_path = "tests/fixtures/profiles/default.yml"
+
+    exit_code = main(
+        [
+            "review",
+            markdown_path,
+            "--profile",
+            profile_path,
+            "--llm-output",
+            str(tmp_path / "review.llm.json"),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert captured.out == ""
+    assert "Error: --llm-output requires --enable-llm" in captured.err
+
+
+def test_cli_review_llm_provider_requires_enable_llm(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    markdown_path = "tests/fixtures/markdown/clean_article.md"
+    profile_path = "tests/fixtures/profiles/default.yml"
+
+    exit_code = main(
+        [
+            "review",
+            markdown_path,
+            "--profile",
+            profile_path,
+            "--llm-provider",
+            "mock",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert captured.out == ""
+    assert "Error: --llm-provider requires --enable-llm" in captured.err
+
+
+def test_cli_review_rejects_unsupported_llm_provider(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    markdown_path = "tests/fixtures/markdown/clean_article.md"
+    profile_path = "tests/fixtures/profiles/default.yml"
+
+    exit_code = main(
+        [
+            "review",
+            markdown_path,
+            "--profile",
+            profile_path,
+            "--enable-llm",
+            "--llm-provider",
+            "openai",
+            "--llm-output",
+            str(tmp_path / "review.llm.json"),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert captured.out == ""
+    assert "Unsupported LLM provider: 'openai'. Only 'mock' is supported." in captured.err
+
+
 def test_cli_missing_markdown_file_returns_non_zero(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],

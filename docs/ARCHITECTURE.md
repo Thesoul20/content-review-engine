@@ -259,6 +259,55 @@ Current LLM provider-boundary status:
 - `src/content_review_engine/llm/mock.py` defines `MockLLMReviewer`, a
   deterministic adapter for tests and future wiring work
 
+TASK-0036 adds the runner boundary:
+
+```text
+LLMReviewRequest
+  ↓
+LLMReviewRunner
+  ↓
+LLMReviewer
+  ↓
+LLMReviewResult
+```
+
+TASK-0037 adds the first CLI plumbing for that boundary, but only for an
+explicit single-file opt-in sidecar flow:
+
+```text
+content-review review
+  ↓
+Markdown Reader + Profile Loader
+  ↓
+Deterministic Review Pipeline
+  ↓
+ReviewResult
+
+content-review review --enable-llm --llm-output <path>
+  ↓
+Reuse current Markdown input
+  ↓
+LLMReviewRequest
+  ↓
+LLMReviewRunner
+  ↓
+MockLLMReviewer
+  ↓
+LLMReviewResult
+  ↓
+JSON sidecar file
+```
+
+Important current boundaries:
+
+- the deterministic `ReviewResult` remains the main CLI output
+- the LLM result is serialized separately as a sidecar JSON file
+- the current Markdown report structure does not read the LLM sidecar
+- the current quality gate does not read the LLM sidecar
+- batch review does not participate in this LLM path
+- no real provider routing, network calls, API keys, or SDK integrations
+  exist in this task
+
 TASK-0036 adds a dedicated execution boundary between request construction and
 provider invocation:
 

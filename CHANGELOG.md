@@ -8,6 +8,52 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0037
+
+### Added
+
+- Added experimental mock-only LLM plumbing to the single-file
+  `content-review review` command via `--enable-llm`.
+- Added `--llm-output` for writing a separate `LLMReviewResult` JSON sidecar.
+- Added optional `--llm-provider mock` support, with `mock` as the only
+  currently accepted provider.
+- Added CLI tests covering sidecar generation, stable LLM schema version,
+  default empty mock findings, request construction, and invalid argument
+  combinations.
+
+### Changed
+
+- Updated `src/content_review_engine/cli.py` to reuse
+  `LLMReviewRequest`, `LLMReviewRunner`, `MockLLMReviewer`, and
+  `llm_review_result_to_json` when LLM review is explicitly enabled.
+- Updated `docs/CLI.md` to document the experimental mock-only LLM sidecar
+  workflow and argument rules.
+- Updated `docs/ARCHITECTURE.md` to document the
+  `CLI -> LLMReviewRunner -> MockLLMReviewer -> LLMReviewResult sidecar`
+  data flow.
+- Updated `docs/DATA_MODELS.md` to clarify that `LLMReviewResult` JSON stays
+  separate from the canonical deterministic `ReviewResult` JSON.
+- Updated `PROJECT_STATE.md` to record TASK-0037 completion.
+- Kept default CLI behavior unchanged.
+- Kept deterministic rule behavior unchanged.
+- Kept `regex_rules` behavior unchanged.
+- Kept suppression behavior unchanged.
+- Kept quality-gate semantics unchanged.
+- Kept Markdown report structure unchanged.
+- Kept current deterministic review JSON output schema unchanged.
+- Kept batch review behavior unchanged.
+
+### Not Added
+
+- No real provider integration.
+- No PydanticAI integration.
+- No OpenAI SDK or Anthropic SDK.
+- No API-key or environment-variable loading.
+- No network requests.
+- No merged LLM findings in the current `ReviewResult`.
+- No batch LLM review.
+- No API, MCP, or GUI behavior.
+
 ## TASK-0036
 
 ### Added

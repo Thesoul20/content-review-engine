@@ -179,6 +179,8 @@ The stable schema version is `llm-review-result.v1`.
 It is distinct from the current deterministic `ReviewResult`.
 TASK-0034 does not merge it into current CLI JSON output, Markdown reports,
 batch results, suppression, or quality-gate behavior.
+TASK-0037 allows the single-file CLI `review` command to write it to a
+separate JSON sidecar file when LLM review is explicitly enabled.
 
 | Field | Required | Description |
 |---|---|---|
@@ -207,6 +209,24 @@ Future tasks must still decide:
 - whether LLM findings participate in quality gates
 - how inline suppression should work for LLM findings
 - how confidence and rationale should appear in reports or adapters
+
+Current CLI sidecar boundary:
+
+```text
+ReviewResult JSON
+  = canonical deterministic review output
+
+LLMReviewResult JSON
+  = separate optional sidecar file
+```
+
+Current guarantees:
+
+- `LLMReviewResult` is not embedded inside `ReviewResult`
+- the main `review-result.v1` schema is unchanged
+- the current Markdown report format is unchanged
+- the current quality gate does not count LLM findings
+- the current batch result schema is unchanged
 
 ---
 

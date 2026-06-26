@@ -85,6 +85,32 @@ use.
 
 ## Recent Completion
 
+- TASK-0037 is complete.
+- Added experimental mock-only LLM plumbing to the single-file
+  `content-review review` CLI command behind explicit `--enable-llm`.
+- Added `--llm-output` as a required sidecar JSON destination when LLM review
+  is enabled.
+- Added optional `--llm-provider mock`, with current validation that only
+  `mock` is supported and only when LLM review is explicitly enabled.
+- Reused the existing `LLMReviewRunner`, `LLMReviewRequest`,
+  `MockLLMReviewer`, and `llm_review_result_to_json` helper to write a
+  separate `LLMReviewResult` sidecar file.
+- Added CLI tests covering sidecar generation, stable LLM schema version,
+  default empty mock findings, main JSON isolation from LLM data, request
+  construction, and invalid CLI argument combinations.
+- Updated CLI, architecture, and data-model documentation for the new
+  sidecar-only LLM flow.
+- Kept deterministic review behavior unchanged by default.
+- Kept `regex_rules` behavior unchanged.
+- Kept suppression behavior unchanged.
+- Kept quality-gate semantics unchanged.
+- Kept Markdown report structure unchanged.
+- Kept current deterministic review JSON output schema unchanged.
+- Kept batch review behavior unchanged and added no batch LLM support.
+- Added no real provider integration, no PydanticAI, no OpenAI SDK, no
+  Anthropic SDK, no environment-variable loading, and no API, MCP, or GUI
+  behavior.
+
 - TASK-0036 is complete.
 - Added `src/content_review_engine/llm/runner.py` with a lightweight
   synchronous `LLMReviewRunner` that accepts an injected `LLMReviewer`,

@@ -30,6 +30,12 @@ from content_review_engine.core.serialization import (
     profile_validation_result_to_json,
     review_result_to_json,
 )
+from content_review_engine.llm import (
+    LLMReviewRequest,
+    LLMReviewRunner,
+    MockLLMReviewer,
+    llm_review_result_to_json,
+)
 from content_review_engine.parser import read_markdown
 from content_review_engine.reports import (
     render_batch_markdown_report,
@@ -46,6 +52,15 @@ def _parse_fail_on(value: str) -> str:
     except ValueError as exc:
         raise argparse.ArgumentTypeError(str(exc)) from exc
     return value
+
+
+def _parse_llm_provider(value: str) -> str:
+    normalized = value.strip()
+    if normalized != "mock":
+        raise argparse.ArgumentTypeError(
+            f"Unsupported LLM provider: {value!r}. Only 'mock' is supported."
+        )
+    return normalized
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -81,6 +96,21 @@ def build_parser() -> argparse.ArgumentParser:
         type=_parse_fail_on,
         choices=SEVERITY_ORDER,
         help="Exit with code 1 when findings are at or above the severity threshold.",
+    )
+    review_parser.add_argument(
+        "--enable-llm",
+        action="store_true",
+        help="Enable experimental mock-only LLM review sidecar output.",
+    )
+    review_parser.add_argument(
+        "--llm-provider",
+        type=_parse_llm_provider,
+        default=None,
+        help="LLM provider for experimental sidecar review. Only 'mock' is supported.",
+    )
+    review_parser.add_argument(
+        "--llm-output",
+        help="Write the experimental LLM review result JSON sidecar to a file.",
     )
 
     profile_parser = subparsers.add_parser(
@@ -410,7 +440,60 @@ def _quality_gate_exit_code(
     return 1 if quality_gate_failed(severity_counts, threshold) else 0
 
 
+def _validate_review_llm_args(args: argparse.Namespace) -> None:
+    if not args.enable_llm:
+        if args.llm_output is not None:
+            raise ValueError("--llm-output requires --enable-llm")
+        if args.llm_provider is not None:
+            raise ValueError("--llm-provider requires --enable-llm")
+        return
+
+    if args.llm_output is None:
+        raise ValueError("--enable-llm requires --llm-output")
+
+
+def _build_llm_review_request(
+    *,
+    markdown_text: str,
+    markdown_path: str,
+    profile_name: str,
+) -> LLMReviewRequest:
+    return LLMReviewRequest(
+        content=markdown_text,
+        profile_name=profile_name,
+        content_path=markdown_path,
+        review_goal="semantic_review",
+    )
+
+
+def _run_llm_review_and_write_sidecar(
+    *,
+    markdown_text: str,
+    markdown_path: str,
+    profile_name: str,
+    provider: str,
+    output_path: str,
+) -> None:
+    if provider != "mock":
+        raise ValueError(
+            f"Unsupported LLM provider: {provider!r}. Only 'mock' is supported."
+        )
+
+    request = _build_llm_review_request(
+        markdown_text=markdown_text,
+        markdown_path=markdown_path,
+        profile_name=profile_name,
+    )
+    runner = LLMReviewRunner(reviewer=MockLLMReviewer())
+    llm_result = runner.run(request)
+    Path(output_path).write_text(
+        llm_review_result_to_json(llm_result),
+        encoding="utf-8",
+    )
+
+
 def _run_review_command(args: argparse.Namespace) -> int:
+    _validate_review_llm_args(args)
     markdown_text = read_markdown(args.markdown_file)
     profile = load_profile(args.profile)
     review_result = review_document(
@@ -427,6 +510,14 @@ def _run_review_command(args: argparse.Namespace) -> int:
     output_exit_code = _write_or_print_output(rendered_output, args.output)
     if output_exit_code != 0:
         return output_exit_code
+    if args.enable_llm:
+        _run_llm_review_and_write_sidecar(
+            markdown_text=markdown_text,
+            markdown_path=args.markdown_file,
+            profile_name=profile.name,
+            provider=args.llm_provider or "mock",
+            output_path=args.llm_output,
+        )
     return _quality_gate_exit_code(
         review_result.summary.severity_counts,
         args.fail_on,
@@ -535,7 +626,13 @@ def main(argv: list[str] | None = None) -> int:
     except ProfileValidationFailed as exc:
         print(_render_profile_validation_exception(exc), file=sys.stderr)
         return 2
-    except (FileNotFoundError, NotADirectoryError, ValueError, ValidationError) as exc:
+    except (
+        FileNotFoundError,
+        NotADirectoryError,
+        OSError,
+        ValueError,
+        ValidationError,
+    ) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 2
 
