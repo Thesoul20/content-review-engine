@@ -4,7 +4,7 @@
 
 M1: Core input layer and minimal review pipeline.
 
-The project currently has Markdown input handling, profile loading, standalone profile validation, deterministic review rules, forbidden-terms allowlists, absolute-claims rule configuration, Markdown inline suppression filtering, a minimal internal rule registry and rule runner, source location metadata on findings, a minimal in-memory review pipeline, a minimal batch CLI adapter, CLI quality-gate exit codes, and committed fixtures/examples for integration-style testing and manual CLI checks.
+The project currently has Markdown input handling, profile loading, standalone profile validation, deterministic review rules, forbidden-terms allowlists, absolute-claims rule configuration, Markdown inline suppression filtering, a minimal internal rule registry and rule runner, centralized built-in rule metadata, source location metadata on findings, a minimal in-memory review pipeline, a minimal batch CLI adapter, CLI quality-gate exit codes, and committed fixtures/examples for integration-style testing and manual CLI checks.
 
 ---
 
@@ -60,6 +60,19 @@ The project currently has Markdown input handling, profile loading, standalone p
 - No active implementation task.
 
 ## Recent Completion
+
+- TASK-0028 is complete.
+- Added `RuleDefinition` plus a centralized deterministic built-in rule
+  metadata registry in `src/content_review_engine/core/rule_registry.py`.
+- Registered the current built-in rule IDs:
+  `forbidden_terms`, `absolute_claims`, `markdown_structure`, and
+  `markdown_links_images`.
+- Added registry tests for completeness, uniqueness, deterministic ordering,
+  lookup behavior, and metadata presence.
+- Updated rule, data model, and profile documentation to mention the
+  centralized built-in metadata registry.
+- Kept rule matching behavior, suppression behavior, CLI behavior, report
+  format, JSON schema, and exit code behavior unchanged.
 
 - TASK-0027 is complete.
 - Consolidated legacy rule documentation around `docs/RULES.md` as the

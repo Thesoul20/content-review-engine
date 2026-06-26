@@ -40,6 +40,11 @@ Current built-in rule IDs are:
 - `markdown_structure`
 - `markdown_links_images`
 
+Current built-in rule metadata is centralized in
+`src/content_review_engine/core/rule_registry.py`.
+The registry is descriptive only. It does not run rules, validate
+suppression comments, change profile parsing, or change output schemas.
+
 Default enablement in the current registry:
 
 - `forbidden_terms`: enabled by default
@@ -207,7 +212,8 @@ Limitations:
 ## Implementation And Tests
 
 This document is the canonical user-facing rule reference. Implementation and
-test coverage currently live here:
+test coverage currently live here. The centralized built-in rule metadata
+registry lives at `src/content_review_engine/core/rule_registry.py`:
 
 - `forbidden_terms`
   - implementation: `src/content_review_engine/rules/forbidden_terms.py`

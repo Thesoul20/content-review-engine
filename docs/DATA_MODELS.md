@@ -8,6 +8,11 @@ The implementation source of truth is `src/content_review_engine/core/models.py`
 
 Canonical JSON serialization helpers live in `src/content_review_engine/core/serialization.py`.
 
+Current built-in rule metadata is centralized in
+`src/content_review_engine/core/rule_registry.py`.
+That registry is internal metadata only. It is not a field in the canonical
+review or batch JSON output schemas unless a future task explicitly exposes it.
+
 ---
 
 ## ReviewIssue
@@ -55,6 +60,10 @@ Character offsets are 0-based.
 
 `ReviewFinding` represents one deterministic rule match.
 
+`rule_id` is the stable identifier for the rule that produced the finding.
+For current built-in rules, descriptive metadata for that identifier is
+centralized in the core rule registry.
+
 | Field | Required | Description |
 |---|---|---|
 | `rule_id` | Yes | Stable rule identifier |
@@ -87,6 +96,24 @@ ReviewFinding(
     ),
 )
 ```
+
+---
+
+## RuleDefinition
+
+`RuleDefinition` stores descriptive metadata for one current built-in rule in
+the internal rule registry.
+
+It is not part of the canonical review-result JSON schema.
+
+| Field | Required | Description |
+|---|---|---|
+| `rule_id` | Yes | Stable built-in rule identifier |
+| `name` | Yes | Human-readable rule name |
+| `description` | Yes | Short description of the rule's purpose |
+| `category` | Yes | Small internal category label such as `terms` or `markdown` |
+| `source` | Yes | Whether the rule is `built-in` or `profile-driven` |
+| `supports_suppression` | Yes | Whether inline suppression comments are supported |
 
 ---
 

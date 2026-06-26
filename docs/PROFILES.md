@@ -112,6 +112,9 @@ Current implemented rule IDs that can be used in example profiles:
 - `markdown_structure`
 - `markdown_links_images`
 
+Current built-in metadata for these rule IDs is centralized in
+`src/content_review_engine/core/rule_registry.py`.
+
 The built-in examples only use `forbidden_terms` and `absolute_claims` so they
 stay easy to read and customize.
 

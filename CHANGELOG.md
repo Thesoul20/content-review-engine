@@ -8,6 +8,38 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0028
+
+### Added
+
+- Added `RuleDefinition` as a small internal rule metadata model.
+- Added a centralized deterministic built-in rule registry in
+  `src/content_review_engine/core/rule_registry.py`.
+- Registered the current built-in rule IDs:
+  `forbidden_terms`, `absolute_claims`, `markdown_structure`, and
+  `markdown_links_images`.
+- Added registry tests covering completeness, uniqueness, deterministic
+  ordering, metadata lookup, unknown-rule handling, and metadata presence.
+
+### Changed
+
+- Updated `docs/RULES.md`, `docs/DATA_MODELS.md`, `docs/PROFILES.md`, and
+  `PROJECT_STATE.md` to describe the centralized rule metadata registry.
+- Kept runtime rule matching behavior unchanged.
+- Kept suppression behavior unchanged.
+- Kept CLI behavior unchanged.
+- Kept Markdown report format unchanged.
+- Kept JSON schema unchanged.
+- Kept exit-code behavior unchanged.
+
+### Not Added
+
+- No new review rules.
+- No new rule types.
+- No regex rule support.
+- No profile format changes.
+- No LLM-based review.
+
 ## TASK-0027
 
 ### Added

@@ -28,6 +28,13 @@ from content_review_engine.core.quality_gate import (
     severity_meets_threshold,
     severity_rank,
 )
+from content_review_engine.core.rule_registry import (
+    RuleDefinition,
+    get_rule_definition,
+    get_rule_definitions,
+    get_rule_ids,
+    is_known_rule_id,
+)
 from content_review_engine.core.serialization import (
     batch_review_result_to_dict,
     batch_review_result_to_json,
@@ -74,4 +81,9 @@ __all__ = [
     "review_result_to_json",
     "severity_meets_threshold",
     "severity_rank",
+    "RuleDefinition",
+    "get_rule_definition",
+    "get_rule_definitions",
+    "get_rule_ids",
+    "is_known_rule_id",
 ]
