@@ -57,6 +57,10 @@ See [docs/QUICKSTART.md](docs/QUICKSTART.md) for the complete first-run
 workflow from dependency installation to profile setup, review, batch review,
 Markdown reports, and CI-oriented exit codes.
 
+For a runnable small workspace with demo articles, demo profiles, committed
+Markdown reports, JSON examples, quality-gate behavior, batch commands, and
+inline suppression examples, see [examples/demo/README.md](examples/demo/README.md).
+
 The repository includes starter and real-world profile templates for general
 publishing, WeChat articles, marketing copy, technical blogs, and health
 content. They help flag common risky wording patterns for review and do not

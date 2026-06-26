@@ -4,6 +4,9 @@ Start with [docs/QUICKSTART.md](./QUICKSTART.md) for the first-run workflow
 from `uv sync` through `review`, `batch`, Markdown reports, and CI-oriented
 exit codes.
 
+For a committed runnable demo workspace using the current CLI contract, see
+[`examples/demo/README.md`](../examples/demo/README.md).
+
 For rule-system details such as supported `rule_id` values, severity ordering,
 suppression comments, counts, and quality gates, see
 [docs/RULES.md](./RULES.md), the canonical rule reference.

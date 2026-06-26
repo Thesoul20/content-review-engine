@@ -27,6 +27,10 @@ content-review batch
 This repository already includes sample Markdown files and built-in example
 profiles, so you can follow the commands below directly from the project root.
 
+If you want a self-contained walkthrough with committed demo articles, demo
+profiles, and demo reports, see
+[`examples/demo/README.md`](../examples/demo/README.md).
+
 ## 1. Install Dependencies
 
 Install the project and its dependencies:
@@ -118,6 +122,14 @@ You can also review a specific fixture that is known to trigger the
 uv run content-review review tests/fixtures/markdown/absolute_claims_article.md --profile profiles/my-wechat.yaml
 ```
 
+If you want a more realistic end-to-end demo with committed profiles and
+expected reports, try:
+
+```bash
+uv run content-review review examples/demo/articles/wechat-demo.md --profile examples/demo/profiles/wechat-demo.yaml
+uv run content-review review examples/demo/articles/technical-demo.md --profile examples/demo/profiles/technical-demo.yaml
+```
+
 ## 6. Review A Directory
 
 Run the same profile against a directory of Markdown files:
@@ -163,6 +175,13 @@ Batch report example:
 
 ```bash
 uv run content-review batch examples/batch/articles --profile profiles/my-wechat-strict.yaml --recursive --fail-on error --format markdown --output artifacts/batch-report.md
+```
+
+Demo report examples:
+
+```bash
+uv run content-review review examples/demo/articles/wechat-demo.md --profile examples/demo/profiles/wechat-demo.yaml --format markdown --output examples/demo/reports/wechat-demo-report.md --fail-on warning
+uv run content-review review examples/demo/articles/technical-demo.md --profile examples/demo/profiles/technical-demo.yaml --format markdown --output examples/demo/reports/technical-demo-report.md --fail-on warning
 ```
 
 When the quality gate fails with exit code `1`, the Markdown report is still
@@ -243,6 +262,10 @@ uv run content-review batch articles --profile profiles/my-wechat-strict.yaml --
 For a copyable GitHub Actions example, see
 [CI Integration](./CI.md) and
 `docs/examples/github-actions/content-review.yml`.
+
+For a runnable local demo that connects articles, profiles, reports, JSON
+output, batch review, quality gates, and suppression, see
+[`examples/demo/README.md`](../examples/demo/README.md).
 
 ## Exit Codes
 

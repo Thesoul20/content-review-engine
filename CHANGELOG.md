@@ -8,6 +8,42 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0032
+
+### Added
+
+- Added a runnable demo workspace under `examples/demo/` with:
+  - short demo articles for WeChat-style and technical-blog content
+  - committed stable demo profiles
+  - deterministic `regex_rules`
+  - committed single-file Markdown demo reports
+  - a demo README with commands for profile validation, single-file review,
+    batch review, Markdown report output, JSON output, quality gates, and
+    inline suppression
+- Added `tests/test_demo_project.py` covering demo file presence, profile
+  validation, regex-rule presence, findings, suppression, Markdown reports,
+  JSON serialization, batch review, quality gates, and documentation links.
+
+### Changed
+
+- Updated `README.md`, `docs/QUICKSTART.md`, `docs/CLI.md`, and
+  `docs/PROFILES.md` to point users to the runnable demo workspace.
+- Updated `PROJECT_STATE.md` to record the new end-to-end demo project.
+- Kept deterministic rule behavior unchanged.
+- Kept `regex_rules` behavior unchanged.
+- Kept suppression behavior unchanged.
+- Kept quality-gate semantics unchanged.
+- Kept Markdown report structure unchanged.
+- Kept JSON output schema unchanged.
+
+### Not Added
+
+- No LLM-based review.
+- No PydanticAI integration.
+- No API, MCP, or GUI behavior.
+- No new rule types.
+- No compliance guarantees.
+
 ## TASK-0031
 
 ### Added

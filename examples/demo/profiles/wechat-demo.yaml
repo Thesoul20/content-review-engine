@@ -1,0 +1,55 @@
+name: wechat-demo
+target_platform: wechat
+tone: clear and careful
+max_title_length: 32
+max_paragraph_length: 220
+
+enabled_rules:
+  - absolute_claims
+  - markdown_links_images
+
+rules:
+  - id: forbidden_terms
+    enabled: true
+    severity: error
+    terms:
+      - 违规词
+      - 敏感词
+      - 禁用词
+    allow_terms: []
+
+  - id: absolute_claims
+    enabled: true
+    severity: warning
+    terms:
+      - 全网最强
+      - 行业第一
+      - 唯一选择
+      - 100% 有效
+    allow_terms:
+      - 唯一标识符
+
+  - id: markdown_links_images
+    enabled: true
+
+regex_rules:
+  - id: exaggerated_claims
+    pattern: "唯一|第一|最强|100%"
+    severity: warning
+    message: "Avoid absolute or exaggerated wording in public-facing drafts."
+    suggestion: "Use narrower wording and add evidence where needed."
+    case_sensitive: false
+
+  - id: engagement_bait
+    pattern: "速看|不看后悔"
+    severity: info
+    message: "This phrase may read as engagement bait."
+    suggestion: "Prefer a clearer and more direct headline or transition."
+    case_sensitive: false
+
+  - id: article_placeholder
+    pattern: "待补图|待补链接|这里补充"
+    severity: warning
+    message: "Remove unfinished article placeholders before publishing."
+    suggestion: "Replace the placeholder with final article content."
+    case_sensitive: false

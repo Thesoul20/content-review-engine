@@ -8,6 +8,10 @@ The project currently has Markdown input handling, profile loading, standalone p
 It now also supports optional profile-configured deterministic `regex_rules`
 that validate patterns at profile load time and emit normal findings with
 profile-defined rule IDs.
+It also now includes a committed end-to-end demo workspace under
+`examples/demo/` with small demo articles, stable demo profiles, committed
+Markdown reports, and tests that exercise review, batch review, JSON output,
+quality gates, and suppression without changing runtime behavior.
 
 ---
 
@@ -65,6 +69,10 @@ profile-defined rule IDs.
 - Regex rule findings participate in existing inline suppression, summaries,
   Markdown reports, JSON output, batch aggregation, quality gates, and exit
   code behavior through the normal review pipeline.
+- The repository includes a small runnable demo project under `examples/demo/`
+  that shows Markdown input, demo profiles, single-file review, batch review,
+  Markdown report output, JSON output, inline suppression, and quality-gate
+  behavior using the current CLI and report pipeline.
 
 ---
 
@@ -73,6 +81,26 @@ profile-defined rule IDs.
 - No active implementation task.
 
 ## Recent Completion
+
+- TASK-0032 is complete.
+- Added `examples/demo/` with short WeChat-style and technical-blog demo
+  articles plus stable demo profiles that include deterministic `regex_rules`.
+- Added committed demo Markdown reports for the two single-file demo runs.
+- Added demo-focused tests covering file presence, profile validation, regex
+  rules, findings, suppression, Markdown report rendering, JSON serialization,
+  batch review, quality-gate behavior, demo README commands, doc links, and
+  conservative wording.
+- Updated README, quickstart, CLI, and profile documentation so users can find
+  the runnable demo directly from the main references.
+- Kept deterministic rule matching behavior unchanged.
+- Kept `regex_rules` behavior unchanged.
+- Kept suppression syntax unchanged.
+- Kept quality-gate semantics unchanged.
+- Kept Markdown report structure unchanged.
+- Kept JSON output schema unchanged.
+- Added no LLM review, PydanticAI, API, MCP, or GUI behavior.
+- Added no legal, medical, advertising, regulatory, or platform compliance
+  guarantees.
 
 - TASK-0031 is complete.
 - Added five practical built-in example/template profiles:

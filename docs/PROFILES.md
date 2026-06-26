@@ -12,6 +12,10 @@ suppression comments, counts, and quality gates, see
 This document describes the repository's YAML review profiles and the built-in
 example profiles under `profiles/examples/`.
 
+For a runnable demo that pairs small Markdown articles with committed demo
+profiles and committed Markdown reports, see
+[`examples/demo/README.md`](../examples/demo/README.md).
+
 A review profile is input data for the core package. It configures metadata,
 basic document constraints, enabled deterministic rules, rule terms,
 rule-specific severity, and optional allowlists.
@@ -38,6 +42,18 @@ automatically at runtime. Use them by passing the profile path explicitly.
 
 The same example profiles are also exposed as built-in templates through
 `content-review profile init`.
+
+The repository also includes two committed demo profiles under
+`examples/demo/profiles/` for end-to-end CLI demonstrations:
+
+- `examples/demo/profiles/wechat-demo.yaml`
+- `examples/demo/profiles/technical-demo.yaml`
+
+These demo profiles are small, stable examples intended to produce predictable
+findings against the matching demo articles in `examples/demo/articles/`.
+They include deterministic `regex_rules`, demonstrate inline suppression, and
+do not provide legal, medical, advertising, regulatory, or platform
+compliance advice.
 
 Discover the available built-in templates with:
 
