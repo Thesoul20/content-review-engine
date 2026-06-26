@@ -85,6 +85,28 @@ use.
 
 ## Recent Completion
 
+- TASK-0036 is complete.
+- Added `src/content_review_engine/llm/runner.py` with a lightweight
+  synchronous `LLMReviewRunner` that accepts an injected `LLMReviewer`,
+  forwards `LLMReviewRequest`, and returns `LLMReviewResult`.
+- Exported `LLMReviewRunner` from `src/content_review_engine/llm/__init__.py`
+  for package-level imports.
+- Added runner tests covering reviewer invocation, configured mock behavior,
+  default empty mock behavior, stable schema version, and provider error
+  propagation.
+- Updated architecture and data-model documentation to place the runner in the
+  `LLMReviewRequest -> LLMReviewRunner -> LLMReviewer -> LLMReviewResult`
+  flow and to document its separation from the deterministic review result
+  schema.
+- Kept deterministic review behavior unchanged.
+- Kept `regex_rules` behavior unchanged.
+- Kept suppression behavior unchanged.
+- Kept quality-gate semantics unchanged.
+- Kept Markdown report structure unchanged.
+- Kept current review JSON output schema unchanged.
+- Added no real provider integration, no PydanticAI, no API keys, no prompt
+  templates, no CLI LLM behavior, and no API, MCP, or GUI behavior.
+
 - TASK-0035 is complete.
 - Added future-facing `LLMReviewRequest`, a synchronous `LLMReviewer`
   provider protocol, minimal LLM error types, and a deterministic

@@ -258,6 +258,33 @@ Current LLM provider-boundary status:
   `LLMReviewer` protocol
 - `src/content_review_engine/llm/mock.py` defines `MockLLMReviewer`, a
   deterministic adapter for tests and future wiring work
+
+TASK-0036 adds a dedicated execution boundary between request construction and
+provider invocation:
+
+```text
+Markdown content
+  ↓
+LLMReviewRequest
+  ↓
+LLMReviewRunner
+  ↓
+LLMReviewer
+  ↓
+LLMReviewResult
+```
+
+Current LLM runner status:
+
+- `src/content_review_engine/llm/runner.py` defines `LLMReviewRunner`
+- the runner is intentionally small and only coordinates `run(request)` to
+  `reviewer.review(request)`
+- the runner receives its `LLMReviewer` dependency through constructor
+  injection
+- provider-layer `LLMReviewError` failures propagate unchanged
+- `MockLLMReviewer` remains the deterministic test adapter for the runner
+- the runner is not wired into the current deterministic review pipeline, CLI,
+  reports, batch review, suppression, or quality-gate flow
 - `src/content_review_engine/llm/errors.py` defines minimal future-facing LLM
   error types
 

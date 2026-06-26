@@ -257,6 +257,47 @@ Notes:
 
 ---
 
+## LLMReviewRunner
+
+`LLMReviewRunner` is the future semantic-review execution coordinator in
+`src/content_review_engine/llm/runner.py`.
+
+Current shape:
+
+```python
+class LLMReviewRunner:
+    def __init__(self, reviewer: LLMReviewer) -> None:
+        ...
+
+    def run(self, request: LLMReviewRequest) -> LLMReviewResult:
+        ...
+```
+
+Current boundary:
+
+```text
+LLMReviewRequest
+  ↓
+LLMReviewRunner
+  ↓
+LLMReviewer
+  ↓
+LLMReviewResult
+```
+
+Notes:
+
+- the runner accepts the existing `LLMReviewRequest` model unchanged
+- the runner returns the existing `LLMReviewResult` model unchanged
+- the runner does not add provider selection, model configuration, API keys,
+  network logic, or environment-variable loading
+- the runner does not modify the current deterministic `ReviewResult` schema
+- the runner does not merge LLM findings into deterministic findings
+- the runner does not change the current CLI JSON output, Markdown report
+  structure, suppression behavior, or quality-gate behavior
+
+---
+
 ## LLM Review Errors
 
 The future LLM adapter boundary now defines minimal error types in

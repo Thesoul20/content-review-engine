@@ -13,6 +13,7 @@ from content_review_engine.llm.models import (
     LLMReviewSummary,
 )
 from content_review_engine.llm.provider import LLMReviewer
+from content_review_engine.llm.runner import LLMReviewRunner
 from content_review_engine.llm.serialization import (
     llm_review_finding_to_dict,
     llm_review_result_to_dict,
@@ -31,6 +32,7 @@ __all__ = [
     "LLMReviewResult",
     "LLMReviewSummary",
     "LLMReviewer",
+    "LLMReviewRunner",
     "MockLLMReviewer",
     "llm_review_finding_to_dict",
     "llm_review_result_to_dict",
