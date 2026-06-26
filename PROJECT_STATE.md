@@ -44,6 +44,10 @@ The project currently has Markdown input handling, profile loading, standalone p
   `content-review profile list`.
 - The repository includes a documented GitHub Actions CI example that validates
   a profile and runs batch review with `--fail-on error`.
+- The repository includes a dedicated quickstart that documents the first-run
+  workflow from dependency installation through profile setup, validation,
+  single-file review, batch review, Markdown report output, inline
+  suppression, and CI-oriented exit codes.
 
 ---
 
@@ -52,6 +56,20 @@ The project currently has Markdown input handling, profile loading, standalone p
 - No active implementation task.
 
 ## Recent Completion
+
+- TASK-0025 is complete.
+- Added `docs/QUICKSTART.md` covering `uv sync`, `profile list`,
+  `profile init`, `profile validate`, `review`, `batch`, `--fail-on`,
+  Markdown report output, inline suppression, exit codes, CI handoff, and
+  compliance limitations.
+- Added lightweight documentation tests that verify the quickstart exists and
+  includes the core CLI commands, Markdown report flow, inline suppression,
+  exit codes, and detailed-doc links.
+- Updated `README.md`, `docs/CLI.md`, `docs/PROFILES.md`, `docs/CI.md`, and
+  `CHANGELOG.md` to link the new quickstart.
+- Kept `profile list`, `profile init`, `profile validate`, `review`, `batch`,
+  suppression behavior, `forbidden_terms`, `absolute_claims`, text/JSON/Markdown
+  output, and `--fail-on` exit-code rules unchanged.
 
 - TASK-0024 is complete.
 - Improved `content-review review --format markdown` and

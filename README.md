@@ -50,3 +50,9 @@ Each development task must have:
 - Files not allowed to modify
 - Acceptance criteria
 - Tests when applicable
+
+## Quickstart
+
+See [docs/QUICKSTART.md](docs/QUICKSTART.md) for the complete first-run
+workflow from dependency installation to profile setup, review, batch review,
+Markdown reports, and CI-oriented exit codes.

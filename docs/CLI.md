@@ -1,5 +1,9 @@
 # CLI
 
+Start with [docs/QUICKSTART.md](./QUICKSTART.md) for the first-run workflow
+from `uv sync` through `review`, `batch`, Markdown reports, and CI-oriented
+exit codes.
+
 ## Current Command
 
 ```bash

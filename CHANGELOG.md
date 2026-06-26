@@ -8,6 +8,47 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0025
+
+### Added
+
+- Added `docs/QUICKSTART.md` with a command-driven first-run workflow covering
+  dependency installation, `profile list`, `profile init`, `profile validate`,
+  single-file review, batch review, `--fail-on`, Markdown report output,
+  inline suppression, profile customization, exit codes, and CI handoff.
+- Added a lightweight quickstart documentation test that verifies the document
+  exists and includes the key CLI commands, report output example, suppression
+  example, exit codes, doc links, and compliance limitation note.
+
+### Changed
+
+- Updated `docs/CLI.md` to link the quickstart from the main CLI reference.
+- Updated `docs/PROFILES.md` and `docs/CI.md` to point readers to the
+  quickstart for the end-to-end setup flow.
+- Updated `README.md` and `PROJECT_STATE.md` to record the new onboarding
+  documentation.
+- Kept `profile list`, `profile init`, `profile validate`, `review`, `batch`,
+  suppression behavior, `forbidden_terms`, `absolute_claims`, text/JSON/Markdown
+  output, and `--fail-on` exit-code rules unchanged.
+
+### Not Added
+
+- No new review rules.
+- No LLM review.
+- No auto-fix behavior.
+- No new CLI commands.
+- No new output formats.
+- No GitHub PR comments.
+- No GitHub annotations.
+- No SARIF output.
+- No HTML report.
+- No PDF report.
+- No API server.
+- No MCP server.
+- No frontend.
+- No database persistence.
+- No publishing integration.
+
 ## TASK-0024
 
 ### Added

@@ -1,5 +1,8 @@
 # Profiles
 
+For the end-to-end first-run workflow, see
+[docs/QUICKSTART.md](./QUICKSTART.md).
+
 ## Purpose
 
 This document describes the repository's YAML review profiles and the built-in

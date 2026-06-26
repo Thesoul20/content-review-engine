@@ -1,5 +1,8 @@
 # CI Integration
 
+For the complete local setup flow before CI, see
+[docs/QUICKSTART.md](./QUICKSTART.md).
+
 ## Purpose
 
 This document shows how to run `content-review` in CI without changing core
