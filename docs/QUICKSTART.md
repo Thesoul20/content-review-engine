@@ -250,6 +250,8 @@ For a copyable GitHub Actions example, see
 ## Next Steps
 
 - Read [CLI Reference](./CLI.md) for all command options and output formats.
+- Read [Rule System](./RULES.md) for supported rule IDs, severity ordering,
+  suppression behavior, counts, and quality gates.
 - Read [Profiles](./PROFILES.md) for profile structure, template differences,
   and customization guidance.
 - Read [CI Integration](./CI.md) for automation and GitHub Actions examples.

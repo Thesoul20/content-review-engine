@@ -56,3 +56,9 @@ Each development task must have:
 See [docs/QUICKSTART.md](docs/QUICKSTART.md) for the complete first-run
 workflow from dependency installation to profile setup, review, batch review,
 Markdown reports, and CI-oriented exit codes.
+
+## Rule Reference
+
+See [docs/RULES.md](docs/RULES.md) for the current rule system, supported rule
+IDs, severity ordering, suppression comments, rule counts, severity counts, and
+quality-gate behavior.

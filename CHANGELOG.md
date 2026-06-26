@@ -8,6 +8,40 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0026
+
+### Added
+
+- Added `docs/RULES.md` as a dedicated rule system reference for the current
+  deterministic review model.
+- Documented the current built-in rule IDs:
+  `forbidden_terms`, `absolute_claims`, `markdown_structure`, and
+  `markdown_links_images`.
+- Documented finding fields, severity levels, severity ordering, quality-gate
+  behavior, `--fail-on` examples, rule counts, severity counts, suppression
+  comments, batch aggregation behavior, reports, and current limitations.
+- Added a documentation test that verifies the rule reference exists and covers
+  the durable rule-system concepts.
+
+### Changed
+
+- Updated `README.md`, `docs/QUICKSTART.md`, `docs/CLI.md`, `docs/PROFILES.md`,
+  and `docs/CI.md` to link the rule-system reference.
+- Kept rule matching behavior, suppression behavior, CLI behavior, Markdown
+  report format, JSON schema, and exit code behavior unchanged.
+
+### Not Added
+
+- No new review rules.
+- No rule-matching changes.
+- No suppression changes.
+- No CLI contract changes.
+- No JSON schema changes.
+- No Markdown report structure changes.
+- No exit-code changes.
+- No LLM-based review.
+- No compliance guarantees.
+
 ## TASK-0025
 
 ### Added

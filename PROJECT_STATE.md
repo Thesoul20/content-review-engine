@@ -48,6 +48,10 @@ The project currently has Markdown input handling, profile loading, standalone p
   workflow from dependency installation through profile setup, validation,
   single-file review, batch review, Markdown report output, inline
   suppression, and CI-oriented exit codes.
+- The repository includes a dedicated rule system reference that documents the
+  current built-in rule IDs, finding fields, severity ordering, quality-gate
+  behavior, suppression comments, rule counts, severity counts, batch
+  aggregation behavior, reports, and limitations.
 
 ---
 
@@ -56,6 +60,21 @@ The project currently has Markdown input handling, profile loading, standalone p
 - No active implementation task.
 
 ## Recent Completion
+
+- TASK-0026 is complete.
+- Added `docs/RULES.md` as the dedicated rule system reference.
+- Documented the current built-in rule IDs:
+  `forbidden_terms`, `absolute_claims`, `markdown_structure`, and
+  `markdown_links_images`.
+- Documented current finding fields, severity levels, severity ordering,
+  `--fail-on` behavior, rule counts, severity counts, suppression comments,
+  batch aggregation behavior, reports, and limitations.
+- Updated `README.md`, `docs/QUICKSTART.md`, `docs/CLI.md`, `docs/PROFILES.md`,
+  and `docs/CI.md` to link the new rule reference.
+- Added documentation tests that verify the rule reference exists, covers the
+  durable rule-system concepts, and is linked from the user-facing docs.
+- Kept rule matching behavior, suppression behavior, CLI behavior, report
+  format, JSON schema, and exit code behavior unchanged.
 
 - TASK-0025 is complete.
 - Added `docs/QUICKSTART.md` covering `uv sync`, `profile list`,

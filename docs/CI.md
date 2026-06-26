@@ -3,6 +3,9 @@
 For the complete local setup flow before CI, see
 [docs/QUICKSTART.md](./QUICKSTART.md).
 
+For the rule-system reference behind `--fail-on`, suppression comments, and
+severity ordering, see [docs/RULES.md](./RULES.md).
+
 ## Purpose
 
 This document shows how to run `content-review` in CI without changing core
