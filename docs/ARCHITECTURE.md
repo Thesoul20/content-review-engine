@@ -155,6 +155,12 @@ The execution registry is operational. It decides which deterministic rule
 implementations run during review, but it is not the primary user-facing
 metadata source for docs or profile guidance.
 
+Profile-configured `regex_rules` are a separate runtime profile-driven path.
+Their individual rule IDs are dynamic, so they are not pre-registered as
+built-in metadata definitions or built-in execution-registry entries.
+Instead, the review runner executes configured regex rules directly from the
+loaded `ReviewProfile` and emits normal `ReviewFinding` objects.
+
 They should not be merged yet. The project only has one current deterministic
 execution path, but it already has multiple descriptive use cases for stable
 rule metadata. Keeping the registries separate preserves a clean boundary while
@@ -208,6 +214,9 @@ Current review pipeline:
   `ReviewProfile.enabled_rules`.
 - The deterministic `markdown_links_images` rule is also registered as opt-in
   through `ReviewProfile.enabled_rules`.
+- Profile-configured `regex_rules` run deterministically from the active
+  profile and are not stored in the built-in metadata registry because their
+  `rule_id` values are dynamic.
 - The pipeline returns a canonical `ReviewResult`.
 - The pipeline parses supported Markdown inline suppression comments after rule
   execution and filters suppressed findings before creating the

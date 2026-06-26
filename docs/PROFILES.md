@@ -112,6 +112,10 @@ Current implemented rule IDs that can be used in example profiles:
 - `markdown_structure`
 - `markdown_links_images`
 
+Profiles can also define additional profile-specific regex rule IDs under
+`regex_rules:`. Those IDs are dynamic runtime profile data, not built-in rule
+metadata entries.
+
 Current built-in metadata for these rule IDs is centralized in
 `src/content_review_engine/core/rule_registry.py`.
 That metadata registry is descriptive only. It does not replace YAML profile
@@ -124,6 +128,49 @@ stay easy to read and customize.
 Initialized profiles use the same YAML content as the built-in examples at the
 time they are created. After initialization, the new file is a normal local
 profile and is no longer linked to the example file in the repository.
+
+## Regex Rules
+
+Profiles can define optional deterministic regex-based checks:
+
+```yaml
+regex_rules:
+  - id: exaggerated_claims
+    pattern: "唯一|第一|最强|绝对|100%"
+    severity: warning
+    message: "Avoid absolute or exaggerated claims."
+    suggestion: "Use a more cautious and evidence-based expression."
+    case_sensitive: false
+```
+
+Current regex rule fields:
+
+- `id`: required stable rule ID matching `^[a-z][a-z0-9_]*$`
+- `pattern`: required Python regular expression
+- `severity`: required `info`, `warning`, `error`, or `critical`
+- `message`: required finding message
+- `suggestion`: optional finding suggestion
+- `case_sensitive`: optional boolean, default `false`
+
+Validation behavior:
+
+- invalid regex patterns are rejected during profile loading and profile
+  validation
+- duplicate regex rule IDs within `regex_rules` are rejected
+- regex rules are optional and are not required in any profile
+
+Execution behavior:
+
+- regex rules scan raw Markdown line by line
+- each match produces one finding
+- findings use the configured regex rule `id` as `rule_id`
+- cross-line regex matching is not supported in this task
+- inline suppression works with the configured regex rule ID, for example
+  `<!-- content-review-disable-line exaggerated_claims -->`
+
+Regex rule IDs are not added to the built-in metadata registry in
+`src/content_review_engine/core/rule_registry.py` because they are
+profile-defined and dynamic.
 
 ## Profile Differences
 
@@ -218,6 +265,8 @@ Common edits:
   based on how strict your workflow should be.
 - Add exact-match `allow_terms` when a configured term is acceptable in a
   specific literal form.
+- Add `regex_rules` when a deterministic pattern is easier to express as a
+  regular expression than as literal terms.
 - Adjust `max_title_length` and `max_paragraph_length` for your publishing
   channel.
 

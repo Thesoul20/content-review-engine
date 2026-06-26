@@ -8,6 +8,46 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0030
+
+### Added
+
+- Added optional profile-configured `regex_rules` to `ReviewProfile`.
+- Added `RegexRuleConfig` validation for regex rule ID format, regex pattern
+  compilation, required message content, optional suggestion normalization,
+  and default `case_sensitive: false`.
+- Added deterministic regex rule execution in
+  `src/content_review_engine/rules/regex_rules.py`.
+- Added regex rule tests in `tests/test_regex_rules.py` covering loading,
+  validation, execution, suppression, summaries, reports, batch aggregation,
+  and quality-gate participation.
+
+### Changed
+
+- Updated the rule runner so configured regex rules execute alongside the
+  existing built-in deterministic rules and emit normal `ReviewFinding`
+  objects.
+- Updated profile validation summaries to include configured regex rule IDs and
+  severities.
+- Updated `docs/RULES.md`, `docs/PROFILES.md`, `docs/DATA_MODELS.md`,
+  `docs/CLI.md`, `docs/ARCHITECTURE.md`, and `PROJECT_STATE.md` to document
+  regex rule configuration, validation behavior, suppression, runtime
+  participation, registry boundaries, and limitations.
+- Kept existing built-in rule behavior unchanged.
+- Kept suppression syntax unchanged.
+- Kept Markdown report structure unchanged beyond normal inclusion of regex
+  findings.
+- Kept JSON output shape unchanged beyond normal inclusion of regex findings.
+- Kept quality-gate semantics unchanged.
+
+### Not Added
+
+- No LLM-based review.
+- No PydanticAI integration.
+- No API, MCP, or GUI behavior.
+- No cross-line regex matching.
+- No compliance guarantees.
+
 ## TASK-0029
 
 ### Added

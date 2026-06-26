@@ -25,6 +25,36 @@ The profile validation command reuses the existing profile loader and registry c
 The profile init command creates a new editable YAML profile from one built-in template and keeps validation on the existing loader path.
 The profile list command exposes the same built-in template registry used by `profile init` and returns either text output or a canonical `profile-template-list.v1` JSON payload.
 
+## Regex Rules
+
+Profiles can define optional deterministic `regex_rules`:
+
+```yaml
+regex_rules:
+  - id: exaggerated_claims
+    pattern: "唯一|第一|最强|绝对|100%"
+    severity: warning
+    message: "Avoid absolute or exaggerated claims."
+    suggestion: "Use a more cautious and evidence-based expression."
+    case_sensitive: false
+```
+
+Behavior:
+
+- regex rules are validated during `review`, `batch`, and `profile validate`
+- invalid patterns and duplicate regex rule IDs are rejected before review runs
+- findings use the configured regex rule `id` as `rule_id`
+- matching is case-insensitive by default unless `case_sensitive: true` is set
+- matching scans raw Markdown line by line and does not support cross-line
+  matches in the current task
+- existing suppression comments work with the configured regex rule ID
+
+Example suppression:
+
+```markdown
+这是最强的解决方案。 <!-- content-review-disable-line exaggerated_claims -->
+```
+
 ## Forbidden Terms Allowlist
 
 The `forbidden_terms` rule supports an optional literal allowlist in rule-style

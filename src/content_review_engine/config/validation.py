@@ -37,6 +37,9 @@ def _format_validation_error(error: ValidationError) -> list[str]:
 def _rule_severity(rule_id: str, profile: ReviewProfile) -> str:
     if rule_id == "absolute_claims":
         return profile.absolute_claims_severity
+    for regex_rule in profile.regex_rules:
+        if regex_rule.id == rule_id:
+            return regex_rule.severity
     return "warning"
 
 
@@ -65,6 +68,7 @@ def _unknown_rule_ids(
 ) -> list[str]:
     unknown_rule_ids: list[str] = []
     seen_rule_ids: set[str] = set()
+    regex_rule_ids = {regex_rule.id for regex_rule in profile.regex_rules}
 
     def add_unknown(rule_id: str) -> None:
         if rule_id in seen_rule_ids:
@@ -84,7 +88,7 @@ def _unknown_rule_ids(
 
     if profile.enabled_rules is not None:
         for rule_id in profile.enabled_rules:
-            if rule_id not in _KNOWN_RULE_IDS:
+            if rule_id not in _KNOWN_RULE_IDS and rule_id not in regex_rule_ids:
                 add_unknown(rule_id)
 
     return unknown_rule_ids
@@ -120,9 +124,17 @@ def _build_profile_summary(
             return ProfileValidationProfileSummary(
                 name=profile.name,
                 target_platform=profile.target_platform,
-                enabled_rule_count=len(rules),
+                enabled_rule_count=len(rules) + len(profile.regex_rules),
                 disabled_rule_count=disabled_rule_count,
-                rules=rules,
+                rules=rules
+                + [
+                    ProfileValidationRuleSummary(
+                        id=regex_rule.id,
+                        enabled=True,
+                        severity=regex_rule.severity,
+                    )
+                    for regex_rule in profile.regex_rules
+                ],
             )
 
     if profile.enabled_rules is not None:
@@ -153,9 +165,17 @@ def _build_profile_summary(
     return ProfileValidationProfileSummary(
         name=profile.name,
         target_platform=profile.target_platform,
-        enabled_rule_count=len(rules),
+        enabled_rule_count=len(rules) + len(profile.regex_rules),
         disabled_rule_count=disabled_rule_count,
-        rules=rules,
+        rules=rules
+        + [
+            ProfileValidationRuleSummary(
+                id=regex_rule.id,
+                enabled=True,
+                severity=regex_rule.severity,
+            )
+            for regex_rule in profile.regex_rules
+        ],
     )
 
 

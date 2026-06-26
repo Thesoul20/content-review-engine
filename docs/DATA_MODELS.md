@@ -105,6 +105,13 @@ ReviewFinding(
 )
 ```
 
+For profile-configured regex findings:
+
+- `rule_id` is the configured regex rule `id`
+- `matched_term` stores the configured regex pattern
+- `matched_text` stores the exact matched substring
+- `location` follows the existing 1-based line and column conventions
+
 ---
 
 ## RuleDefinition
@@ -115,6 +122,8 @@ the internal rule registry.
 It is not part of the canonical review-result JSON schema.
 It does not replace `ReviewFinding.rule_id`, and it does not appear in the
 current JSON output unless a future task explicitly exposes registry metadata.
+Profile-configured regex rule IDs are dynamic and are intentionally not stored
+as `RuleDefinition` entries in the built-in metadata registry.
 
 | Field | Required | Description |
 |---|---|---|
@@ -124,6 +133,26 @@ current JSON output unless a future task explicitly exposes registry metadata.
 | `category` | Yes | Small internal category label such as `terms` or `markdown` |
 | `source` | Yes | Whether the rule is `built-in` or `profile-driven` |
 | `supports_suppression` | Yes | Whether inline suppression comments are supported |
+
+---
+
+## RegexRuleConfig
+
+`RegexRuleConfig` stores one optional profile-configured deterministic regex
+rule inside `ReviewProfile.regex_rules`.
+
+It is profile input data, not a new review-result JSON top-level section.
+Regex findings still flow through the existing `ReviewFinding`,
+`ReviewResult`, and `BatchReviewResult` models.
+
+| Field | Required | Description |
+|---|---|---|
+| `id` | Yes | Stable profile-defined rule identifier matching `^[a-z][a-z0-9_]*$` |
+| `pattern` | Yes | Python regular expression compiled during validation |
+| `severity` | Yes | `info`, `warning`, `error`, or `critical` |
+| `message` | Yes | Human-readable finding message |
+| `suggestion` | No | Optional remediation guidance |
+| `case_sensitive` | Yes | Boolean flag, default `false` |
 
 ---
 

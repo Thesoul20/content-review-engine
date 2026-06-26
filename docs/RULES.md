@@ -40,6 +40,9 @@ Current built-in rule IDs are:
 - `markdown_structure`
 - `markdown_links_images`
 
+Profiles can also define additional dynamic regex rule IDs through
+`regex_rules:`. Those rule IDs are profile-defined, not built-in.
+
 Current built-in rule metadata is centralized in
 `src/content_review_engine/core/rule_registry.py`.
 The registry is descriptive only. It does not run rules, validate
@@ -55,6 +58,10 @@ Default enablement in the current registry:
 - `markdown_structure`: opt-in
 - `markdown_links_images`: opt-in
 
+Configured `regex_rules` are separate from the built-in execution registry.
+They run deterministically from the active profile and produce findings using
+their configured `id` as `rule_id`.
+
 Opt-in rules become active through `rules:`-based profile configuration or
 explicit `enabled_rules`.
 
@@ -66,6 +73,51 @@ If a future LLM semantic review layer is added, it should stay separate from
 the deterministic execution registry and produce compatible findings later.
 
 ## Current Built-in Rules
+
+## Profile-Configured Regex Rules
+
+Purpose:
+Let a profile define additional deterministic pattern-based checks without
+changing Python code.
+
+Current behavior:
+
+- configured under top-level `regex_rules`
+- each configured regex rule has its own `id`, `pattern`, `severity`,
+  `message`, optional `suggestion`, and optional `case_sensitive`
+- each regex match produces one finding
+- findings use the configured regex rule `id` as `rule_id`
+- matching runs against raw Markdown line by line
+- line and column metadata are populated for each match
+- inline suppression works with the configured regex rule `id`
+- matching is case-insensitive by default unless `case_sensitive: true` is set
+
+Typical profile configuration:
+
+```yaml
+regex_rules:
+  - id: exaggerated_claims
+    pattern: "唯一|第一|最强|绝对|100%"
+    severity: warning
+    message: "Avoid absolute or exaggerated claims."
+    suggestion: "Use a more cautious and evidence-based expression."
+    case_sensitive: false
+```
+
+Suppression example:
+
+```markdown
+这是最强的解决方案。 <!-- content-review-disable-line exaggerated_claims -->
+```
+
+Limitations:
+
+- no cross-line regex matching in the current task
+- matches are evaluated on raw Markdown, not rendered HTML
+- dynamic regex rule IDs are not added to the built-in metadata registry in
+  `src/content_review_engine/core/rule_registry.py`
+- no compliance guarantee for advertising, legal, medical, regulatory, or
+  platform policy requirements
 
 ### `forbidden_terms`
 
@@ -226,6 +278,9 @@ test coverage currently live here. The centralized built-in rule metadata
 registry lives at `src/content_review_engine/core/rule_registry.py`:
 runtime deterministic execution registry lives at
 `src/content_review_engine/rules/registry.py`.
+Profile-configured `regex_rules` remain runtime profile data and therefore are
+not registered as built-in metadata definitions in
+`src/content_review_engine/core/rule_registry.py`.
 
 - `forbidden_terms`
   - implementation: `src/content_review_engine/rules/forbidden_terms.py`
@@ -239,6 +294,9 @@ runtime deterministic execution registry lives at
 - `markdown_links_images`
   - implementation: `src/content_review_engine/rules/markdown_links_images.py`
   - tests: `tests/test_markdown_links_images_rule.py`
+- `regex_rules`
+  - implementation: `src/content_review_engine/rules/regex_rules.py`
+  - tests: `tests/test_regex_rules.py`
 
 ## Findings
 
@@ -253,6 +311,8 @@ reports:
 - `suggestion`: optional remediation guidance; not every rule sets this
 - `matched_term`: the configured term or internal match label associated with
   the finding
+- for profile-configured regex findings, `matched_term` stores the configured
+  regex pattern and `matched_text` stores the exact matched substring
 - `matched_text`: optional original matched text
 - `location.start_line`: 1-based line number when location data is available
 - `location.start_column`: 1-based column number when location data is available

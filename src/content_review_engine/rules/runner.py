@@ -1,13 +1,19 @@
 from __future__ import annotations
 
 from content_review_engine.core.models import ReviewFinding, ReviewProfile
+from content_review_engine.rules.regex_rules import run_regex_rules
 from content_review_engine.rules.registry import RuleRegistry, build_default_rule_registry
 
 
 def _resolve_rule_ids(profile: ReviewProfile, registry: RuleRegistry) -> list[str]:
     if profile.enabled_rules is None:
         return registry.list_enabled_rule_ids()
-    return list(profile.enabled_rules)
+    regex_rule_ids = {regex_rule.id for regex_rule in profile.regex_rules}
+    return [
+        rule_id
+        for rule_id in profile.enabled_rules
+        if rule_id not in regex_rule_ids
+    ]
 
 
 def run_rules(
@@ -22,6 +28,8 @@ def run_rules(
     for rule_id in _resolve_rule_ids(profile, active_registry):
         rule = active_registry.get(rule_id)
         findings.extend(rule.evaluate(text, profile))
+
+    findings.extend(run_regex_rules(text, profile))
 
     return findings
 

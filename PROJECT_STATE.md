@@ -5,6 +5,9 @@
 M1: Core input layer and minimal review pipeline.
 
 The project currently has Markdown input handling, profile loading, standalone profile validation, deterministic review rules, forbidden-terms allowlists, absolute-claims rule configuration, Markdown inline suppression filtering, a minimal internal rule registry and rule runner, centralized built-in rule metadata, source location metadata on findings, a minimal in-memory review pipeline, a minimal batch CLI adapter, CLI quality-gate exit codes, and committed fixtures/examples for integration-style testing and manual CLI checks.
+It now also supports optional profile-configured deterministic `regex_rules`
+that validate patterns at profile load time and emit normal findings with
+profile-defined rule IDs.
 
 ---
 
@@ -52,6 +55,12 @@ The project currently has Markdown input handling, profile loading, standalone p
   current built-in rule IDs, finding fields, severity ordering, quality-gate
   behavior, suppression comments, rule counts, severity counts, batch
   aggregation behavior, reports, and limitations.
+- Review profiles can now define optional deterministic `regex_rules` with
+  profile-defined rule IDs, compiled regex validation, configurable severity,
+  message, optional suggestion, and optional case sensitivity.
+- Regex rule findings participate in existing inline suppression, summaries,
+  Markdown reports, JSON output, batch aggregation, quality gates, and exit
+  code behavior through the normal review pipeline.
 
 ---
 
@@ -60,6 +69,25 @@ The project currently has Markdown input handling, profile loading, standalone p
 - No active implementation task.
 
 ## Recent Completion
+
+- TASK-0030 is complete.
+- Added optional `regex_rules` support to `ReviewProfile`.
+- Added regex rule ID validation, regex pattern compilation validation, and
+  duplicate regex rule ID rejection during profile loading and validation.
+- Added deterministic line-by-line regex rule execution that produces one
+  finding per match using the configured regex rule ID as `rule_id`.
+- Reused the existing suppression, summary, report, batch, and quality-gate
+  pipeline so regex findings participate without changing the canonical output
+  shapes.
+- Updated architecture, rule, profile, CLI, and data-model documentation for
+  regex rule configuration, runtime behavior, registry boundary, and current
+  limitations.
+- Added regex-focused tests for loading, validation, execution, suppression,
+  counts, reports, batch aggregation, and quality gates.
+- Kept built-in rule behavior unchanged.
+- Kept suppression syntax unchanged.
+- Kept quality-gate semantics unchanged.
+- Kept JSON output shape unchanged.
 
 - TASK-0029 is complete.
 - Documented the architectural boundary between the descriptive built-in rule

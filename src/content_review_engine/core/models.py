@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import re
 from typing import Literal
 
 from pydantic import BaseModel, Field
+from pydantic import field_validator, model_validator
 
 Severity = Literal["low", "medium", "high", "critical"]
 FindingSeverity = Literal["info", "warning", "error", "critical"]
@@ -11,6 +13,7 @@ BATCH_REVIEW_RESULT_SCHEMA_VERSION = "batch-review-result.v1"
 PROFILE_VALIDATION_RESULT_SCHEMA_VERSION = "profile-validation-result.v1"
 PROFILE_TEMPLATE_LIST_SCHEMA_VERSION = "profile-template-list.v1"
 REVIEW_SUMMARY_SEVERITIES: tuple[str, ...] = ("info", "warning", "error", "critical")
+REGEX_RULE_ID_PATTERN = re.compile(r"^[a-z][a-z0-9_]*$")
 
 
 def _default_severity_counts() -> dict[str, int]:
@@ -48,6 +51,52 @@ class ReviewFinding(BaseModel):
     suggestion: str | None = None
     matched_text: str | None = None
     location: SourceSpan | None = None
+
+
+class RegexRuleConfig(BaseModel):
+    id: str
+    pattern: str
+    severity: FindingSeverity
+    message: str
+    suggestion: str | None = None
+    case_sensitive: bool = False
+
+    @field_validator("id")
+    @classmethod
+    def validate_id(cls, value: str) -> str:
+        normalized = value.strip()
+        if not REGEX_RULE_ID_PATTERN.fullmatch(normalized):
+            raise ValueError(
+                "regex rule id must match ^[a-z][a-z0-9_]*$"
+            )
+        return normalized
+
+    @field_validator("pattern")
+    @classmethod
+    def validate_pattern(cls, value: str) -> str:
+        if value == "":
+            raise ValueError("regex rule pattern must not be empty")
+        try:
+            re.compile(value)
+        except re.error as exc:
+            raise ValueError(f"invalid regex pattern: {exc}") from exc
+        return value
+
+    @field_validator("message")
+    @classmethod
+    def validate_message(cls, value: str) -> str:
+        normalized = value.strip()
+        if normalized == "":
+            raise ValueError("regex rule message must not be empty")
+        return normalized
+
+    @field_validator("suggestion")
+    @classmethod
+    def normalize_suggestion(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        return normalized or None
 
 
 class ReviewSummary(BaseModel):
@@ -199,7 +248,25 @@ class ReviewProfile(BaseModel):
     absolute_claims_terms: list[str] = Field(default_factory=list)
     absolute_claims_allow_terms: list[str] = Field(default_factory=list)
     absolute_claims_severity: FindingSeverity = "warning"
+    regex_rules: list[RegexRuleConfig] = Field(default_factory=list)
     enabled_rules: list[str] | None = None
+
+    @model_validator(mode="after")
+    def validate_regex_rule_ids(self) -> "ReviewProfile":
+        seen_rule_ids: set[str] = set()
+        duplicate_rule_ids: list[str] = []
+
+        for regex_rule in self.regex_rules:
+            if regex_rule.id in seen_rule_ids:
+                duplicate_rule_ids.append(regex_rule.id)
+                continue
+            seen_rule_ids.add(regex_rule.id)
+
+        if duplicate_rule_ids:
+            duplicates = ", ".join(sorted(set(duplicate_rule_ids)))
+            raise ValueError(f"duplicate regex rule id: {duplicates}")
+
+        return self
 
 
 __all__ = [
@@ -220,6 +287,8 @@ __all__ = [
     "ProfileValidationRuleSummary",
     "ProfileTemplateListResult",
     "ProfileTemplateSummary",
+    "RegexRuleConfig",
+    "REGEX_RULE_ID_PATTERN",
     "ReviewProfile",
     "ReviewProfileMetadata",
     "ReviewResult",
