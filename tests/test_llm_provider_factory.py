@@ -1,67 +1,66 @@
 from __future__ import annotations
 
-import importlib
 import socket
-import sys
 
 import pytest
 
 from content_review_engine.llm import (
     LLMProviderConfig,
-    LLMProviderConfigError,
+    LLMReviewer,
     MockLLMReviewer,
     PydanticAIReviewer,
+    PydanticAITestModelReviewer,
+    SUPPORTED_LLM_REVIEWER_PROVIDERS,
+    UnsupportedLLMProviderError,
     create_llm_reviewer,
-    load_llm_provider_config,
+    get_registered_llm_provider_names,
+    get_supported_llm_reviewer_provider_names,
 )
 
 
-def test_provider_factory_creates_mock_reviewer() -> None:
-    reviewer = create_llm_reviewer(load_llm_provider_config())
+def test_provider_factory_creates_mock_reviewer_from_provider_name() -> None:
+    reviewer = create_llm_reviewer("mock")
 
     assert isinstance(reviewer, MockLLMReviewer)
+    assert isinstance(reviewer, LLMReviewer)
 
 
-def test_provider_factory_creates_pydanticai_skeleton() -> None:
-    config = load_llm_provider_config(provider="pydanticai")
-    reviewer = create_llm_reviewer(config)
+def test_provider_factory_creates_testmodel_reviewer_from_provider_name() -> None:
+    reviewer = create_llm_reviewer("pydantic-ai-testmodel")
 
-    assert isinstance(reviewer, PydanticAIReviewer)
-    assert reviewer.config is config
-
-
-def test_provider_factory_rejects_unknown_provider_defensively() -> None:
-    config = LLMProviderConfig.model_construct(provider="openai")
-
-    with pytest.raises(LLMProviderConfigError) as exc_info:
-        create_llm_reviewer(config)
-
-    assert str(exc_info.value) == "Unknown LLM provider 'openai'. Supported providers: 'mock', 'pydanticai'."
+    assert isinstance(reviewer, PydanticAITestModelReviewer)
+    assert isinstance(reviewer, LLMReviewer)
 
 
-def test_provider_factory_does_not_fallback_pydanticai_to_mock() -> None:
-    config = load_llm_provider_config(provider="pydanticai")
-    reviewer = create_llm_reviewer(config)
+def test_provider_factory_normalizes_provider_name_before_creation() -> None:
+    reviewer = create_llm_reviewer("  PYDANTIC-AI-TESTMODEL  ")
 
-    assert isinstance(reviewer, PydanticAIReviewer)
-    assert not isinstance(reviewer, MockLLMReviewer)
+    assert isinstance(reviewer, PydanticAITestModelReviewer)
 
 
-def test_provider_factory_does_not_import_pydanticai_sdk(
-) -> None:
-    sys.modules.pop("content_review_engine.llm", None)
-    sys.modules.pop("content_review_engine.llm.factory", None)
-    sys.modules.pop("content_review_engine.llm.pydanticai", None)
+def test_provider_factory_rejects_unsupported_provider_without_fallback() -> None:
+    with pytest.raises(UnsupportedLLMProviderError) as exc_info:
+        create_llm_reviewer("openai")
 
-    module = importlib.import_module("content_review_engine.llm.factory")
+    message = str(exc_info.value)
 
-    reviewer = module.create_llm_reviewer(module.LLMProviderConfig())
-
-    assert isinstance(reviewer, MockLLMReviewer)
-    assert module.PydanticAIReviewer.__name__ == "PydanticAIReviewer"
+    assert "Unknown LLM provider 'openai'." in message
+    assert "'mock'" in message
+    assert "'pydantic-ai-testmodel'" in message
 
 
-def test_provider_factory_does_not_make_network_calls(
+def test_provider_factory_rejects_blank_provider_without_fallback() -> None:
+    with pytest.raises(UnsupportedLLMProviderError) as exc_info:
+        create_llm_reviewer("   ")
+
+    message = str(exc_info.value)
+
+    assert "Unknown LLM provider '   '." in message
+    assert "'mock'" in message
+    assert "'pydantic-ai-testmodel'" in message
+
+
+def test_provider_factory_name_mode_does_not_require_api_key_env_or_network(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     def fail_create_connection(*args, **kwargs):  # type: ignore[no-untyped-def]
@@ -69,12 +68,52 @@ def test_provider_factory_does_not_make_network_calls(
 
     monkeypatch.setattr(socket, "create_connection", fail_create_connection)
 
-    mock_reviewer = create_llm_reviewer(load_llm_provider_config(provider="mock"))
+    mock_reviewer = create_llm_reviewer("mock")
+    testmodel_reviewer = create_llm_reviewer("pydantic-ai-testmodel")
 
     assert isinstance(mock_reviewer, MockLLMReviewer)
+    assert isinstance(testmodel_reviewer, PydanticAITestModelReviewer)
 
-    pydanticai_reviewer = create_llm_reviewer(
-        load_llm_provider_config(provider="pydanticai")
+
+def test_provider_factory_keeps_existing_config_based_mock_behavior() -> None:
+    reviewer = create_llm_reviewer(LLMProviderConfig(provider="mock"))
+
+    assert isinstance(reviewer, MockLLMReviewer)
+
+
+def test_provider_factory_keeps_existing_config_based_pydanticai_behavior() -> None:
+    config = LLMProviderConfig(
+        provider="pydanticai",
+        model="openai:gpt-4o-mini",
+        api_key_env="OPENAI_API_KEY",
     )
 
-    assert isinstance(pydanticai_reviewer, PydanticAIReviewer)
+    reviewer = create_llm_reviewer(config)
+
+    assert isinstance(reviewer, PydanticAIReviewer)
+    assert reviewer.config is config
+
+
+def test_provider_factory_config_mode_rejects_unknown_provider_defensively() -> None:
+    config = LLMProviderConfig.model_construct(provider="openai")
+
+    with pytest.raises(UnsupportedLLMProviderError) as exc_info:
+        create_llm_reviewer(config)
+
+    message = str(exc_info.value)
+
+    assert "Unknown LLM provider 'openai'." in message
+    assert "'mock'" in message
+    assert "'pydanticai'" in message
+
+
+def test_supported_reviewer_provider_names_are_stable() -> None:
+    assert SUPPORTED_LLM_REVIEWER_PROVIDERS == ("mock", "pydantic-ai-testmodel")
+    assert get_supported_llm_reviewer_provider_names() == (
+        "mock",
+        "pydantic-ai-testmodel",
+    )
+
+
+def test_registered_config_provider_names_remain_stable() -> None:
+    assert get_registered_llm_provider_names() == ("mock", "pydanticai")

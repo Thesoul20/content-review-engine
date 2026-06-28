@@ -85,6 +85,29 @@ use.
 
 ## Recent Completion
 
+- TASK-0055 is complete.
+- Added provider-name-based LLM reviewer construction in
+  `src/content_review_engine/llm/factory.py` for `mock` and
+  `pydantic-ai-testmodel`, while keeping the existing config-driven CLI/runtime
+  factory path intact for `mock` and `pydanticai`.
+- Added `UnsupportedLLMProviderError` so unsupported reviewer providers fail
+  explicitly with the unknown provider name plus the supported provider names.
+- Added `tests/test_llm_provider_factory.py` for provider-name creation,
+  protocol conformance, unsupported-provider errors, no-network/no-API-key
+  boundaries, and continued config-driven factory compatibility.
+- Updated architecture, data-model, and provider-usage docs to document the
+  new package-level reviewer provider factory and to record that
+  `LLMReviewRequest`, `LLMReviewResult`, and `LLMProviderConfig` schemas are
+  unchanged by TASK-0055.
+- Kept `LLMReviewRequest` schema unchanged.
+- Kept `LLMReviewResult` schema unchanged.
+- Kept `LLMProviderConfig` schema unchanged.
+- Kept `LLMSidecarResult` JSON schema unchanged.
+- Kept `llm-check`, `review`, and `batch` user-visible default behavior
+  unchanged.
+- Added no real API-key dependency, no `.env` loading, and no external-network
+  test dependency.
+
 - TASK-0054 is complete.
 - Added `src/content_review_engine/llm/pydantic_ai_provider.py` with
   `PydanticAITestModelReviewer`, provider-local request helpers, and a

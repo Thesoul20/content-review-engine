@@ -16,12 +16,45 @@ the deterministic review pipeline.
 
 - `mock`: safe for local tests and CI, requires no API key, performs no
   network calls.
-- `pydanticai-testmodel`: package-level testing provider built on
+- `pydantic-ai-testmodel`: package-level testing provider built on
   `pydantic_ai.models.test.TestModel`, requires no API key, performs no
   network calls, and is not wired into the CLI provider factory.
 - `pydanticai`: real runtime provider, requires an API key through an
   environment variable, can call an external OpenAI-compatible endpoint, and
   should be used only for explicit manual verification.
+
+## Reviewer Provider Factory
+
+The package now exposes a reviewer-provider factory for internal code paths
+that want a concrete `LLMReviewer` from a stable provider name without
+constructing CLI config.
+
+Current reviewer provider names:
+
+- `mock`
+- `pydantic-ai-testmodel`
+
+Example:
+
+```python
+from content_review_engine.llm import create_llm_reviewer
+
+reviewer = create_llm_reviewer("mock")
+testmodel_reviewer = create_llm_reviewer("pydantic-ai-testmodel")
+```
+
+Factory behavior:
+
+- `create_llm_reviewer("mock")` returns `MockLLMReviewer`
+- `create_llm_reviewer("pydantic-ai-testmodel")` returns
+  `PydanticAITestModelReviewer`
+- unsupported provider names raise a clear error and do not silently fall back
+- this factory path does not read `.env`, does not require an API key, and
+  does not access the network for the supported reviewer providers above
+
+This is a package boundary for future adapters. It does not add a new CLI
+provider-selection flag and does not change the default behavior of `review`,
+`batch`, or `llm-check`.
 
 ## PydanticAI TestModel Provider
 
@@ -37,7 +70,8 @@ Use it when you need:
 
 Current limitations:
 
-- it is a Python package provider only, not a CLI-selectable provider
+- it is a Python package provider only, available through the package-level
+  reviewer provider factory, not as a CLI-selectable provider
 - it does not read `LLMProviderConfig`
 - it does not participate in `content-review review`, `batch`, or
   `llm-check`

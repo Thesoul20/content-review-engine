@@ -41,6 +41,10 @@ class LLMProviderConfigError(LLMReviewError):
     """Raised when provider configuration is invalid."""
 
 
+class UnsupportedLLMProviderError(LLMProviderConfigError):
+    """Raised when a requested reviewer provider name is not supported."""
+
+
 class LLMProviderSecretError(LLMProviderConfigError):
     """Raised when provider secret resolution fails safely."""
 
@@ -67,4 +71,5 @@ __all__ = [
     "LLMProviderTimeoutError",
     "LLMResponseValidationError",
     "LLMReviewError",
+    "UnsupportedLLMProviderError",
 ]

@@ -25,11 +25,17 @@ from content_review_engine.llm.errors import (
     LLMProviderTimeoutError,
     LLMResponseValidationError,
     LLMReviewError,
+    UnsupportedLLMProviderError,
 )
 from content_review_engine.llm.factory import (
+    LLM_REVIEWER_PROVIDER_MOCK,
+    LLM_REVIEWER_PROVIDER_PYDANTIC_AI_TESTMODEL,
+    LLM_REVIEWER_PROVIDER_REGISTRY,
     LLM_PROVIDER_REGISTRY,
+    SUPPORTED_LLM_REVIEWER_PROVIDERS,
     create_llm_reviewer,
     get_registered_llm_provider_names,
+    get_supported_llm_reviewer_provider_names,
 )
 from content_review_engine.llm.mock import MockLLMReviewer
 from content_review_engine.llm.models import (
@@ -128,6 +134,10 @@ __all__ = [
     "LLMProviderSecretError",
     "LLMProviderTimeoutError",
     "LLM_REVIEW_RESULT_SCHEMA_VERSION",
+    "LLM_REVIEWER_PROVIDER_MOCK",
+    "LLM_REVIEWER_PROVIDER_PYDANTIC_AI_TESTMODEL",
+    "LLM_REVIEWER_PROVIDER_REGISTRY",
+    "SUPPORTED_LLM_REVIEWER_PROVIDERS",
     "LLM_SIDECAR_RESULT_SCHEMA_VERSION",
     "LLM_SIDECAR_STATUS_VALUES",
     "LLMResponseValidationError",
@@ -157,6 +167,7 @@ __all__ = [
     "PydanticAIReviewer",
     "PydanticAITestModelReviewer",
     "ResolvedLLMSecret",
+    "UnsupportedLLMProviderError",
     "build_pydantic_ai_testmodel_agent",
     "build_pydantic_ai_testmodel_request",
     "build_pydantic_ai_testmodel_response_args",
@@ -172,6 +183,7 @@ __all__ = [
     "build_pydanticai_retry_exhausted_error",
     "create_llm_reviewer",
     "get_registered_llm_provider_names",
+    "get_supported_llm_reviewer_provider_names",
     "load_llm_provider_config_file",
     "llm_review_finding_to_dict",
     "llm_review_result_to_dict",

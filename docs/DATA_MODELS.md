@@ -192,6 +192,8 @@ result schema unchanged.
 TASK-0041 keeps `LLMReviewResult` as the nested success payload, but wraps CLI
 sidecar output in a separate `LLMSidecarResult` envelope that records summary,
 per-file status, and structured non-sensitive errors.
+TASK-0055 adds only a reviewer-provider factory boundary. It does not change
+the `LLMReviewRequest` or `LLMReviewResult` schema.
 
 | Field | Required | Description |
 |---|---|---|
@@ -241,6 +243,8 @@ It is not part of the deterministic `ReviewResult`, `BatchReviewResult`, or
 `ReviewProfile` schemas.
 It can now be created directly from CLI flags or loaded from a dedicated YAML
 config file through `load_llm_provider_config_file()`.
+TASK-0055 does not change this schema and does not add
+`pydanticai-testmodel` as a config-driven CLI provider.
 
 | Field | Required | Description |
 |---|---|---|

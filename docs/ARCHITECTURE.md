@@ -218,8 +218,10 @@ Current status:
 - `src/content_review_engine/llm/smoke_check.py` now runs standalone provider
   config/secret/runtime smoke checks without entering the deterministic review
   pipeline
-- `src/content_review_engine/llm/factory.py` now owns provider selection and
-  reviewer construction
+- `src/content_review_engine/llm/factory.py` now owns two creation boundaries:
+  config-driven runtime provider selection for the existing CLI sidecar path,
+  and name-driven reviewer construction for package-local reviewer providers
+  such as `mock` and `pydantic-ai-testmodel`
 - the CLI can optionally route single-file and batch sidecar review through
   that config/config-loader/factory boundary
 - the CLI can optionally write a separate LLM sidecar Markdown report for
@@ -258,6 +260,26 @@ Current single-file Markdown report boundary:
 ```text
 ReviewResult
   ↓
+
+Current provider-construction boundary:
+
+```text
+package-local reviewer provider name
+  ↓
+create_llm_reviewer("mock" | "pydantic-ai-testmodel")
+  ↓
+MockLLMReviewer / PydanticAITestModelReviewer
+
+CLI/config-driven runtime provider config
+  ↓
+create_llm_reviewer(LLMProviderConfig)
+  ↓
+MockLLMReviewer / PydanticAIReviewer
+```
+
+The reviewer-provider factory is construction only. It does not execute
+review, read `.env`, load YAML config files, resolve secrets, or merge LLM
+findings into the deterministic review pipeline.
 Deterministic Markdown report sections
 
 LLMSidecarResult sidecar

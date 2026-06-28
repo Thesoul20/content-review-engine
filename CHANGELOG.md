@@ -8,6 +8,40 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0055
+
+### Added
+
+- Added reviewer-provider construction in
+  `src/content_review_engine/llm/factory.py` for the package-level provider
+  names `mock` and `pydantic-ai-testmodel`.
+- Added `UnsupportedLLMProviderError` for explicit unsupported-provider
+  failures with the unknown provider name and the supported provider list.
+- Added `tests/test_llm_provider_factory.py` coverage for supported provider
+  creation, `LLMReviewer` protocol compatibility, unsupported-provider
+  failures, no-network/no-API-key boundaries, and compatibility with the
+  existing config-driven factory path.
+
+### Changed
+
+- Updated `src/content_review_engine/llm/__init__.py` exports for the new
+  reviewer-provider factory constants, registry helpers, and error type.
+- Updated `docs/LLM_PROVIDER_USAGE.md`, `docs/ARCHITECTURE.md`,
+  `docs/DATA_MODELS.md`, and `PROJECT_STATE.md` to document the new package
+  factory boundary and confirm that `LLMReviewRequest`, `LLMReviewResult`, and
+  `LLMProviderConfig` schemas remain unchanged.
+- Kept `llm-check`, `review`, and `batch` default user-visible behavior
+  unchanged.
+- Kept `LLMProviderConfig`, `LLMReviewRequest`, `LLMReviewResult`, and
+  `LLMSidecarResult` schemas unchanged.
+
+### Not Added
+
+- No real provider integration, no API-key requirement, no `.env` loading, no
+  secret resolver changes, and no external-network test dependency.
+- No new CLI provider-selection behavior, no deterministic review/report
+  changes, and no LLM merge into the canonical deterministic outputs.
+
 ## TASK-0054
 
 ### Added
