@@ -116,7 +116,7 @@ def test_pydanticai_review_raises_secret_error_without_secret(
 
     assert (
         str(exc_info.value)
-        == "LLM API key environment variable 'CONTENT_REVIEW_TEST_LLM_API_KEY' is not set."
+        == "LLM provider secret environment variable 'CONTENT_REVIEW_TEST_LLM_API_KEY' is not set."
     )
 
 

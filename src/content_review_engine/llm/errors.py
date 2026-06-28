@@ -49,6 +49,18 @@ class LLMProviderSecretError(LLMProviderConfigError):
     """Raised when provider secret resolution fails safely."""
 
 
+class MissingLLMProviderSecretReferenceError(LLMProviderSecretError):
+    """Raised when secret resolution is requested without api_key_env."""
+
+
+class MissingLLMProviderSecretEnvironmentVariableError(LLMProviderSecretError):
+    """Raised when the configured secret environment variable is not set."""
+
+
+class EmptyLLMProviderSecretEnvironmentVariableError(LLMProviderSecretError):
+    """Raised when the configured secret environment variable is empty."""
+
+
 class LLMProviderNotImplementedError(LLMProviderConfigError):
     """Raised when a recognized provider is not implemented yet."""
 
@@ -69,6 +81,9 @@ __all__ = [
     "LLMProviderRuntimeError",
     "LLMProviderSecretError",
     "LLMProviderTimeoutError",
+    "MissingLLMProviderSecretReferenceError",
+    "MissingLLMProviderSecretEnvironmentVariableError",
+    "EmptyLLMProviderSecretEnvironmentVariableError",
     "LLMResponseValidationError",
     "LLMReviewError",
     "UnsupportedLLMProviderError",

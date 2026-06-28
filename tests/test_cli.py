@@ -1730,7 +1730,8 @@ def test_cli_review_llm_config_file_pydanticai_rejects_missing_environment_varia
     assert exit_code == 2
     assert captured.out == ""
     assert (
-        "Error: LLM API key environment variable 'CONTENT_REVIEW_TEST_LLM_API_KEY' is not set."
+        "Error: LLM provider secret environment variable "
+        "'CONTENT_REVIEW_TEST_LLM_API_KEY' is not set."
         in captured.err
     )
     assert not llm_output_path.exists()
@@ -4790,7 +4791,34 @@ def test_cli_llm_check_pydanticai_secret_missing_returns_error(
 
     assert exit_code == 2
     assert captured.out == ""
-    assert "Error: LLM API key environment variable 'OPENAI_API_KEY' is not set." in captured.err
+    assert (
+        "Error: LLM provider secret environment variable 'OPENAI_API_KEY' is not set."
+        in captured.err
+    )
+
+
+def test_cli_llm_check_pydanticai_missing_api_key_env_returns_error(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = main(
+        [
+            "llm-check",
+            "--llm-provider",
+            "pydanticai",
+            "--llm-model",
+            "openai:gpt-4o-mini",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert captured.out == ""
+    assert (
+        "Error: LLM provider secret reference is missing: "
+        "api_key_env is required for secret resolution."
+        in captured.err
+    )
 
 
 def test_cli_llm_check_missing_config_file_returns_error(

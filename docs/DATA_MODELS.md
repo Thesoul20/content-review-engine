@@ -516,7 +516,7 @@ Current fields:
 |---|---|---|
 | `provider` | Yes | Provider name, default `mock`; recognized values are `mock` and `pydanticai` |
 | `model` | No | Optional model identifier; required at runtime for `pydanticai` review execution |
-| `api_key_env` | No | Optional environment variable name only; stores the variable name, not the secret |
+| `api_key_env` | No | Optional environment variable name only; a secret reference that stores the variable name, not the secret |
 | `base_url` | No | Optional provider base URL; passed to the `pydanticai` OpenAI-compatible runtime when configured |
 | `timeout_seconds` | No | Optional LLM runtime timeout in seconds; if set, must be greater than `0` |
 | `retry_attempts` | Yes | Extra retry attempts after the initial provider call; default `0`; must be an integer greater than or equal to `0` |
@@ -545,6 +545,8 @@ Notes:
   stores only the environment variable name
 - this validation boundary does not read `.env`, does not resolve secrets, and
   does not access the network
+- `api_key_env` may be used later by `resolve_llm_provider_secret()`, but that
+  later lookup is a separate boundary from config validation
 
 ---
 
@@ -565,6 +567,8 @@ Notes:
 - the resolved secret model is internal to the LLM adapter boundary
 - `repr` redacts `api_key`
 - `model_dump()` excludes `api_key`
+- `ResolvedLLMSecret` comes from the separate resolver contract, not from
+  config validation or factory construction
 - sidecar JSON, Markdown reports, deterministic review output, and CLI errors
   must not serialize the secret value
 
@@ -700,6 +704,9 @@ The future LLM adapter boundary now defines minimal error types in
 | `UnsupportedLLMProviderError` | Provider name is not recognized by the current boundary |
 | `LLMProviderNotImplementedError` | Provider name is reserved but not implemented yet |
 | `LLMProviderSecretError` | Missing, unset, or empty provider secret configuration |
+| `MissingLLMProviderSecretReferenceError` | Secret resolution was requested without `api_key_env` |
+| `MissingLLMProviderSecretEnvironmentVariableError` | `api_key_env` points to an unset environment variable |
+| `EmptyLLMProviderSecretEnvironmentVariableError` | `api_key_env` points to an empty environment variable |
 | `LLMProviderError` | Provider adapter failure, such as transport or upstream execution failure |
 | `LLMProviderRuntimeError` | Stable fallback for unknown provider runtime failures |
 | `LLMProviderTimeoutError` | Provider runtime timeout failure |

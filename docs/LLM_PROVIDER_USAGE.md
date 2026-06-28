@@ -176,7 +176,8 @@ Provider parameters covered by the current CLI:
 
 `--llm-model` is required for `pydanticai`.
 `--llm-api-key-env` stores only the environment variable name, not the secret
-value itself.
+value itself. `api_key_env` is a secret reference, not a secret value.
+In short: api_key_env is a secret reference.
 `--llm-config` can load the same provider fields from a YAML file, and any
 explicit CLI flag overrides the same field from that file.
 `--llm-base-url` is optional and is only for OpenAI-compatible endpoints.
@@ -195,6 +196,37 @@ stays on the existing omitted-`--llm-provider` config-driven path.
 Direct CLI provider names for future real providers such as `openai`,
 `anthropic`, `gemini`, `deepseek`, `qwen`, and `local` are still not
 supported.
+
+## Secret Resolver Contract
+
+Future real-provider secret lookup is centralized in the shared secret
+resolver boundary in `src/content_review_engine/llm/secrets.py`.
+This secret resolver contract is internal-only.
+
+Current helper surface:
+
+- `resolve_llm_provider_secret(config, env=None) -> str`
+- `resolve_llm_api_key(config, env=None) -> ResolvedLLMSecret`
+
+Contract:
+
+- the resolver reads `LLMProviderConfig.api_key_env`
+- `api_key_env` is a secret reference, not a secret value
+- when `env` is provided, resolution reads only that mapping
+- when `env` is omitted, resolution reads the current process environment
+- it does not read `.env`
+- it does not read repository files
+- it does not access the network
+- it does not print or serialize secret values
+- missing `api_key_env` raises a structured secret-reference error
+- unset env vars raise a structured secret error
+- empty env vars raise a structured secret error
+
+Missing `api_key_env` fails before any real provider call.
+Empty env vars also fail before any real provider call.
+Reserved real provider names such as `openai` or `anthropic` still remain
+unavailable after this task; the resolver contract only prepares the future
+boundary.
 
 ## Single-file Sidecar Provider Selection
 

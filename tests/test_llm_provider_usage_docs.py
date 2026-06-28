@@ -71,6 +71,10 @@ def test_usage_docs_exist_and_cover_required_provider_flags_and_boundaries() -> 
     assert "--llm-api-key-env" in content
     assert "--llm-base-url" in content
     assert "--llm-timeout-seconds" in content
+    assert "secret resolver" in content
+    assert "resolve_llm_provider_secret" in content
+    assert "api_key_env is a secret reference" in content
+    assert "does not read `.env`" in content
     assert "llm_provider" in content
     assert "llm_provider_source" in content
     assert "Quality Gate behavior does not read LLM findings" in content
@@ -118,6 +122,8 @@ def test_docs_and_fixtures_do_not_require_real_network_or_real_api_key() -> None
     assert "`pydantic-ai-testmodel`: package-level testing provider" in usage_doc
     assert "Reserved real provider names such as `openai` or `anthropic`" in usage_doc
     assert "must not be used" in usage_doc
+    assert "Missing `api_key_env` fails before any real provider call." in usage_doc
+    assert "Empty env vars also fail before any real provider call." in usage_doc
     assert "batch `--llm-provider` supports only `mock` and `pydantic-ai-testmodel`" in usage_doc
     assert "explicit sidecar writes `llm_provider_source: explicit`" in usage_doc
     assert "omitted `--llm-provider` writes `llm_provider_source: default` or `config`" in usage_doc

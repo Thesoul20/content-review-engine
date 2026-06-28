@@ -17,6 +17,7 @@ from content_review_engine.llm.config import (
 )
 from content_review_engine.llm.config_loader import load_llm_provider_config_file
 from content_review_engine.llm.errors import (
+    EmptyLLMProviderSecretEnvironmentVariableError,
     LLMProviderAuthError,
     LLMProviderConfigError,
     LLMProviderModelError,
@@ -30,6 +31,8 @@ from content_review_engine.llm.errors import (
     LLMProviderTimeoutError,
     LLMResponseValidationError,
     LLMReviewError,
+    MissingLLMProviderSecretEnvironmentVariableError,
+    MissingLLMProviderSecretReferenceError,
     UnsupportedLLMProviderError,
 )
 from content_review_engine.llm.factory import (
@@ -95,7 +98,13 @@ from content_review_engine.llm.pydanticai_mapping import (
 )
 from content_review_engine.llm.provider import LLMReviewer
 from content_review_engine.llm.runner import LLMReviewRunner
-from content_review_engine.llm.secrets import ResolvedLLMSecret, resolve_llm_api_key
+from content_review_engine.llm.secrets import (
+    REDACTED_SECRET_TEXT,
+    ResolvedLLMSecret,
+    redact_secret_value,
+    resolve_llm_api_key,
+    resolve_llm_provider_secret,
+)
 from content_review_engine.llm.sidecar import (
     build_llm_sidecar_error,
     build_llm_sidecar_file_failed,
@@ -141,6 +150,9 @@ __all__ = [
     "LLMProviderRuntimeError",
     "LLMProviderSecretError",
     "LLMProviderTimeoutError",
+    "MissingLLMProviderSecretReferenceError",
+    "MissingLLMProviderSecretEnvironmentVariableError",
+    "EmptyLLMProviderSecretEnvironmentVariableError",
     "LLM_REVIEW_RESULT_SCHEMA_VERSION",
     "LLM_REVIEWER_PROVIDER_MOCK",
     "LLM_REVIEWER_PROVIDER_PYDANTIC_AI_TESTMODEL",
@@ -175,6 +187,7 @@ __all__ = [
     "PydanticAIReviewSummary",
     "PydanticAIReviewer",
     "PydanticAITestModelReviewer",
+    "REDACTED_SECRET_TEXT",
     "ResolvedLLMSecret",
     "UnsupportedLLMProviderError",
     "build_pydantic_ai_testmodel_agent",
@@ -212,7 +225,9 @@ __all__ = [
     "classify_pydanticai_runtime_error",
     "is_pydanticai_retryable_error",
     "pydanticai_response_to_llm_review_result",
+    "redact_secret_value",
     "resolve_llm_api_key",
+    "resolve_llm_provider_secret",
     "render_llm_smoke_check_result",
     "raise_pydanticai_not_implemented",
     "run_pydantic_ai_testmodel_agent",

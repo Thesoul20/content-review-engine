@@ -139,6 +139,10 @@ Single-file `review` constraints:
 - `--llm-api-key-env` stores the environment variable name in config; when
   `pydanticai` is selected, the CLI resolves that env var only to verify the
   secret exists and never prints its value
+- the shared secret resolver reads `LLMProviderConfig.api_key_env` from either
+  an explicit env mapping or the current process environment
+- the shared secret resolver does not read `.env`, does not read repository
+  files, and does not access the network
 - if `--llm-provider pydanticai` omits `--llm-api-key-env`, points to an
   unset env var, or points to an empty env var, the command exits with a
   structured secret error
@@ -158,6 +162,8 @@ Single-file `review` constraints:
   and sets an instance-local minimum spacing between consecutive real
   `pydanticai` runtime call start times
 - the CLI does not support a plaintext `--llm-api-key` argument
+- the CLI does not add any new plaintext `--api-key` argument for real
+  providers
 - the LLM result is written as a separate UTF-8 JSON sidecar file in
   `LLMSidecarResult` format
 - `--llm-markdown-output` optionally writes a separate UTF-8 Markdown sidecar

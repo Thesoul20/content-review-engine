@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import socket
 
 import pytest
@@ -89,6 +90,25 @@ def test_provider_factory_keeps_existing_config_based_mock_behavior() -> None:
 
 
 def test_provider_factory_keeps_existing_config_based_pydanticai_behavior() -> None:
+    config = LLMProviderConfig(
+        provider="pydanticai",
+        model="openai:gpt-4o-mini",
+        api_key_env="OPENAI_API_KEY",
+    )
+
+    reviewer = create_llm_reviewer(config)
+
+    assert isinstance(reviewer, PydanticAIReviewer)
+    assert reviewer.config is config
+
+
+def test_provider_factory_config_mode_does_not_resolve_secret_value(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail_getenv(*args, **kwargs):  # type: ignore[no-untyped-def]
+        raise AssertionError(f"Unexpected env access: {args!r} {kwargs!r}")
+
+    monkeypatch.setattr(os, "getenv", fail_getenv)
     config = LLMProviderConfig(
         provider="pydanticai",
         model="openai:gpt-4o-mini",

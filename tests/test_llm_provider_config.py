@@ -97,6 +97,26 @@ def test_validate_llm_provider_config_test_providers_do_not_require_api_key() ->
     assert testmodel_config.api_key_env is None
 
 
+def test_validate_llm_provider_config_does_not_resolve_secret_value(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail_getenv(*args, **kwargs):  # type: ignore[no-untyped-def]
+        raise AssertionError(f"Unexpected env access: {args!r} {kwargs!r}")
+
+    monkeypatch.setattr(os, "getenv", fail_getenv)
+
+    config = validate_llm_provider_config(
+        LLMProviderConfig(
+            provider="pydanticai",
+            model="openai:gpt-4o-mini",
+            api_key_env="OPENAI_API_KEY",
+        )
+    )
+
+    assert config.provider == "pydanticai"
+    assert config.api_key_env == "OPENAI_API_KEY"
+
+
 def test_reserved_real_provider_list_is_stable() -> None:
     assert LLM_RESERVED_REAL_PROVIDER_NAMES == (
         "openai",

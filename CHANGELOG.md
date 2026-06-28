@@ -8,6 +8,42 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0061
+
+### Added
+
+- Added a dedicated secret-resolver contract in
+  `src/content_review_engine/llm/secrets.py` with
+  `resolve_llm_provider_secret(config, env=None)` for direct `api_key_env`
+  lookup plus new secret-resolution error subclasses for missing
+  `api_key_env`, unset env vars, and empty env vars.
+- Added `tests/test_llm_secret_resolver.py` for fake env mapping resolution,
+  process-environment fallback, no-`.env`/no-network boundaries, non-leaking
+  error messages, and optional secret redaction helper coverage.
+
+### Changed
+
+- Updated `resolve_llm_api_key()` to reuse the new lower-level resolver while
+  keeping `ResolvedLLMSecret` redaction behavior stable for the existing
+  PydanticAI adapter boundary.
+- Updated `src/content_review_engine/llm/__init__.py`,
+  `tests/test_llm_provider_config.py`, `tests/test_llm_provider_factory.py`,
+  `tests/test_cli.py`, `tests/test_llm_pydanticai_provider.py`, and
+  `tests/test_llm_provider_usage_docs.py` for the new resolver contract and
+  safe secret-error messages.
+- Updated `docs/LLM_PROVIDER_USAGE.md`, `docs/DATA_MODELS.md`,
+  `docs/ARCHITECTURE.md`, `docs/CLI.md`, and `PROJECT_STATE.md` to document
+  `api_key_env` as a secret reference, the explicit resolver boundary, and the
+  continued absence of plaintext API-key CLI arguments.
+
+### Not Added
+
+- No new real provider class, no change to reserved real provider
+  availability, no `.env` loader, no new CLI API-key argument, and no
+  external-network dependency.
+- No change to `LLMReviewResult`, `ReviewResult`, `BatchReviewResult`, sidecar
+  metadata schema, Markdown report schema, or quality-gate behavior.
+
 ## TASK-0060
 
 ### Added

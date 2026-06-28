@@ -85,6 +85,33 @@ use.
 
 ## Recent Completion
 
+- TASK-0061 is complete.
+- Added a separate LLM secret-resolver contract in
+  `src/content_review_engine/llm/secrets.py` with
+  `resolve_llm_provider_secret(config, env=None)` as the lowest-level
+  `api_key_env` lookup boundary plus a compatibility wrapper for
+  `ResolvedLLMSecret`.
+- Added stable secret-resolution errors for missing `api_key_env`, unset env
+  vars, and empty env vars without leaking secret values into exception
+  messages, sidecars, reports, or canonical result models.
+- Kept provider-config validation, reviewer factory construction, CLI flag
+  parsing, sidecar metadata schema, `LLMReviewResult`, `ReviewResult`, and
+  `BatchReviewResult` schemas unchanged while documenting that those paths do
+  not resolve secret values.
+- Added `tests/test_llm_secret_resolver.py` plus updates to
+  `tests/test_llm_provider_config.py`, `tests/test_llm_provider_factory.py`,
+  `tests/test_cli.py`, and `tests/test_llm_provider_usage_docs.py` for fake
+  env mapping resolution, missing-reference/unset/empty env var failures,
+  no-`.env`/no-network coverage, non-leaking error messages, and regression
+  coverage around config, factory, and CLI boundaries.
+- Updated `docs/LLM_PROVIDER_USAGE.md`, `docs/DATA_MODELS.md`,
+  `docs/ARCHITECTURE.md`, and `docs/CLI.md` to document that `api_key_env` is
+  a secret reference, that the shared resolver reads environment variables but
+  not `.env`, and that no new plaintext API-key CLI argument was added.
+- Kept reserved real provider names unavailable and did not add any new real
+  provider class, real SDK dependency, `.env` loader, or external-network
+  dependency for this task.
+
 - TASK-0060 is complete.
 - Added provider-contract validation helpers in
   `src/content_review_engine/llm/config.py` so current code can distinguish
