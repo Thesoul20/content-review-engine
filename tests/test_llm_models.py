@@ -2,6 +2,8 @@ import pytest
 from pydantic import ValidationError
 
 from content_review_engine.llm import (
+    LLMSidecarResult,
+    LLMSidecarSummary,
     LLMReviewFinding,
     LLMReviewResult,
     LLMReviewSummary,
@@ -147,3 +149,19 @@ def test_llm_review_result_serialization_uses_canonical_shape() -> None:
         },
         "metadata": {"run_mode": "offline-model-shape-only"},
     }
+
+
+def test_llm_sidecar_result_defaults_include_provider_metadata() -> None:
+    result = LLMSidecarResult(
+        summary=LLMSidecarSummary(
+            file_count=0,
+            succeeded_count=0,
+            failed_count=0,
+            skipped_count=0,
+            finding_count=0,
+        )
+    )
+
+    assert result.schema_version == "llm-sidecar-result.v2"
+    assert result.llm_provider == "mock"
+    assert result.llm_provider_source == "default"

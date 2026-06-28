@@ -9,9 +9,14 @@ from pydantic import model_validator
 from content_review_engine.core.models import FindingSeverity
 
 LLM_REVIEW_RESULT_SCHEMA_VERSION = "llm-review-result.v1"
-LLM_SIDECAR_RESULT_SCHEMA_VERSION = "llm-sidecar-result.v1"
+LLM_SIDECAR_RESULT_SCHEMA_VERSION = "llm-sidecar-result.v2"
 LLM_OVERALL_RISK_VALUES: tuple[str, ...] = ("low", "medium", "high", "unknown")
 LLM_SIDECAR_STATUS_VALUES: tuple[str, ...] = ("success", "failed", "skipped")
+LLM_SIDECAR_PROVIDER_SOURCE_VALUES: tuple[str, ...] = (
+    "explicit",
+    "default",
+    "config",
+)
 
 
 def _validate_optional_non_empty(value: str | None, field_name: str) -> str | None:
@@ -133,8 +138,18 @@ class LLMSidecarFile(BaseModel):
 
 class LLMSidecarResult(BaseModel):
     schema_version: str = LLM_SIDECAR_RESULT_SCHEMA_VERSION
+    llm_provider: str = "mock"
+    llm_provider_source: Literal["explicit", "default", "config"] = "default"
     summary: LLMSidecarSummary
     files: tuple[LLMSidecarFile, ...] = Field(default_factory=tuple)
+
+    @field_validator("llm_provider")
+    @classmethod
+    def validate_llm_provider(cls, value: str) -> str:
+        normalized = value.strip()
+        if normalized == "":
+            raise ValueError("llm_provider must not be empty")
+        return normalized
 
 
 class LLMReviewRequest(BaseModel):
@@ -178,6 +193,7 @@ class LLMReviewRequest(BaseModel):
 __all__ = [
     "LLM_OVERALL_RISK_VALUES",
     "LLM_REVIEW_RESULT_SCHEMA_VERSION",
+    "LLM_SIDECAR_PROVIDER_SOURCE_VALUES",
     "LLM_SIDECAR_RESULT_SCHEMA_VERSION",
     "LLM_SIDECAR_STATUS_VALUES",
     "LLMSidecarError",

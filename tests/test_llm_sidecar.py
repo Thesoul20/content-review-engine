@@ -36,7 +36,9 @@ def test_llm_sidecar_serialization_includes_summary_for_success() -> None:
     payload = llm_sidecar_result_to_dict(result)
 
     assert payload == {
-        "schema_version": "llm-sidecar-result.v1",
+        "schema_version": "llm-sidecar-result.v2",
+        "llm_provider": "mock",
+        "llm_provider_source": "default",
         "summary": {
             "file_count": 1,
             "succeeded_count": 1,
@@ -72,11 +74,15 @@ def test_llm_sidecar_serialization_includes_partial_failure_summary() -> None:
                 path="b.md",
                 exc=LLMProviderError("provider unavailable"),
             ),
-        ]
+        ],
+        llm_provider="mock",
+        llm_provider_source="explicit",
     )
 
     payload = llm_sidecar_result_to_dict(result)
 
+    assert payload["llm_provider"] == "mock"
+    assert payload["llm_provider_source"] == "explicit"
     assert payload["summary"] == {
         "file_count": 2,
         "succeeded_count": 1,
@@ -111,11 +117,15 @@ def test_llm_sidecar_serialization_keeps_envelope_stable_for_testmodel_provider(
 
     payload = llm_sidecar_result_to_dict(
         build_llm_sidecar_result(
-            [build_llm_sidecar_file_success(path="article.md", review=review)]
+            [build_llm_sidecar_file_success(path="article.md", review=review)],
+            llm_provider="pydantic-ai-testmodel",
+            llm_provider_source="explicit",
         )
     )
 
-    assert payload["schema_version"] == "llm-sidecar-result.v1"
+    assert payload["schema_version"] == "llm-sidecar-result.v2"
+    assert payload["llm_provider"] == "pydantic-ai-testmodel"
+    assert payload["llm_provider_source"] == "explicit"
     assert payload["summary"]["file_count"] == 1
     assert payload["files"][0]["status"] == "success"
     assert payload["files"][0]["review"]["provider"] == "pydanticai-testmodel"

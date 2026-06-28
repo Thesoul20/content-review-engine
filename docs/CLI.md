@@ -159,7 +159,10 @@ Single-file `review` constraints:
 
 Single-file sidecar shape:
 
-- top-level `schema_version` is `llm-sidecar-result.v1`
+- top-level `schema_version` is `llm-sidecar-result.v2`
+- top-level `llm_provider` records the provider name used for this sidecar run
+- top-level `llm_provider_source` records how that provider was selected:
+  `explicit`, `default`, or `config`
 - top-level `summary` includes `file_count`, `succeeded_count`,
   `failed_count`, `skipped_count`, and `finding_count`
 - `files[0].status` is `success` or `failed` in the current implementation
@@ -171,6 +174,10 @@ Single-file sidecar shape:
 - the optional sidecar Markdown report shows the same summary, per-file
   status, structured errors, and successful-file findings without changing
   the main deterministic Markdown report
+- explicit sidecar writes `llm_provider_source: explicit`
+- omitted `--llm-provider` writes `llm_provider_source: default` or `config`,
+  depending on whether the provider came from built-in defaults or
+  `--llm-config`
 
 Current behavior guarantees:
 
@@ -258,6 +265,11 @@ Batch constraints:
 - the `pydanticai` path reuses the same internal request/prompt/response
   mapping contract used in single-file review
 - the CLI does not support a plaintext `--llm-api-key` argument
+- batch sidecar JSON uses the same envelope metadata as single-file sidecar:
+  `llm_provider` plus `llm_provider_source`
+- explicit batch sidecar writes `llm_provider_source: explicit`
+- omitted batch `--llm-provider` writes `llm_provider_source: default` or
+  `config`
 - the batch command writes one separate UTF-8 `LLMSidecarResult` JSON sidecar
   per reviewed Markdown file
 - the batch command also writes

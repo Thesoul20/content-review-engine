@@ -85,6 +85,27 @@ use.
 
 ## Recent Completion
 
+- TASK-0059 is complete.
+- Added sidecar-envelope provider metadata for single-file and batch LLM
+  sidecar JSON output through top-level `llm_provider` and
+  `llm_provider_source` fields.
+- Updated the shared LLM sidecar builder and serializer path so single-file
+  sidecars, per-file batch sidecars, and the batch manifest all record the
+  concrete provider name plus whether it came from the `explicit`, `default`,
+  or `config` selection path.
+- Updated `tests/test_llm_sidecar.py`, `tests/test_cli.py`,
+  `tests/test_llm_models.py`, and `tests/test_llm_provider_usage_docs.py`
+  for explicit-provider metadata, default/config-driven metadata, sidecar
+  envelope stability, and main-result isolation boundaries.
+- Updated `docs/CLI.md`, `docs/LLM_PROVIDER_USAGE.md`,
+  `docs/DATA_MODELS.md`, and `docs/ARCHITECTURE.md` to document the new
+  sidecar envelope metadata and its boundary from deterministic outputs.
+- Kept `LLMReviewResult`, `ReviewResult`, `BatchReviewResult`,
+  `content-review llm-check`, deterministic Markdown reports, and
+  quality-gate semantics unchanged.
+- Kept real API keys, `.env` loading, and external-network access out of the
+  new metadata path.
+
 - TASK-0058 is complete.
 - Added explicit batch LLM sidecar reviewer selection for
   `content-review batch` through `--llm-provider mock` and
@@ -513,7 +534,7 @@ use.
 - TASK-0041 is complete.
 - Added `LLMSidecarResult`, `LLMSidecarSummary`, per-file sidecar status, and
   structured sidecar errors for CLI LLM output.
-- Single-file `--llm-output` now writes `llm-sidecar-result.v1` with
+- Single-file `--llm-output` now writes `llm-sidecar-result.v2` with
   `summary`, `files[0].status`, optional nested `review`, and structured
   failure output.
 - Batch `--llm-output-dir` now keeps the existing per-file sidecar paths and

@@ -233,6 +233,10 @@ Current status:
   omitted `--llm-provider` keeps the existing config-driven boundary, while
   explicit `--llm-provider mock|pydantic-ai-testmodel` uses the name-driven
   `create_llm_reviewer()` boundary
+- single-file and batch sidecar envelopes now also record `llm_provider` plus
+  `llm_provider_source` at the top level, so sidecar consumers can tell which
+  provider ran and whether the selection was `explicit`, `default`, or
+  `config`
 - the CLI can optionally write a separate LLM sidecar Markdown report for
   single-file or batch sidecar output through `--llm-markdown-output`
 - the single-file Markdown report can now optionally append a separate

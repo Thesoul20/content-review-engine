@@ -231,7 +231,10 @@ def test_cli_review_enable_llm_writes_mock_sidecar_without_changing_main_json(
     assert captured.err == ""
     assert review_payload["schema_version"] == "review-result.v1"
     assert "llm_review" not in review_payload
-    assert llm_payload["schema_version"] == "llm-sidecar-result.v1"
+    assert "llm_provider" not in review_payload
+    assert llm_payload["schema_version"] == "llm-sidecar-result.v2"
+    assert llm_payload["llm_provider"] == "mock"
+    assert llm_payload["llm_provider_source"] == "default"
     assert llm_payload["summary"] == {
         "file_count": 1,
         "succeeded_count": 1,
@@ -279,7 +282,9 @@ def test_cli_review_markdown_enable_llm_without_include_report_keeps_report_unch
 
     assert exit_code == 0
     assert "## LLM Review" not in captured.out
-    assert llm_payload["schema_version"] == "llm-sidecar-result.v1"
+    assert llm_payload["schema_version"] == "llm-sidecar-result.v2"
+    assert llm_payload["llm_provider"] == "mock"
+    assert llm_payload["llm_provider_source"] == "default"
     assert llm_payload["files"][0]["status"] == "success"
     assert llm_payload["files"][0]["review"] == {
         "schema_version": "llm-review-result.v1",
@@ -1145,6 +1150,7 @@ def test_cli_review_mock_provider_still_works_without_llm_model(
 ) -> None:
     markdown_path = "tests/fixtures/markdown/clean_article.md"
     profile_path = "tests/fixtures/profiles/default.yml"
+    llm_output_path = tmp_path / "review.llm.json"
 
     exit_code = main(
         [
@@ -1156,14 +1162,17 @@ def test_cli_review_mock_provider_still_works_without_llm_model(
             "--llm-provider",
             "mock",
             "--llm-output",
-            str(tmp_path / "review.llm.json"),
+            str(llm_output_path),
         ]
     )
 
     captured = capsys.readouterr()
+    llm_payload = json.loads(llm_output_path.read_text(encoding="utf-8"))
 
     assert exit_code == 0
     assert captured.err == ""
+    assert llm_payload["llm_provider"] == "mock"
+    assert llm_payload["llm_provider_source"] == "explicit"
 
 
 def test_cli_review_explicit_provider_uses_create_llm_reviewer_name_path(
@@ -1242,6 +1251,8 @@ def test_cli_review_pydantic_ai_testmodel_provider_writes_sidecar_without_api_ke
 
     assert exit_code == 0
     assert captured.err == ""
+    assert llm_payload["llm_provider"] == "pydantic-ai-testmodel"
+    assert llm_payload["llm_provider_source"] == "explicit"
     assert llm_payload["files"][0]["status"] == "success"
     assert llm_payload["files"][0]["review"]["provider"] == "pydanticai-testmodel"
     assert llm_payload["files"][0]["review"]["model"] == "test"
@@ -1319,6 +1330,8 @@ def test_cli_review_llm_config_file_can_drive_pydanticai_sidecar_json_and_markdo
     assert captured.err == ""
     assert review_payload["schema_version"] == "review-result.v1"
     assert "llm_review" not in review_payload
+    assert llm_payload["llm_provider"] == "pydanticai"
+    assert llm_payload["llm_provider_source"] == "config"
     assert llm_payload["summary"] == {
         "file_count": 1,
         "succeeded_count": 1,
@@ -1504,6 +1517,8 @@ def test_cli_review_llm_config_file_can_drive_mock_sidecar(
 
     assert exit_code == 0
     assert captured.err == ""
+    assert payload["llm_provider"] == "mock"
+    assert payload["llm_provider_source"] == "config"
     assert payload["files"][0]["status"] == "success"
     assert "error" not in payload["files"][0]
 
@@ -3258,12 +3273,15 @@ def test_cli_batch_enable_llm_writes_mock_sidecars_without_changing_batch_json(
     assert captured.err == ""
     assert review_payload["schema_version"] == "batch-review-result.v1"
     assert "llm_review" not in review_payload
+    assert "llm_provider" not in review_payload
     assert clean_sidecar.exists()
     assert forbidden_sidecar.exists()
     assert nested_sidecar.exists()
     assert manifest_sidecar.exists()
     assert json.loads(clean_sidecar.read_text(encoding="utf-8")) == {
-        "schema_version": "llm-sidecar-result.v1",
+        "schema_version": "llm-sidecar-result.v2",
+        "llm_provider": "mock",
+        "llm_provider_source": "default",
         "summary": {
             "file_count": 1,
             "succeeded_count": 1,
@@ -3284,7 +3302,9 @@ def test_cli_batch_enable_llm_writes_mock_sidecars_without_changing_batch_json(
         ],
     }
     assert json.loads(forbidden_sidecar.read_text(encoding="utf-8")) == {
-        "schema_version": "llm-sidecar-result.v1",
+        "schema_version": "llm-sidecar-result.v2",
+        "llm_provider": "mock",
+        "llm_provider_source": "default",
         "summary": {
             "file_count": 1,
             "succeeded_count": 1,
@@ -3305,7 +3325,9 @@ def test_cli_batch_enable_llm_writes_mock_sidecars_without_changing_batch_json(
         ],
     }
     assert json.loads(nested_sidecar.read_text(encoding="utf-8")) == {
-        "schema_version": "llm-sidecar-result.v1",
+        "schema_version": "llm-sidecar-result.v2",
+        "llm_provider": "mock",
+        "llm_provider_source": "default",
         "summary": {
             "file_count": 1,
             "succeeded_count": 1,
@@ -3326,7 +3348,9 @@ def test_cli_batch_enable_llm_writes_mock_sidecars_without_changing_batch_json(
         ],
     }
     assert json.loads(manifest_sidecar.read_text(encoding="utf-8")) == {
-        "schema_version": "llm-sidecar-result.v1",
+        "schema_version": "llm-sidecar-result.v2",
+        "llm_provider": "mock",
+        "llm_provider_source": "default",
         "summary": {
             "file_count": 3,
             "succeeded_count": 3,
@@ -3757,6 +3781,8 @@ def test_cli_batch_explicit_mock_provider_writes_sidecars(
 
     assert exit_code == 0
     assert captured.err == ""
+    assert llm_payload["llm_provider"] == "mock"
+    assert llm_payload["llm_provider_source"] == "explicit"
     assert llm_payload["files"][0]["path"] == "tests/fixtures/batch/articles/clean.md"
     assert llm_payload["files"][0]["status"] == "success"
 
@@ -3816,6 +3842,10 @@ def test_cli_batch_explicit_testmodel_provider_writes_sidecars_and_markdown_repo
     assert captured.out == ""
     assert captured.err == ""
     assert batch_payload["schema_version"] == "batch-review-result.v1"
+    assert clean_payload["llm_provider"] == "pydantic-ai-testmodel"
+    assert clean_payload["llm_provider_source"] == "explicit"
+    assert manifest_payload["llm_provider"] == "pydantic-ai-testmodel"
+    assert manifest_payload["llm_provider_source"] == "explicit"
     assert manifest_payload["summary"]["succeeded_count"] == 3
     assert manifest_payload["summary"]["finding_count"] == 0
     assert clean_payload["files"][0]["status"] == "success"
@@ -3930,6 +3960,8 @@ def test_cli_batch_llm_config_file_can_drive_mock_sidecars(
 
     assert exit_code == 0
     assert captured.err == ""
+    assert manifest_payload["llm_provider"] == "mock"
+    assert manifest_payload["llm_provider_source"] == "config"
     assert manifest_payload["summary"]["succeeded_count"] == 3
     assert all(file["status"] == "success" for file in manifest_payload["files"])
 

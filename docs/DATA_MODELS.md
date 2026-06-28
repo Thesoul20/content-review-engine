@@ -194,6 +194,8 @@ sidecar output in a separate `LLMSidecarResult` envelope that records summary,
 per-file status, and structured non-sensitive errors.
 TASK-0055 adds only a reviewer-provider factory boundary. It does not change
 the `LLMReviewRequest` or `LLMReviewResult` schema.
+TASK-0059 adds provider metadata only to the `LLMSidecarResult` envelope and
+does not change the nested `LLMReviewResult` schema.
 
 | Field | Required | Description |
 |---|---|---|
@@ -233,6 +235,34 @@ LLMSidecarResult JSON
   = separate optional sidecar file
   -> success entries can include nested LLMReviewResult
 ```
+
+## LLMSidecarResult
+
+`LLMSidecarResult` is the optional sidecar envelope written by `review` and
+`batch` when the experimental LLM sidecar path is enabled.
+
+The stable schema version is `llm-sidecar-result.v2`.
+
+It is not part of the canonical deterministic `ReviewResult` or
+`BatchReviewResult` JSON schemas.
+
+| Field | Required | Description |
+|---|---|---|
+| `schema_version` | Yes | Stable sidecar envelope schema version |
+| `llm_provider` | Yes | Concrete provider name used for this sidecar run |
+| `llm_provider_source` | Yes | Provider selection source: `explicit`, `default`, or `config` |
+| `summary` | Yes | `LLMSidecarSummary` aggregate counts for this sidecar payload |
+| `files` | Yes | Tuple of `LLMSidecarFile` entries |
+
+Boundary notes:
+
+- `llm_provider` and `llm_provider_source` belong only to the sidecar
+  envelope
+- they do not appear inside `LLMReviewResult`
+- they do not appear in `ReviewResult`
+- they do not appear in `BatchReviewResult`
+- they do not change deterministic JSON, deterministic Markdown reports, or
+  quality-gate evaluation
 
 ## LLMProviderConfig
 
@@ -325,7 +355,7 @@ Current guarantees:
 
 `LLMSidecarResult` stores the CLI-facing machine-readable LLM sidecar output.
 
-The stable schema version is `llm-sidecar-result.v1`.
+The stable schema version is `llm-sidecar-result.v2`.
 
 It is distinct from both `ReviewResult` and `LLMReviewResult`.
 It exists to let CLI callers record success, failure, and partial success
@@ -336,6 +366,8 @@ report renderer.
 | Field | Required | Description |
 |---|---|---|
 | `schema_version` | Yes | Stable sidecar envelope schema version |
+| `llm_provider` | Yes | Concrete provider name used for this sidecar run |
+| `llm_provider_source` | Yes | Provider selection source: `explicit`, `default`, or `config` |
 | `summary` | Yes | `LLMSidecarSummary` with aggregate counts |
 | `files` | Yes | Tuple of `LLMSidecarFile` entries |
 

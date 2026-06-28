@@ -787,6 +787,19 @@ def _build_batch_review_llm_reviewer(args: argparse.Namespace):
     return _build_llm_reviewer(args)
 
 
+def _normalize_llm_sidecar_provider_name(provider: str) -> str:
+    return provider.strip().lower()
+
+
+def _build_llm_sidecar_provider_metadata(args: argparse.Namespace) -> tuple[str, str]:
+    if args.llm_provider is not None:
+        return (_normalize_llm_sidecar_provider_name(args.llm_provider), "explicit")
+
+    config = _build_llm_provider_config(args)
+    provider_source = "config" if args.llm_config is not None else "default"
+    return (config.provider, provider_source)
+
+
 def _build_llm_review_request(
     *,
     markdown_text: str,
@@ -902,6 +915,8 @@ def _write_batch_llm_sidecars(
     llm_output_dir: str,
     profile_name: str,
     reviewer,
+    llm_provider: str,
+    llm_provider_source: str,
 ) -> LLMSidecarResult:
     manifest_files: list[LLMSidecarFile] = []
     for review_result in batch_result.results:
@@ -926,12 +941,20 @@ def _write_batch_llm_sidecars(
             markdown_path=markdown_path,
         )
         _write_llm_sidecar(
-            sidecar_result=build_llm_sidecar_result([sidecar_file]),
+            sidecar_result=build_llm_sidecar_result(
+                [sidecar_file],
+                llm_provider=llm_provider,
+                llm_provider_source=llm_provider_source,
+            ),
             output_path=str(sidecar_path),
             create_parent_dirs=True,
         )
         manifest_files.append(_clone_llm_sidecar_file_without_review(sidecar_file))
-    manifest_result = build_llm_sidecar_result(manifest_files)
+    manifest_result = build_llm_sidecar_result(
+        manifest_files,
+        llm_provider=llm_provider,
+        llm_provider_source=llm_provider_source,
+    )
     _write_llm_sidecar(
         sidecar_result=manifest_result,
         output_path=str(_build_batch_llm_manifest_path(llm_output_dir=llm_output_dir)),
@@ -943,6 +966,9 @@ def _write_batch_llm_sidecars(
 def _run_review_command(args: argparse.Namespace) -> int:
     _validate_review_llm_args(args)
     llm_reviewer = _build_single_review_llm_reviewer(args) if args.enable_llm else None
+    llm_provider_metadata = (
+        _build_llm_sidecar_provider_metadata(args) if args.enable_llm else None
+    )
     markdown_text = read_markdown(args.markdown_file)
     profile = load_profile(args.profile)
     review_result = review_document(
@@ -971,7 +997,12 @@ def _run_review_command(args: argparse.Namespace) -> int:
     if output_exit_code != 0:
         return output_exit_code
     if args.enable_llm:
-        llm_sidecar_result = build_llm_sidecar_result([llm_sidecar_file])
+        llm_provider, llm_provider_source = llm_provider_metadata
+        llm_sidecar_result = build_llm_sidecar_result(
+            [llm_sidecar_file],
+            llm_provider=llm_provider,
+            llm_provider_source=llm_provider_source,
+        )
         _write_llm_sidecar(
             sidecar_result=llm_sidecar_result,
             output_path=args.llm_output,
@@ -990,6 +1021,9 @@ def _run_review_command(args: argparse.Namespace) -> int:
 def _run_batch_command(args: argparse.Namespace) -> int:
     _validate_batch_llm_args(args)
     llm_reviewer = _build_batch_review_llm_reviewer(args) if args.enable_llm else None
+    llm_provider_metadata = (
+        _build_llm_sidecar_provider_metadata(args) if args.enable_llm else None
+    )
     profile = load_profile(args.profile)
     batch_result = review_markdown_directory(
         Path(args.input_dir),
@@ -1007,12 +1041,15 @@ def _run_batch_command(args: argparse.Namespace) -> int:
     if output_exit_code != 0:
         return output_exit_code
     if args.enable_llm:
+        llm_provider, llm_provider_source = llm_provider_metadata
         manifest_result = _write_batch_llm_sidecars(
             batch_result=batch_result,
             input_dir=args.input_dir,
             llm_output_dir=args.llm_output_dir,
             profile_name=profile.name,
             reviewer=llm_reviewer,
+            llm_provider=llm_provider,
+            llm_provider_source=llm_provider_source,
         )
         if args.llm_markdown_output is not None:
             _write_llm_markdown_report(

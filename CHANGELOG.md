@@ -8,6 +8,41 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0059
+
+### Added
+
+- Added top-level `llm_provider` and `llm_provider_source` metadata to
+  `LLMSidecarResult` for single-file sidecars, per-file batch sidecars, and
+  the batch manifest.
+
+### Changed
+
+- Updated `src/content_review_engine/llm/models.py` and
+  `src/content_review_engine/llm/sidecar.py` so the sidecar envelope schema is
+  now `llm-sidecar-result.v2` and the provider metadata is validated and
+  serialized centrally instead of being assembled in the CLI.
+- Updated `src/content_review_engine/cli.py` so sidecar output records whether
+  provider selection came from the explicit reviewer-name path or the existing
+  default/config-driven path, while keeping user-visible `--llm-provider`
+  behavior unchanged.
+- Updated `tests/test_llm_sidecar.py`, `tests/test_llm_models.py`,
+  `tests/test_cli.py`, and `tests/test_llm_provider_usage_docs.py` for
+  explicit-provider metadata, default/config-driven metadata, schema-version
+  changes, and deterministic-result isolation.
+- Updated `docs/CLI.md`, `docs/LLM_PROVIDER_USAGE.md`,
+  `docs/DATA_MODELS.md`, `docs/ARCHITECTURE.md`, and `PROJECT_STATE.md` to
+  document the new sidecar envelope metadata and its boundary from canonical
+  deterministic outputs.
+
+### Not Added
+
+- No real provider integration, no API-key requirement, no `.env` loading, no
+  secret resolver changes, and no external-network test dependency.
+- No change to `LLMReviewResult`, deterministic `ReviewResult` or
+  `BatchReviewResult`, Markdown report schema, `llm-check` user-visible
+  behavior, or quality-gate behavior.
+
 ## TASK-0058
 
 ### Added

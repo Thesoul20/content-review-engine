@@ -9,6 +9,7 @@ the deterministic review pipeline.
   `BatchReviewResult` output.
 - LLM review writes separate `LLMSidecarResult` JSON and optional Markdown
   sidecar reports.
+- Sidecar envelopes now record `llm_provider` and `llm_provider_source`.
 - LLM findings do not change deterministic JSON, deterministic Markdown
   reports, or `--fail-on` quality-gate behavior.
 
@@ -178,6 +179,9 @@ Behavior:
 - `--llm-provider` without the sidecar path fails clearly
 - omitting explicit `--llm-provider` keeps the existing single-file sidecar behavior unchanged
 - explicit single-file `--llm-provider` does not require an API key, does not read `.env`, and does not access the network for the supported providers above
+- explicit sidecar writes `llm_provider_source: explicit`
+- omitted `--llm-provider` writes `llm_provider_source: default` or `config`
+  and still records the concrete `llm_provider` name in the sidecar envelope
 
 ## Batch Sidecar Provider Selection
 
@@ -196,6 +200,29 @@ Behavior:
 - `--llm-provider` without the batch sidecar path fails clearly
 - omitting explicit batch `--llm-provider` keeps the existing batch sidecar behavior unchanged
 - explicit batch `--llm-provider` does not require an API key, does not read `.env`, and does not access the network for the supported providers above
+- explicit sidecar writes `llm_provider_source: explicit`
+- omitted `--llm-provider` writes `llm_provider_source: default` or `config`
+  and still records the concrete `llm_provider` name in the sidecar envelope
+
+## Sidecar Provider Metadata
+
+`LLMSidecarResult` JSON now uses schema version `llm-sidecar-result.v2` and
+adds two top-level envelope fields:
+
+- `llm_provider`: the provider name used for this sidecar run, such as
+  `mock`, `pydantic-ai-testmodel`, or `pydanticai`
+- `llm_provider_source`: how that provider was selected
+
+Current `llm_provider_source` values:
+
+- `explicit`: the user passed `--llm-provider`
+- `default`: the user omitted `--llm-provider` and the sidecar used the
+  built-in default provider path
+- `config`: the user omitted `--llm-provider` and the sidecar provider came
+  from `--llm-config`
+
+These fields belong only to the sidecar envelope. They do not appear in
+`ReviewResult`, `BatchReviewResult`, or the deterministic Markdown report.
 
 ## Required Environment Variables
 
@@ -302,7 +329,8 @@ Single-file and batch LLM sidecars use `LLMSidecarResult`.
 
 Check:
 
-- top-level `schema_version` is `llm-sidecar-result.v1`
+- top-level `schema_version` is `llm-sidecar-result.v2`
+- top-level `llm_provider` and `llm_provider_source` are present
 - `summary.file_count`, `summary.succeeded_count`, `summary.failed_count`,
   `summary.skipped_count`, and `summary.finding_count` are present
 - each `files[]` entry has `path`, `status`, and either `review` or `error`

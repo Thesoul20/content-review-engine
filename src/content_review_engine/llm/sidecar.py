@@ -67,9 +67,14 @@ def build_llm_sidecar_summary(
 
 def build_llm_sidecar_result(
     files: tuple[LLMSidecarFile, ...] | list[LLMSidecarFile],
+    *,
+    llm_provider: str = "mock",
+    llm_provider_source: str = "default",
 ) -> LLMSidecarResult:
     sidecar_files = tuple(files)
     return LLMSidecarResult(
+        llm_provider=llm_provider,
+        llm_provider_source=llm_provider_source,
         summary=build_llm_sidecar_summary(sidecar_files),
         files=sidecar_files,
     )

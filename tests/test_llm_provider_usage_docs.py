@@ -61,6 +61,8 @@ def test_usage_docs_exist_and_cover_required_provider_flags_and_boundaries() -> 
     assert "--llm-api-key-env" in content
     assert "--llm-base-url" in content
     assert "--llm-timeout-seconds" in content
+    assert "llm_provider" in content
+    assert "llm_provider_source" in content
     assert "Quality Gate behavior does not read LLM findings" in content
     assert "Real `pydanticai` provider calls must not run in default `pytest` or CI." in content
     assert "LLMProviderTimeoutError" in content
@@ -104,5 +106,7 @@ def test_docs_and_fixtures_do_not_require_real_network_or_real_api_key() -> None
     assert "replace-with-your-real-key" in usage_doc
     assert "mock`: safe for local tests and CI" in usage_doc
     assert "batch `--llm-provider` supports only `mock` and `pydantic-ai-testmodel`" in usage_doc
+    assert "explicit sidecar writes `llm_provider_source: explicit`" in usage_doc
+    assert "omitted `--llm-provider` writes `llm_provider_source: default` or `config`" in usage_doc
     assert "default `pytest` or CI" in usage_doc
     assert "YOUR_OPENAI_API_KEY_HERE" in env_example
