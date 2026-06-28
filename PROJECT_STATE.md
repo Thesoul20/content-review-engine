@@ -85,6 +85,32 @@ use.
 
 ## Recent Completion
 
+- TASK-0043 is complete.
+- Added `LLMProviderConfig` plus structured provider-name validation and
+  config loading under `src/content_review_engine/llm/config.py`.
+- Added provider-factory and registry helpers under
+  `src/content_review_engine/llm/factory.py`.
+- The current runnable provider remains `mock`.
+- The reserved provider name `pydanticai` is now recognized but returns a
+  clear not-implemented error.
+- Updated the CLI to parse provider config flags, build reviewer instances
+  through the factory, and keep deterministic review behavior unchanged when
+  LLM review is not enabled.
+- Removed CLI-side environment-variable secret loading from the LLM runner
+  path; config now stores only `api_key_env` names.
+- Added provider config, provider factory, and updated CLI tests for default
+  mock behavior, reserved-provider errors, unknown-provider errors, and
+  deterministic quality-gate isolation.
+- Updated architecture, data-model, CLI, and CI docs for the new provider
+  configuration boundary.
+- Kept `LLMSidecarResult` JSON schema unchanged.
+- Kept standalone LLM sidecar Markdown report structure unchanged.
+- Kept deterministic review and batch JSON schemas unchanged.
+- Kept deterministic Markdown report structure unchanged.
+- Kept deterministic quality-gate semantics unchanged.
+- Added no real OpenAI, Anthropic, or PydanticAI SDK execution, no real API
+  requests, and no LLM merge into `ReviewResult`.
+
 - TASK-0042 is complete.
 - Added `render_llm_sidecar_markdown_report` for standalone LLM sidecar
   Markdown output from `LLMSidecarResult`.

@@ -140,8 +140,10 @@ Workflow example:
 If you also enable the experimental LLM sidecar path, LLM finding content and
 LLM sidecar failures still do not affect the deterministic quality-gate exit
 code. The same rule applies if you also write an independent LLM sidecar
-Markdown report through `--llm-markdown-output`. Only deterministic findings
-contribute to exit code `1`.
+Markdown report through `--llm-markdown-output`. The same boundary applies to
+LLM provider config such as `--llm-provider`, `--llm-model`, or
+`--llm-api-key-env`: they do not affect deterministic quality-gate evaluation.
+Only deterministic findings contribute to exit code `1`.
 
 In GitHub Actions, exit code `0` passes the step. Exit code `1` or `2` fails
 the step.

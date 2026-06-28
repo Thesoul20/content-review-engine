@@ -634,7 +634,7 @@ def test_cli_review_llm_output_requires_enable_llm(
     assert "Error: --llm-output requires --enable-llm" in captured.err
 
 
-def test_cli_review_llm_provider_requires_enable_llm(
+def test_cli_review_llm_provider_without_enable_llm_does_not_affect_deterministic_review(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     markdown_path = "tests/fixtures/markdown/clean_article.md"
@@ -653,12 +653,12 @@ def test_cli_review_llm_provider_requires_enable_llm(
 
     captured = capsys.readouterr()
 
-    assert exit_code == 2
-    assert captured.out == ""
-    assert "Error: --llm-provider requires --enable-llm" in captured.err
+    assert exit_code == 0
+    assert "Findings: 0" in captured.out
+    assert captured.err == ""
 
 
-def test_cli_review_llm_model_requires_enable_llm(
+def test_cli_review_llm_model_without_enable_llm_does_not_affect_deterministic_review(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     markdown_path = "tests/fixtures/markdown/clean_article.md"
@@ -677,12 +677,12 @@ def test_cli_review_llm_model_requires_enable_llm(
 
     captured = capsys.readouterr()
 
-    assert exit_code == 2
-    assert captured.out == ""
-    assert "Error: --llm-model requires --enable-llm" in captured.err
+    assert exit_code == 0
+    assert "Findings: 0" in captured.out
+    assert captured.err == ""
 
 
-def test_cli_review_llm_api_key_env_requires_enable_llm(
+def test_cli_review_llm_api_key_env_without_enable_llm_does_not_affect_deterministic_review(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     markdown_path = "tests/fixtures/markdown/clean_article.md"
@@ -701,12 +701,12 @@ def test_cli_review_llm_api_key_env_requires_enable_llm(
 
     captured = capsys.readouterr()
 
-    assert exit_code == 2
-    assert captured.out == ""
-    assert "Error: --llm-api-key-env requires --enable-llm" in captured.err
+    assert exit_code == 0
+    assert "Findings: 0" in captured.out
+    assert captured.err == ""
 
 
-def test_cli_review_llm_base_url_requires_enable_llm(
+def test_cli_review_llm_base_url_without_enable_llm_does_not_affect_deterministic_review(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     markdown_path = "tests/fixtures/markdown/clean_article.md"
@@ -725,9 +725,9 @@ def test_cli_review_llm_base_url_requires_enable_llm(
 
     captured = capsys.readouterr()
 
-    assert exit_code == 2
-    assert captured.out == ""
-    assert "Error: --llm-base-url requires --enable-llm" in captured.err
+    assert exit_code == 0
+    assert "Findings: 0" in captured.out
+    assert captured.err == ""
 
 
 def test_cli_review_llm_markdown_output_requires_enable_llm(
@@ -780,7 +780,10 @@ def test_cli_review_rejects_unsupported_llm_provider(
 
     assert exit_code == 2
     assert captured.out == ""
-    assert "Unsupported LLM provider: 'openai'." in captured.err
+    assert (
+        "Error: Unknown LLM provider 'openai'. Supported providers: 'mock', 'pydanticai'."
+        in captured.err
+    )
 
 
 def test_cli_review_mock_provider_still_works_without_llm_model(
@@ -810,118 +813,13 @@ def test_cli_review_mock_provider_still_works_without_llm_model(
     assert captured.err == ""
 
 
-def test_cli_review_pydanticai_provider_requires_llm_model(
+def test_cli_review_mock_provider_accepts_llm_model_and_api_key_env_config(
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     markdown_path = "tests/fixtures/markdown/clean_article.md"
     profile_path = "tests/fixtures/profiles/default.yml"
-    monkeypatch.setenv("OPENAI_API_KEY", "secret-key")
-
-    exit_code = main(
-        [
-            "review",
-            markdown_path,
-            "--profile",
-            profile_path,
-            "--enable-llm",
-            "--llm-provider",
-            "pydanticai-openai",
-            "--llm-output",
-            str(tmp_path / "review.llm.json"),
-        ]
-    )
-
-    captured = capsys.readouterr()
-
-    assert exit_code == 2
-    assert captured.out == ""
-    assert (
-        "Error: --llm-provider pydanticai-openai requires --llm-model"
-        in captured.err
-    )
-
-
-def test_cli_review_pydanticai_provider_requires_api_key_env(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-    capsys: pytest.CaptureFixture[str],
-) -> None:
-    markdown_path = "tests/fixtures/markdown/clean_article.md"
-    profile_path = "tests/fixtures/profiles/default.yml"
-    monkeypatch.delenv("MISSING_OPENAI_KEY", raising=False)
-
-    exit_code = main(
-        [
-            "review",
-            markdown_path,
-            "--profile",
-            profile_path,
-            "--enable-llm",
-            "--llm-provider",
-            "pydanticai-openai",
-            "--llm-model",
-            "gpt-4o-mini",
-            "--llm-api-key-env",
-            "MISSING_OPENAI_KEY",
-            "--llm-output",
-            str(tmp_path / "review.llm.json"),
-        ]
-    )
-
-    captured = capsys.readouterr()
-
-    assert exit_code == 2
-    assert captured.out == ""
-    assert "Environment variable 'MISSING_OPENAI_KEY' is required" in captured.err
-
-
-def test_cli_review_pydanticai_provider_writes_sidecar_with_fake_provider(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-    capsys: pytest.CaptureFixture[str],
-) -> None:
-    markdown_path = "tests/fixtures/markdown/clean_article.md"
-    profile_path = "tests/fixtures/profiles/default.yml"
-    review_output_path = tmp_path / "review.json"
     llm_output_path = tmp_path / "review.llm.json"
-    monkeypatch.setenv("OPENAI_API_KEY", "secret-key")
-
-    from content_review_engine.llm import LLMReviewFinding, LLMReviewResult, LLMReviewSummary
-
-    class FakePydanticAIReviewer:
-        def __init__(self, *, model: str, api_key: str, base_url: str | None = None) -> None:
-            self.model = model
-            self.api_key = api_key
-            self.base_url = base_url
-
-        def review(self, request):  # type: ignore[no-untyped-def]
-            assert request.profile_name == "default"
-            assert request.content_path == markdown_path
-            assert request.review_goal == "semantic_review"
-            return LLMReviewResult(
-                provider="pydanticai-openai",
-                model=self.model,
-                prompt_version="pydanticai-openai.v1",
-                profile_name=request.profile_name,
-                findings=(
-                    LLMReviewFinding(
-                        rule_id="llm_semantic_risk",
-                        severity="warning",
-                        message="Possible unsupported claim.",
-                    ),
-                ),
-                summary=LLMReviewSummary(
-                    overall_risk="medium",
-                    summary="One semantic finding.",
-                ),
-            )
-
-    monkeypatch.setattr(
-        "content_review_engine.cli.PydanticAIOpenAIReviewer",
-        FakePydanticAIReviewer,
-    )
 
     exit_code = main(
         [
@@ -929,15 +827,13 @@ def test_cli_review_pydanticai_provider_writes_sidecar_with_fake_provider(
             markdown_path,
             "--profile",
             profile_path,
-            "--format",
-            "json",
-            "--output",
-            str(review_output_path),
             "--enable-llm",
             "--llm-provider",
-            "pydanticai-openai",
+            "mock",
             "--llm-model",
-            "gpt-4o-mini",
+            "mock-model",
+            "--llm-api-key-env",
+            "OPENAI_API_KEY",
             "--llm-base-url",
             "https://example.com/v1",
             "--llm-output",
@@ -946,19 +842,43 @@ def test_cli_review_pydanticai_provider_writes_sidecar_with_fake_provider(
     )
 
     captured = capsys.readouterr()
-    review_payload = json.loads(review_output_path.read_text(encoding="utf-8"))
     llm_payload = json.loads(llm_output_path.read_text(encoding="utf-8"))
 
     assert exit_code == 0
-    assert captured.out == ""
     assert captured.err == ""
-    assert review_payload["schema_version"] == "review-result.v1"
-    assert "llm_review" not in review_payload
-    assert llm_payload["schema_version"] == "llm-sidecar-result.v1"
     assert llm_payload["files"][0]["status"] == "success"
-    assert llm_payload["files"][0]["review"]["provider"] == "pydanticai-openai"
-    assert llm_payload["files"][0]["review"]["model"] == "gpt-4o-mini"
-    assert llm_payload["files"][0]["review"]["findings"][0]["rule_id"] == "llm_semantic_risk"
+
+
+def test_cli_review_pydanticai_provider_returns_not_implemented_error(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    markdown_path = "tests/fixtures/markdown/clean_article.md"
+    profile_path = "tests/fixtures/profiles/default.yml"
+
+    exit_code = main(
+        [
+            "review",
+            markdown_path,
+            "--profile",
+            profile_path,
+            "--enable-llm",
+            "--llm-provider",
+            "pydanticai",
+            "--llm-model",
+            "gpt-4o-mini",
+            "--llm-api-key-env",
+            "OPENAI_API_KEY",
+            "--llm-output",
+            str(tmp_path / "review.llm.json"),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert captured.out == ""
+    assert "Error: Provider 'pydanticai' is recognized but not implemented yet." in captured.err
 
 
 def test_cli_review_llm_markdown_output_writes_single_file_report(
@@ -2714,7 +2634,7 @@ def test_cli_batch_llm_output_dir_requires_enable_llm(
     assert "Error: --llm-output-dir requires --enable-llm" in captured.err
 
 
-def test_cli_batch_llm_provider_requires_enable_llm(
+def test_cli_batch_llm_provider_without_enable_llm_does_not_affect_deterministic_review(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     input_dir = "tests/fixtures/batch/articles"
@@ -2733,12 +2653,12 @@ def test_cli_batch_llm_provider_requires_enable_llm(
 
     captured = capsys.readouterr()
 
-    assert exit_code == 2
-    assert captured.out == ""
-    assert "Error: --llm-provider requires --enable-llm" in captured.err
+    assert exit_code == 0
+    assert "Batch review completed." in captured.out
+    assert captured.err == ""
 
 
-def test_cli_batch_llm_model_requires_enable_llm(
+def test_cli_batch_llm_model_without_enable_llm_does_not_affect_deterministic_review(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     input_dir = "tests/fixtures/batch/articles"
@@ -2757,12 +2677,12 @@ def test_cli_batch_llm_model_requires_enable_llm(
 
     captured = capsys.readouterr()
 
-    assert exit_code == 2
-    assert captured.out == ""
-    assert "Error: --llm-model requires --enable-llm" in captured.err
+    assert exit_code == 0
+    assert "Batch review completed." in captured.out
+    assert captured.err == ""
 
 
-def test_cli_batch_llm_api_key_env_requires_enable_llm(
+def test_cli_batch_llm_api_key_env_without_enable_llm_does_not_affect_deterministic_review(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     input_dir = "tests/fixtures/batch/articles"
@@ -2781,12 +2701,12 @@ def test_cli_batch_llm_api_key_env_requires_enable_llm(
 
     captured = capsys.readouterr()
 
-    assert exit_code == 2
-    assert captured.out == ""
-    assert "Error: --llm-api-key-env requires --enable-llm" in captured.err
+    assert exit_code == 0
+    assert "Batch review completed." in captured.out
+    assert captured.err == ""
 
 
-def test_cli_batch_llm_base_url_requires_enable_llm(
+def test_cli_batch_llm_base_url_without_enable_llm_does_not_affect_deterministic_review(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     input_dir = "tests/fixtures/batch/articles"
@@ -2805,9 +2725,9 @@ def test_cli_batch_llm_base_url_requires_enable_llm(
 
     captured = capsys.readouterr()
 
-    assert exit_code == 2
-    assert captured.out == ""
-    assert "Error: --llm-base-url requires --enable-llm" in captured.err
+    assert exit_code == 0
+    assert "Batch review completed." in captured.out
+    assert captured.err == ""
 
 
 def test_cli_batch_llm_markdown_output_requires_enable_llm(
@@ -2860,122 +2780,19 @@ def test_cli_batch_rejects_unsupported_llm_provider(
 
     assert exit_code == 2
     assert captured.out == ""
-    assert "Unsupported LLM provider: 'openai'." in captured.err
-
-
-def test_cli_batch_pydanticai_provider_requires_llm_model(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-    capsys: pytest.CaptureFixture[str],
-) -> None:
-    input_dir = "tests/fixtures/batch/articles"
-    profile_path = "tests/fixtures/batch/profile.yml"
-    monkeypatch.setenv("OPENAI_API_KEY", "secret-key")
-
-    exit_code = main(
-        [
-            "batch",
-            input_dir,
-            "--profile",
-            profile_path,
-            "--recursive",
-            "--enable-llm",
-            "--llm-provider",
-            "pydanticai-openai",
-            "--llm-output-dir",
-            str(tmp_path / "llm-sidecars"),
-        ]
-    )
-
-    captured = capsys.readouterr()
-
-    assert exit_code == 2
-    assert captured.out == ""
     assert (
-        "Error: --llm-provider pydanticai-openai requires --llm-model"
+        "Error: Unknown LLM provider 'openai'. Supported providers: 'mock', 'pydanticai'."
         in captured.err
     )
 
 
-def test_cli_batch_pydanticai_provider_requires_api_key_env(
+def test_cli_batch_mock_provider_accepts_llm_model_and_api_key_env_config(
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     input_dir = "tests/fixtures/batch/articles"
     profile_path = "tests/fixtures/batch/profile.yml"
-    monkeypatch.delenv("MISSING_OPENAI_KEY", raising=False)
-
-    exit_code = main(
-        [
-            "batch",
-            input_dir,
-            "--profile",
-            profile_path,
-            "--recursive",
-            "--enable-llm",
-            "--llm-provider",
-            "pydanticai-openai",
-            "--llm-model",
-            "gpt-4o-mini",
-            "--llm-api-key-env",
-            "MISSING_OPENAI_KEY",
-            "--llm-output-dir",
-            str(tmp_path / "llm-sidecars"),
-        ]
-    )
-
-    captured = capsys.readouterr()
-
-    assert exit_code == 2
-    assert captured.out == ""
-    assert "Environment variable 'MISSING_OPENAI_KEY' is required" in captured.err
-
-
-def test_cli_batch_pydanticai_provider_writes_sidecars_with_fake_provider(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-    capsys: pytest.CaptureFixture[str],
-) -> None:
-    input_dir = "tests/fixtures/batch/articles"
-    profile_path = "tests/fixtures/batch/profile.yml"
-    review_output_path = tmp_path / "batch.json"
     llm_output_dir = tmp_path / "llm-sidecars"
-    monkeypatch.setenv("OPENAI_API_KEY", "secret-key")
-
-    from content_review_engine.llm import LLMReviewFinding, LLMReviewResult, LLMReviewSummary
-
-    class FakePydanticAIReviewer:
-        def __init__(self, *, model: str, api_key: str, base_url: str | None = None) -> None:
-            self.model = model
-            self.api_key = api_key
-            self.base_url = base_url
-
-        def review(self, request):  # type: ignore[no-untyped-def]
-            assert request.profile_name == "batch-default"
-            assert request.review_goal == "semantic_review"
-            return LLMReviewResult(
-                provider="pydanticai-openai",
-                model=self.model,
-                prompt_version="pydanticai-openai.v1",
-                profile_name=request.profile_name,
-                findings=(
-                    LLMReviewFinding(
-                        rule_id="llm_semantic_risk",
-                        severity="warning",
-                        message="Possible unsupported claim.",
-                    ),
-                ),
-                summary=LLMReviewSummary(
-                    overall_risk="medium",
-                    summary="One semantic finding per file.",
-                ),
-            )
-
-    monkeypatch.setattr(
-        "content_review_engine.cli.PydanticAIOpenAIReviewer",
-        FakePydanticAIReviewer,
-    )
 
     exit_code = main(
         [
@@ -2984,15 +2801,13 @@ def test_cli_batch_pydanticai_provider_writes_sidecars_with_fake_provider(
             "--profile",
             profile_path,
             "--recursive",
-            "--format",
-            "json",
-            "--output",
-            str(review_output_path),
             "--enable-llm",
             "--llm-provider",
-            "pydanticai-openai",
+            "mock",
             "--llm-model",
-            "gpt-4o-mini",
+            "mock-model",
+            "--llm-api-key-env",
+            "OPENAI_API_KEY",
             "--llm-base-url",
             "https://example.com/v1",
             "--llm-output-dir",
@@ -3001,26 +2816,46 @@ def test_cli_batch_pydanticai_provider_writes_sidecars_with_fake_provider(
     )
 
     captured = capsys.readouterr()
-    review_payload = json.loads(review_output_path.read_text(encoding="utf-8"))
     llm_payload = json.loads(
-        (llm_output_dir / "nested" / "nested_forbidden.md.llm-review.json").read_text(
-            encoding="utf-8"
-        )
+        (llm_output_dir / "clean.md.llm-review.json").read_text(encoding="utf-8")
     )
 
     assert exit_code == 0
-    assert captured.out == ""
     assert captured.err == ""
-    assert review_payload["schema_version"] == "batch-review-result.v1"
-    assert "llm_review" not in review_payload
-    assert llm_payload["schema_version"] == "llm-sidecar-result.v1"
     assert llm_payload["files"][0]["status"] == "success"
-    assert llm_payload["files"][0]["review"]["provider"] == "pydanticai-openai"
-    assert llm_payload["files"][0]["review"]["model"] == "gpt-4o-mini"
-    assert (
-        llm_payload["files"][0]["review"]["findings"][0]["rule_id"]
-        == "llm_semantic_risk"
+
+
+def test_cli_batch_pydanticai_provider_returns_not_implemented_error(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    input_dir = "tests/fixtures/batch/articles"
+    profile_path = "tests/fixtures/batch/profile.yml"
+
+    exit_code = main(
+        [
+            "batch",
+            input_dir,
+            "--profile",
+            profile_path,
+            "--recursive",
+            "--enable-llm",
+            "--llm-provider",
+            "pydanticai",
+            "--llm-model",
+            "gpt-4o-mini",
+            "--llm-api-key-env",
+            "OPENAI_API_KEY",
+            "--llm-output-dir",
+            str(tmp_path / "llm-sidecars"),
+        ]
     )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert captured.out == ""
+    assert "Error: Provider 'pydanticai' is recognized but not implemented yet." in captured.err
 
 
 def test_cli_batch_llm_markdown_output_writes_batch_report(

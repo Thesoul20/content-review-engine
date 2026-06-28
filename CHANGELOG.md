@@ -8,6 +8,47 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0043
+
+### Added
+
+- Added `src/content_review_engine/llm/config.py` with `LLMProviderConfig`,
+  provider-name validation, and config-loading helpers.
+- Added `src/content_review_engine/llm/factory.py` with a small provider
+  registry and `create_llm_reviewer(config)`.
+- Added `LLMProviderConfigError` and `LLMProviderNotImplementedError`.
+- Added `tests/test_llm_config.py` and `tests/test_llm_provider_factory.py`.
+
+### Changed
+
+- Updated `src/content_review_engine/cli.py` so LLM sidecar review now builds
+  provider config and reviewer instances through the shared LLM factory.
+- Updated the CLI contract so `mock` remains the default and only runnable
+  provider, while reserved `pydanticai` returns a clear not-implemented
+  error.
+- Updated the CLI so provider config flags can be parsed without
+  `--enable-llm` and do not affect deterministic review unless LLM sidecar
+  review is explicitly enabled.
+- Updated `tests/test_cli.py` to cover default mock config, mock factory
+  creation, config-only flags, reserved-provider errors, unknown-provider
+  errors, and continued quality-gate isolation.
+- Updated `docs/ARCHITECTURE.md`, `docs/DATA_MODELS.md`, `docs/CLI.md`, and
+  `docs/CI.md` to document the provider configuration boundary.
+- Updated `PROJECT_STATE.md` to record TASK-0043 completion.
+- Kept `LLMSidecarResult` JSON schema unchanged.
+- Kept LLM sidecar Markdown report structure unchanged.
+- Kept deterministic review and batch JSON schemas unchanged.
+- Kept deterministic Markdown report structure unchanged.
+- Kept deterministic quality-gate semantics unchanged.
+
+### Not Added
+
+- No real OpenAI, Anthropic, or PydanticAI SDK execution.
+- No real network requests or API-key secret resolution.
+- No LLM merge into `ReviewResult` or quality-gate evaluation.
+- No API, MCP, GUI, retry, timeout, rate limiting, or other real provider
+  runtime behavior.
+
 ## TASK-0042
 
 ### Added

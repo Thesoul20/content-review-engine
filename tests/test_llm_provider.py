@@ -2,6 +2,8 @@ import pytest
 from pydantic import ValidationError
 
 from content_review_engine.llm import (
+    LLMProviderConfigError,
+    LLMProviderNotImplementedError,
     LLMProviderError,
     LLMResponseValidationError,
     LLMReviewError,
@@ -120,9 +122,13 @@ def test_mock_llm_result_can_be_serialized() -> None:
 
 
 def test_llm_error_hierarchy_is_stable() -> None:
+    config_error = LLMProviderConfigError("config invalid")
+    not_implemented_error = LLMProviderNotImplementedError("not implemented")
     provider_error = LLMProviderError("provider failed")
     response_error = LLMResponseValidationError("response invalid")
 
+    assert isinstance(config_error, LLMReviewError)
+    assert isinstance(not_implemented_error, LLMProviderConfigError)
     assert isinstance(provider_error, LLMReviewError)
     assert isinstance(response_error, LLMReviewError)
     assert not isinstance(provider_error, LLMResponseValidationError)

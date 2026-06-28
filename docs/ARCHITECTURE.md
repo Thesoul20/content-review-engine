@@ -210,11 +210,12 @@ TASK-0034 adds only foundational future-facing LLM review data models under
 Current status:
 
 - the review engine remains deterministic for the main review pipeline
-- `src/content_review_engine/llm/pydanticai.py` now provides an optional real
-  `PydanticAIOpenAIReviewer` adapter
-- PydanticAI exists only in the LLM provider layer
-- the CLI can optionally route single-file and batch sidecar review to `mock`
-  or `pydanticai-openai`
+- `src/content_review_engine/llm/config.py` now defines a structured
+  `LLMProviderConfig`
+- `src/content_review_engine/llm/factory.py` now owns provider selection and
+  reviewer construction
+- the CLI can optionally route single-file and batch sidecar review through
+  that config/factory boundary
 - the CLI can optionally write a separate LLM sidecar Markdown report for
   single-file or batch sidecar output through `--llm-markdown-output`
 - the single-file Markdown report can now optionally append a separate
@@ -290,7 +291,7 @@ Per reviewed Markdown file:
     ↓
   LLMReviewRunner
     ↓
-  MockLLMReviewer or PydanticAIOpenAIReviewer
+  create_llm_reviewer(LLMProviderConfig)
     ↓
   LLMReviewResult
     ↓
@@ -351,11 +352,16 @@ Current LLM provider-boundary status:
 - `src/content_review_engine/llm/models.py` defines `LLMReviewRequest`
 - `src/content_review_engine/llm/provider.py` defines a small synchronous
   `LLMReviewer` protocol
+- `src/content_review_engine/llm/config.py` defines `LLMProviderConfig`,
+  including provider name, optional model, optional `api_key_env`, and
+  optional `base_url`
+- `src/content_review_engine/llm/factory.py` defines the provider registry and
+  `create_llm_reviewer(config)`
 - `src/content_review_engine/llm/mock.py` defines `MockLLMReviewer`, a
   deterministic adapter for tests and future wiring work
-- `src/content_review_engine/llm/pydanticai.py` defines
-  `PydanticAIOpenAIReviewer`, which maps structured PydanticAI output into the
-  existing `LLMReviewResult`
+- the current runnable provider is only `mock`
+- the reserved provider name `pydanticai` is recognized by config loading but
+  currently returns a not-implemented provider error
 
 TASK-0036 adds the runner boundary:
 
@@ -389,7 +395,7 @@ LLMReviewRequest
   ↓
 LLMReviewRunner
   ↓
-MockLLMReviewer or PydanticAIOpenAIReviewer
+create_llm_reviewer(LLMProviderConfig)
   ↓
 LLMReviewResult
   ↓
@@ -403,10 +409,11 @@ Important current boundaries:
 - the current Markdown report structure does not read the LLM sidecar
 - the current quality gate does not read the LLM sidecar
 - batch review does not participate in this LLM path
-- PydanticAI, OpenAI-compatible model configuration, and API-key environment
-  variable loading are confined to the provider-selection path for this sidecar
+- provider config parsing and reviewer construction are confined to the
+  sidecar adapter path
+- the runner does not read environment variables
 - the deterministic review pipeline, canonical JSON schema, Markdown report,
-  and batch flow do not import PydanticAI
+  and batch flow do not depend on provider-specific secret resolution
 
 TASK-0036 adds a dedicated execution boundary between request construction and
 provider invocation:

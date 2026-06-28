@@ -1,7 +1,22 @@
+from content_review_engine.llm.config import (
+    LLM_DEFAULT_PROVIDER_NAME,
+    LLM_PROVIDER_NAMES,
+    LLMProviderConfig,
+    LLMProviderName,
+    LLMProviderType,
+    load_llm_provider_config,
+)
 from content_review_engine.llm.errors import (
+    LLMProviderConfigError,
+    LLMProviderNotImplementedError,
     LLMProviderError,
     LLMResponseValidationError,
     LLMReviewError,
+)
+from content_review_engine.llm.factory import (
+    LLM_PROVIDER_REGISTRY,
+    create_llm_reviewer,
+    get_registered_llm_provider_names,
 )
 from content_review_engine.llm.mock import MockLLMReviewer
 from content_review_engine.llm.models import (
@@ -45,7 +60,15 @@ from content_review_engine.llm.serialization import (
 )
 
 __all__ = [
+    "LLM_DEFAULT_PROVIDER_NAME",
     "LLM_OVERALL_RISK_VALUES",
+    "LLM_PROVIDER_NAMES",
+    "LLM_PROVIDER_REGISTRY",
+    "LLMProviderConfig",
+    "LLMProviderConfigError",
+    "LLMProviderName",
+    "LLMProviderNotImplementedError",
+    "LLMProviderType",
     "LLMProviderError",
     "LLM_REVIEW_RESULT_SCHEMA_VERSION",
     "LLM_SIDECAR_RESULT_SCHEMA_VERSION",
@@ -71,6 +94,8 @@ __all__ = [
     "build_llm_sidecar_file_success",
     "build_llm_sidecar_result",
     "build_llm_sidecar_summary",
+    "create_llm_reviewer",
+    "get_registered_llm_provider_names",
     "llm_review_finding_to_dict",
     "llm_review_result_to_dict",
     "llm_review_result_to_json",
@@ -80,4 +105,5 @@ __all__ = [
     "llm_sidecar_result_to_dict",
     "llm_sidecar_result_to_json",
     "llm_sidecar_summary_to_dict",
+    "load_llm_provider_config",
 ]

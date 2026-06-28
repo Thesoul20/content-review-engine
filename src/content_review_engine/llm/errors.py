@@ -9,11 +9,21 @@ class LLMProviderError(LLMReviewError):
     """Raised when a provider adapter fails to complete a review."""
 
 
+class LLMProviderConfigError(LLMReviewError):
+    """Raised when provider configuration is invalid."""
+
+
+class LLMProviderNotImplementedError(LLMProviderConfigError):
+    """Raised when a recognized provider is not implemented yet."""
+
+
 class LLMResponseValidationError(LLMReviewError):
     """Raised when provider output cannot be validated as an LLM review result."""
 
 
 __all__ = [
+    "LLMProviderConfigError",
+    "LLMProviderNotImplementedError",
     "LLMProviderError",
     "LLMResponseValidationError",
     "LLMReviewError",

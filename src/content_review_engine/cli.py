@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import os
 import sys
 from pathlib import Path
 
@@ -32,19 +31,20 @@ from content_review_engine.core.serialization import (
     review_result_to_json,
 )
 from content_review_engine.llm import (
+    LLM_DEFAULT_PROVIDER_NAME,
     LLMSidecarFile,
     LLMSidecarResult,
+    LLMProviderConfig,
     LLMReviewRequest,
     LLMReviewError,
     LLMReviewResult,
     LLMReviewRunner,
-    MockLLMReviewer,
-    PYDANTICAI_OPENAI_PROVIDER_NAME,
-    PydanticAIOpenAIReviewer,
     build_llm_sidecar_file_failed,
     build_llm_sidecar_file_success,
     build_llm_sidecar_result,
+    create_llm_reviewer,
     llm_sidecar_result_to_json,
+    load_llm_provider_config,
 )
 from content_review_engine.parser import read_markdown
 from content_review_engine.reports import (
@@ -69,12 +69,8 @@ def _parse_fail_on(value: str) -> str:
 
 def _parse_llm_provider(value: str) -> str:
     normalized = value.strip()
-    if normalized not in {"mock", PYDANTICAI_OPENAI_PROVIDER_NAME}:
-        raise argparse.ArgumentTypeError(
-            "Unsupported LLM provider: "
-            f"{value!r}. Supported providers are 'mock' and "
-            f"'{PYDANTICAI_OPENAI_PROVIDER_NAME}'."
-        )
+    if normalized == "":
+        raise argparse.ArgumentTypeError("LLM provider must not be empty.")
     return normalized
 
 
@@ -123,26 +119,26 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help=(
             "LLM provider for experimental sidecar review. "
-            "Supported: 'mock', 'pydanticai-openai'."
+            "Current runnable provider: 'mock'. Reserved provider name: 'pydanticai'."
         ),
     )
     review_parser.add_argument(
         "--llm-model",
         default=None,
-        help="Model name for --llm-provider pydanticai-openai.",
+        help="Optional model name stored in LLM provider config.",
     )
     review_parser.add_argument(
         "--llm-api-key-env",
         default=None,
         help=(
-            "Environment variable name used to read the API key for "
-            "--llm-provider pydanticai-openai. Defaults to OPENAI_API_KEY."
+            "Optional environment variable name stored in LLM provider config. "
+            "The CLI does not read the secret value."
         ),
     )
     review_parser.add_argument(
         "--llm-base-url",
         default=None,
-        help="Optional OpenAI-compatible base URL for --llm-provider pydanticai-openai.",
+        help="Optional base URL stored in LLM provider config.",
     )
     review_parser.add_argument(
         "--llm-output",
@@ -261,7 +257,7 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help=(
             "LLM provider for experimental sidecar review. "
-            "Supported: 'mock', 'pydanticai-openai'."
+            "Current runnable provider: 'mock'. Reserved provider name: 'pydanticai'."
         ),
     )
     batch_parser.add_argument(
@@ -277,20 +273,20 @@ def build_parser() -> argparse.ArgumentParser:
     batch_parser.add_argument(
         "--llm-model",
         default=None,
-        help="Model name for --llm-provider pydanticai-openai.",
+        help="Optional model name stored in LLM provider config.",
     )
     batch_parser.add_argument(
         "--llm-api-key-env",
         default=None,
         help=(
-            "Environment variable name used to read the API key for "
-            "--llm-provider pydanticai-openai. Defaults to OPENAI_API_KEY."
+            "Optional environment variable name stored in LLM provider config. "
+            "The CLI does not read the secret value."
         ),
     )
     batch_parser.add_argument(
         "--llm-base-url",
         default=None,
-        help="Optional OpenAI-compatible base URL for --llm-provider pydanticai-openai.",
+        help="Optional base URL stored in LLM provider config.",
     )
 
     return parser
@@ -536,14 +532,6 @@ def _validate_review_llm_args(args: argparse.Namespace) -> None:
     if not args.enable_llm:
         if args.llm_output is not None:
             raise ValueError("--llm-output requires --enable-llm")
-        if args.llm_provider is not None:
-            raise ValueError("--llm-provider requires --enable-llm")
-        if args.llm_model is not None:
-            raise ValueError("--llm-model requires --enable-llm")
-        if args.llm_api_key_env is not None:
-            raise ValueError("--llm-api-key-env requires --enable-llm")
-        if args.llm_base_url is not None:
-            raise ValueError("--llm-base-url requires --enable-llm")
         if args.llm_markdown_output is not None:
             raise ValueError("--llm-markdown-output requires --enable-llm")
         if args.include_llm_report:
@@ -555,28 +543,11 @@ def _validate_review_llm_args(args: argparse.Namespace) -> None:
     if args.include_llm_report and args.format != "markdown":
         raise ValueError("--include-llm-report requires --format markdown")
 
-    provider = args.llm_provider or "mock"
-    if provider == "mock":
-        return
-
-    if provider == PYDANTICAI_OPENAI_PROVIDER_NAME and args.llm_model is None:
-        raise ValueError(
-            "--llm-provider pydanticai-openai requires --llm-model"
-        )
-
 
 def _validate_batch_llm_args(args: argparse.Namespace) -> None:
     if not args.enable_llm:
         if args.llm_output_dir is not None:
             raise ValueError("--llm-output-dir requires --enable-llm")
-        if args.llm_provider is not None:
-            raise ValueError("--llm-provider requires --enable-llm")
-        if args.llm_model is not None:
-            raise ValueError("--llm-model requires --enable-llm")
-        if args.llm_api_key_env is not None:
-            raise ValueError("--llm-api-key-env requires --enable-llm")
-        if args.llm_base_url is not None:
-            raise ValueError("--llm-base-url requires --enable-llm")
         if args.llm_markdown_output is not None:
             raise ValueError("--llm-markdown-output requires --enable-llm")
         return
@@ -584,34 +555,18 @@ def _validate_batch_llm_args(args: argparse.Namespace) -> None:
     if args.llm_output_dir is None:
         raise ValueError("--enable-llm requires --llm-output-dir")
 
-    provider = args.llm_provider or "mock"
-    if provider == "mock":
-        return
 
-    if provider == PYDANTICAI_OPENAI_PROVIDER_NAME and args.llm_model is None:
-        raise ValueError(
-            "--llm-provider pydanticai-openai requires --llm-model"
-        )
+def _build_llm_provider_config(args: argparse.Namespace) -> LLMProviderConfig:
+    return load_llm_provider_config(
+        provider=args.llm_provider or LLM_DEFAULT_PROVIDER_NAME,
+        model=args.llm_model,
+        api_key_env=args.llm_api_key_env,
+        base_url=args.llm_base_url,
+    )
 
 
 def _build_llm_reviewer(args: argparse.Namespace):
-    provider = args.llm_provider or "mock"
-    if provider == "mock":
-        return MockLLMReviewer()
-
-    api_key_env = args.llm_api_key_env or "OPENAI_API_KEY"
-    api_key = os.environ.get(api_key_env, "").strip()
-    if api_key == "":
-        raise ValueError(
-            "Environment variable "
-            f"{api_key_env!r} is required for --llm-provider pydanticai-openai"
-        )
-
-    return PydanticAIOpenAIReviewer(
-        model=args.llm_model,
-        api_key=api_key,
-        base_url=args.llm_base_url,
-    )
+    return create_llm_reviewer(_build_llm_provider_config(args))
 
 
 def _build_llm_review_request(

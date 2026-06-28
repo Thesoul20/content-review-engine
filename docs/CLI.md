@@ -14,8 +14,8 @@ suppression comments, counts, and quality gates, see
 ## Current Command
 
 ```bash
-uv run content-review review <markdown_file> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--fail-on info|warning|error|critical] [--enable-llm --llm-output <file> [--llm-markdown-output <file>] [--llm-provider mock|pydanticai-openai] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>] [--include-llm-report]]
-uv run content-review batch <input_dir> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--recursive] [--pattern "*.md"] [--fail-on info|warning|error|critical] [--enable-llm --llm-output-dir <dir> [--llm-markdown-output <file>] [--llm-provider mock|pydanticai-openai] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>]]
+uv run content-review review <markdown_file> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--fail-on info|warning|error|critical] [--enable-llm --llm-output <file> [--llm-markdown-output <file>] [--llm-provider mock|pydanticai] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>] [--include-llm-report]]
+uv run content-review batch <input_dir> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--recursive] [--pattern "*.md"] [--fail-on info|warning|error|critical] [--enable-llm --llm-output-dir <dir> [--llm-markdown-output <file>] [--llm-provider mock|pydanticai] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>]]
 uv run content-review profile validate <profile_file> [--format text|json]
 uv run content-review profile init --template <general-basic|general-publishing|health-content|marketing-copy|technical-blog|wechat-basic|wechat-article|wechat-strict> --output <profile_file> [--force]
 uv run content-review profile list [--format text|json]
@@ -37,32 +37,30 @@ uv run content-review review article.md --profile profile.yaml --enable-llm --ll
 uv run content-review review article.md --profile profile.yaml --enable-llm --llm-provider mock --llm-output article.llm.json
 uv run content-review review article.md --profile profile.yaml --enable-llm --llm-output article.llm.json --llm-markdown-output article.llm.md
 uv run content-review review article.md --profile profile.yaml --format markdown --enable-llm --llm-output article.llm.json --include-llm-report
-OPENAI_API_KEY=your-key uv run content-review review article.md --profile profile.yaml --enable-llm --llm-provider pydanticai-openai --llm-model gpt-4o-mini --llm-output article.llm.json
-LLM_GATEWAY_KEY=your-key uv run content-review review article.md --profile profile.yaml --enable-llm --llm-provider pydanticai-openai --llm-model gpt-4o-mini --llm-api-key-env LLM_GATEWAY_KEY --llm-base-url https://example.com/v1 --llm-output article.llm.json
+uv run content-review review article.md --profile profile.yaml --enable-llm --llm-provider pydanticai --llm-model gpt-4o-mini --llm-api-key-env OPENAI_API_KEY --llm-output article.llm.json
 ```
 
 Single-file `review` constraints:
 
 - this path is opt-in and disabled by default
 - only the single-file `review` command supports it
-- `--llm-provider` supports `mock` and `pydanticai-openai`
+- `--llm-provider` supports `mock` and the reserved provider name `pydanticai`
 - `--enable-llm` requires `--llm-output`
 - `--llm-output` without `--enable-llm` fails
-- `--llm-provider` without `--enable-llm` fails
-- `--llm-model` without `--enable-llm` fails
-- `--llm-api-key-env` without `--enable-llm` fails
-- `--llm-base-url` without `--enable-llm` fails
 - `--llm-markdown-output` without `--enable-llm` fails
 - `--include-llm-report` without `--enable-llm` fails
 - `--include-llm-report` requires `--format markdown`
 - `--include-llm-report` fails for `--format json`
 - `--include-llm-report` fails for `--format text`
-- `--llm-provider pydanticai-openai` requires `--llm-model`
-- `--llm-provider pydanticai-openai` reads the API key from the environment
-  variable named by `--llm-api-key-env`, or `OPENAI_API_KEY` by default
+- `--llm-provider`, `--llm-model`, `--llm-api-key-env`, and `--llm-base-url`
+  can still be parsed without `--enable-llm`, but they do not affect the
+  deterministic review path
+- `--llm-provider mock` is the default and the only runnable provider
+- `--llm-provider pydanticai` is recognized but currently returns a clear
+  not-implemented error
+- `--llm-model`, `--llm-api-key-env`, and `--llm-base-url` are stored in
+  `LLMProviderConfig` for future provider work
 - the CLI does not support a plaintext `--llm-api-key` argument
-- `--llm-base-url` is optional and only configures an OpenAI-compatible
-  endpoint for `pydanticai-openai`
 - the LLM result is written as a separate UTF-8 JSON sidecar file in
   `LLMSidecarResult` format
 - `--llm-markdown-output` optionally writes a separate UTF-8 Markdown sidecar
@@ -100,12 +98,12 @@ Current behavior guarantees:
 
 Provider notes:
 
-- `mock` keeps the deterministic test-only behavior from TASK-0037 and does
-  not require `--llm-model`
-- `pydanticai-openai` uses the provider adapter in
-  `src/content_review_engine/llm/pydanticai.py`
-- the CLI only reads the API key environment variable after `--enable-llm` is
-  explicitly enabled
+- `mock` keeps the deterministic sidecar behavior from TASK-0037 and remains
+  the default provider
+- `pydanticai` is reserved for a future real provider boundary and currently
+  fails fast with a clear not-implemented error
+- the CLI stores only the `api_key_env` name in config and does not read or
+  print secret values
 
 ## Experimental Batch LLM Sidecar Review
 
@@ -116,8 +114,7 @@ flow:
 uv run content-review batch articles --profile profile.yaml --recursive --enable-llm --llm-output-dir llm-sidecars
 uv run content-review batch articles --profile profile.yaml --recursive --enable-llm --llm-provider mock --llm-output-dir llm-sidecars
 uv run content-review batch articles --profile profile.yaml --recursive --enable-llm --llm-output-dir llm-sidecars --llm-markdown-output llm-sidecars.md
-OPENAI_API_KEY=your-key uv run content-review batch articles --profile profile.yaml --recursive --enable-llm --llm-provider pydanticai-openai --llm-model gpt-4o-mini --llm-output-dir llm-sidecars
-LLM_GATEWAY_KEY=your-key uv run content-review batch articles --profile profile.yaml --recursive --enable-llm --llm-provider pydanticai-openai --llm-model gpt-4o-mini --llm-api-key-env LLM_GATEWAY_KEY --llm-base-url https://example.com/v1 --llm-output-dir llm-sidecars
+uv run content-review batch articles --profile profile.yaml --recursive --enable-llm --llm-provider pydanticai --llm-model gpt-4o-mini --llm-api-key-env OPENAI_API_KEY --llm-output-dir llm-sidecars
 ```
 
 Batch constraints:
@@ -125,19 +122,14 @@ Batch constraints:
 - this path is opt-in and disabled by default
 - `--enable-llm` requires `--llm-output-dir`
 - `--llm-output-dir` without `--enable-llm` fails
-- `--llm-provider` without `--enable-llm` fails
-- `--llm-model` without `--enable-llm` fails
-- `--llm-api-key-env` without `--enable-llm` fails
-- `--llm-base-url` without `--enable-llm` fails
 - `--llm-markdown-output` without `--enable-llm` fails
-- `--llm-provider` supports `mock` and `pydanticai-openai`
+- `--llm-provider` supports `mock` and the reserved provider name `pydanticai`
 - `--llm-provider mock` does not require `--llm-model`
 - `--llm-provider mock` does not read any API key
-- `--llm-provider pydanticai-openai` requires `--llm-model`
-- `--llm-provider pydanticai-openai` reads the API key from the environment
-  variable named by `--llm-api-key-env`, or `OPENAI_API_KEY` by default
-- `--llm-base-url` is optional and only configures an OpenAI-compatible
-  endpoint for `pydanticai-openai`
+- `--llm-provider pydanticai` is recognized but currently returns a clear
+  not-implemented error
+- `--llm-model`, `--llm-api-key-env`, and `--llm-base-url` are config-only
+  fields until a future real provider is implemented
 - the CLI does not support a plaintext `--llm-api-key` argument
 - the batch command writes one separate UTF-8 `LLMSidecarResult` JSON sidecar
   per reviewed Markdown file

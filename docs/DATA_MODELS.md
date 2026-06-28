@@ -181,8 +181,8 @@ TASK-0034 does not merge it into current CLI JSON output, Markdown reports,
 batch results, suppression, or quality-gate behavior.
 TASK-0037 allows the single-file CLI `review` command to write it to a
 separate JSON sidecar file when LLM review is explicitly enabled.
-TASK-0038 allows the optional `pydanticai-openai` provider to generate
-structured output and convert it into the same `LLMReviewResult` sidecar model.
+TASK-0043 adds `LLMProviderConfig` plus a provider factory boundary while
+keeping `LLMReviewResult` as the same sidecar result model.
 TASK-0039 also allows single-file Markdown report rendering to accept
 `LLMReviewResult` as an optional additional input for human-readable output,
 without changing the canonical deterministic `ReviewResult` schema.
@@ -378,8 +378,8 @@ Notes:
 
 - the initial boundary is synchronous to match the current project shape
 - adapters should return `LLMReviewResult`
-- current implementations are `MockLLMReviewer` and
-  `PydanticAIOpenAIReviewer`
+- the current runnable implementation is `MockLLMReviewer`
+- reviewer construction now goes through `create_llm_reviewer(config)`
 
 ---
 
@@ -424,6 +424,46 @@ Notes:
 
 ---
 
+## LLMProviderConfig
+
+`LLMProviderConfig` stores structured provider-selection input for the LLM
+sidecar adapter boundary.
+
+Current fields:
+
+| Field | Required | Description |
+|---|---|---|
+| `provider` | Yes | Provider name, default `mock`; recognized values are `mock` and reserved `pydanticai` |
+| `model` | No | Optional model identifier stored for future provider use |
+| `api_key_env` | No | Optional environment variable name only; stores the variable name, not the secret |
+| `base_url` | No | Optional base URL stored for future provider use |
+
+Notes:
+
+- the default config uses `provider = "mock"`
+- `provider_type` is derived as `mock` or `real`
+- config loading validates provider names and rejects unknown providers with
+  `LLMProviderConfigError`
+- `repr` and serialization do not contain any secret value because the model
+  stores only the environment variable name
+
+---
+
+## LLM Provider Factory
+
+`src/content_review_engine/llm/factory.py` owns reviewer construction from
+`LLMProviderConfig`.
+
+Current behavior:
+
+- `provider = "mock"` returns `MockLLMReviewer`
+- `provider = "pydanticai"` raises `LLMProviderNotImplementedError`
+- unknown providers raise `LLMProviderConfigError`
+- the factory does not read environment variables, perform network requests,
+  or depend on the CLI layer
+
+---
+
 ## LLM Review Errors
 
 The future LLM adapter boundary now defines minimal error types in
@@ -432,6 +472,8 @@ The future LLM adapter boundary now defines minimal error types in
 | Type | Description |
 |---|---|
 | `LLMReviewError` | Base exception for future LLM review failures |
+| `LLMProviderConfigError` | Invalid or unsupported provider configuration |
+| `LLMProviderNotImplementedError` | Recognized provider name that is not implemented yet |
 | `LLMProviderError` | Provider adapter failure, such as transport or upstream execution failure |
 | `LLMResponseValidationError` | Provider output could not be validated as an `LLMReviewResult` |
 
@@ -449,25 +491,6 @@ Current behavior:
 - otherwise `review()` returns a new empty `LLMReviewResult`
 - it does not perform network access, prompt execution, or provider-specific
   behavior
-
----
-
-## PydanticAIOpenAIReviewer
-
-`PydanticAIOpenAIReviewer` is the optional OpenAI-compatible provider adapter
-defined in `src/content_review_engine/llm/pydanticai.py`.
-
-Current behavior:
-
-- it implements the existing synchronous `LLMReviewer` interface
-- it accepts the existing `LLMReviewRequest` model as input
-- it uses PydanticAI internally only inside the provider layer
-- it converts provider output into the existing `LLMReviewResult` model before
-  sidecar serialization
-- provider execution failures map to `LLMProviderError`
-- structured output validation failures map to `LLMResponseValidationError`
-- it does not change the deterministic `ReviewResult` schema, Markdown report
-  structure, quality gate, or batch result schema
 
 ---
 
