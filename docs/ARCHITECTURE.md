@@ -359,6 +359,9 @@ Current LLM provider-boundary status:
   `create_llm_reviewer(config)`
 - `src/content_review_engine/llm/mock.py` defines `MockLLMReviewer`, a
   deterministic adapter for tests and future wiring work
+- `src/content_review_engine/llm/pydanticai.py` is now only an explicit future
+  provider skeleton; it does not import a PydanticAI SDK, read environment
+  variables, or perform network calls
 - the current runnable provider is only `mock`
 - the reserved provider name `pydanticai` is recognized by config loading but
   currently returns a not-implemented provider error
@@ -411,6 +414,8 @@ Important current boundaries:
 - batch review does not participate in this LLM path
 - provider config parsing and reviewer construction are confined to the
   sidecar adapter path
+- the reserved `pydanticai` adapter path is intentionally a non-runnable
+  skeleton until a later task implements the real provider boundary
 - the runner does not read environment variables
 - the deterministic review pipeline, canonical JSON schema, Markdown report,
   and batch flow do not depend on provider-specific secret resolution

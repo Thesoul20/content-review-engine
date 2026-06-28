@@ -8,6 +8,45 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0044
+
+### Changed
+
+- Replaced the old runnable-looking `src/content_review_engine/llm/pydanticai.py`
+  implementation with an explicit future skeleton that only raises
+  `LLMProviderNotImplementedError`.
+- Removed the historical `pydantic-ai-slim[openai]` dependency from
+  `pyproject.toml` and refreshed `uv.lock` because the reserved `pydanticai`
+  path is no longer a runnable SDK-backed adapter.
+- Updated `src/content_review_engine/llm/factory.py` so the reserved
+  `pydanticai` path reuses the same skeleton not-implemented boundary instead
+  of implying a hidden runnable adapter.
+- Updated `src/content_review_engine/llm/__init__.py` to stop exporting the old
+  `PydanticAIOpenAIReviewer` symbols and export only the reserved skeleton
+  boundary.
+- Updated `tests/test_llm_provider_factory.py` to cover mock success,
+  reserved-provider not-implemented behavior, unknown-provider config errors,
+  no fallback to `mock`, no required PydanticAI SDK import, and no network
+  calls.
+- Rewrote `tests/test_llm_pydanticai_provider.py` so it only asserts explicit
+  skeleton semantics and no longer implies a runnable real provider.
+- Updated `docs/ARCHITECTURE.md`, `docs/DATA_MODELS.md`, `docs/CLI.md`, and
+  `docs/CI.md` to document that only `mock` is runnable today and
+  `pydanticai` is recognized but not implemented.
+- Updated `PROJECT_STATE.md` to record TASK-0044 completion.
+- Kept `LLMSidecarResult` JSON schema unchanged.
+- Kept LLM sidecar Markdown report structure unchanged.
+- Kept deterministic review and batch JSON schemas unchanged.
+- Kept deterministic Markdown report structure unchanged.
+- Kept deterministic quality-gate semantics unchanged.
+
+### Not Added
+
+- No real PydanticAI SDK integration or imports.
+- No real network requests, API-key reads, or secret resolution.
+- No runnable `pydanticai` provider, no fallback to `mock`, and no LLM merge
+  into deterministic review results.
+
 ## TASK-0043
 
 ### Added

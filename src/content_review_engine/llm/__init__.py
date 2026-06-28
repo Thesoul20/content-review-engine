@@ -34,9 +34,10 @@ from content_review_engine.llm.models import (
     LLMReviewSummary,
 )
 from content_review_engine.llm.pydanticai import (
-    PYDANTICAI_OPENAI_PROMPT_VERSION,
-    PYDANTICAI_OPENAI_PROVIDER_NAME,
-    PydanticAIOpenAIReviewer,
+    PYDANTICAI_NOT_IMPLEMENTED_MESSAGE,
+    PYDANTICAI_PROVIDER_NAME,
+    PydanticAIReviewer,
+    raise_pydanticai_not_implemented,
 )
 from content_review_engine.llm.provider import LLMReviewer
 from content_review_engine.llm.runner import LLMReviewRunner
@@ -86,9 +87,9 @@ __all__ = [
     "LLMReviewer",
     "LLMReviewRunner",
     "MockLLMReviewer",
-    "PYDANTICAI_OPENAI_PROMPT_VERSION",
-    "PYDANTICAI_OPENAI_PROVIDER_NAME",
-    "PydanticAIOpenAIReviewer",
+    "PYDANTICAI_NOT_IMPLEMENTED_MESSAGE",
+    "PYDANTICAI_PROVIDER_NAME",
+    "PydanticAIReviewer",
     "build_llm_sidecar_error",
     "build_llm_sidecar_file_failed",
     "build_llm_sidecar_file_success",
@@ -106,4 +107,5 @@ __all__ = [
     "llm_sidecar_result_to_json",
     "llm_sidecar_summary_to_dict",
     "load_llm_provider_config",
+    "raise_pydanticai_not_implemented",
 ]

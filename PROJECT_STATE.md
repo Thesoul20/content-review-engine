@@ -85,6 +85,33 @@ use.
 
 ## Recent Completion
 
+- TASK-0044 is complete.
+- Normalized the reserved `pydanticai` provider boundary so provider factory,
+  CLI behavior, adapter code, tests, and docs all agree that only `mock` is
+  runnable today.
+- Replaced the old runnable-looking `src/content_review_engine/llm/pydanticai.py`
+  implementation with an explicit future skeleton that only raises
+  `LLMProviderNotImplementedError`.
+- Removed the historical `pydantic-ai-slim[openai]` package dependency because
+  the reserved `pydanticai` path is no longer a runnable SDK-backed adapter.
+- Removed top-level `llm` package exports that implied a real
+  PydanticAI/OpenAI-compatible reviewer already exists.
+- Updated provider-factory tests to assert no fallback to `mock`, no required
+  PydanticAI SDK import, and no network behavior for the reserved provider
+  path.
+- Rewrote the old PydanticAI adapter tests so they only assert future-skeleton
+  semantics and do not imply a runnable real provider.
+- Updated architecture, data-model, CLI, and CI docs so the current runnable
+  provider set is explicitly `mock` only and `pydanticai` is recognized but
+  not implemented.
+- Kept `LLMSidecarResult` JSON schema unchanged.
+- Kept LLM sidecar Markdown report structure unchanged.
+- Kept deterministic review and batch JSON schemas unchanged.
+- Kept deterministic Markdown report structure unchanged.
+- Kept deterministic quality-gate semantics unchanged.
+- Added no real PydanticAI SDK execution, no real API requests, and no API-key
+  secret resolution.
+
 - TASK-0043 is complete.
 - Added `LLMProviderConfig` plus structured provider-name validation and
   config loading under `src/content_review_engine/llm/config.py`.

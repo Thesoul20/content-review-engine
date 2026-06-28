@@ -461,6 +461,8 @@ Current behavior:
 - unknown providers raise `LLMProviderConfigError`
 - the factory does not read environment variables, perform network requests,
   or depend on the CLI layer
+- `src/content_review_engine/llm/pydanticai.py` is only a future skeleton and
+  does not import a real PydanticAI SDK or implement provider review logic
 
 ---
 

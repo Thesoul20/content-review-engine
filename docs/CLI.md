@@ -60,6 +60,8 @@ Single-file `review` constraints:
   not-implemented error
 - `--llm-model`, `--llm-api-key-env`, and `--llm-base-url` are stored in
   `LLMProviderConfig` for future provider work
+- the reserved `pydanticai` adapter path is only a future skeleton and does
+  not load a real SDK, read API-key values, or make network requests
 - the CLI does not support a plaintext `--llm-api-key` argument
 - the LLM result is written as a separate UTF-8 JSON sidecar file in
   `LLMSidecarResult` format
@@ -102,6 +104,7 @@ Provider notes:
   the default provider
 - `pydanticai` is reserved for a future real provider boundary and currently
   fails fast with a clear not-implemented error
+- `pydanticai` does not fallback to `mock`
 - the CLI stores only the `api_key_env` name in config and does not read or
   print secret values
 
@@ -130,6 +133,8 @@ Batch constraints:
   not-implemented error
 - `--llm-model`, `--llm-api-key-env`, and `--llm-base-url` are config-only
   fields until a future real provider is implemented
+- the reserved `pydanticai` adapter path is only a future skeleton and does
+  not load a real SDK, read API-key values, or make network requests
 - the CLI does not support a plaintext `--llm-api-key` argument
 - the batch command writes one separate UTF-8 `LLMSidecarResult` JSON sidecar
   per reviewed Markdown file

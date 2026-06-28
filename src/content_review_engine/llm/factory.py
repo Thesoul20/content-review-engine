@@ -5,9 +5,9 @@ from collections.abc import Callable
 from content_review_engine.llm.config import LLMProviderConfig
 from content_review_engine.llm.errors import (
     LLMProviderConfigError,
-    LLMProviderNotImplementedError,
 )
 from content_review_engine.llm.mock import MockLLMReviewer
+from content_review_engine.llm.pydanticai import raise_pydanticai_not_implemented
 from content_review_engine.llm.provider import LLMReviewer
 
 ProviderFactory = Callable[[LLMProviderConfig], LLMReviewer]
@@ -19,9 +19,8 @@ def _create_mock_reviewer(config: LLMProviderConfig) -> LLMReviewer:
 
 
 def _create_pydanticai_reviewer(config: LLMProviderConfig) -> LLMReviewer:
-    raise LLMProviderNotImplementedError(
-        f"Provider {config.provider!r} is recognized but not implemented yet."
-    )
+    del config
+    raise_pydanticai_not_implemented()
 
 
 LLM_PROVIDER_REGISTRY: dict[str, ProviderFactory] = {
