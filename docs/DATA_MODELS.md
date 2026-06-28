@@ -255,6 +255,13 @@ LLMReviewResult
   = optional appended Markdown section input only
 ```
 
+Current optional sidecar Markdown report boundary:
+
+```text
+LLMSidecarResult
+  = optional standalone Markdown sidecar report input
+```
+
 Current guarantees:
 
 - `LLMReviewResult` is not embedded inside `ReviewResult`
@@ -273,6 +280,8 @@ Current guarantees:
 - batch sidecars also write `llm-review-manifest.json` with aggregate
   `file_count`, `succeeded_count`, `failed_count`, `skipped_count`, and
   `finding_count`
+- successful manifest entries can include nested `LLMReviewResult` so the
+  optional standalone sidecar Markdown report can render per-file findings
 - provider-specific structured output is converted before serialization, so a
   successful sidecar entry can still embed an `LLMReviewResult` even when the
   provider uses PydanticAI internally
@@ -288,6 +297,8 @@ The stable schema version is `llm-sidecar-result.v1`.
 It is distinct from both `ReviewResult` and `LLMReviewResult`.
 It exists to let CLI callers record success, failure, and partial success
 without changing the deterministic review schema or quality-gate behavior.
+The same structure is also the input to the standalone LLM sidecar Markdown
+report renderer.
 
 | Field | Required | Description |
 |---|---|---|

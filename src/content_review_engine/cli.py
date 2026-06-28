@@ -49,6 +49,7 @@ from content_review_engine.llm import (
 from content_review_engine.parser import read_markdown
 from content_review_engine.reports import (
     render_batch_markdown_report,
+    render_llm_sidecar_markdown_report,
     render_markdown_report,
 )
 from content_review_engine.review import review_document, review_markdown_directory
@@ -146,6 +147,10 @@ def build_parser() -> argparse.ArgumentParser:
     review_parser.add_argument(
         "--llm-output",
         help="Write the experimental LLM review result JSON sidecar to a file.",
+    )
+    review_parser.add_argument(
+        "--llm-markdown-output",
+        help="Write the experimental LLM sidecar Markdown report to a file.",
     )
     review_parser.add_argument(
         "--include-llm-report",
@@ -263,6 +268,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--llm-output-dir",
         default=None,
         help="Write experimental per-file LLM review JSON sidecars under this directory.",
+    )
+    batch_parser.add_argument(
+        "--llm-markdown-output",
+        default=None,
+        help="Write the experimental batch LLM sidecar Markdown report to a file.",
     )
     batch_parser.add_argument(
         "--llm-model",
@@ -534,6 +544,8 @@ def _validate_review_llm_args(args: argparse.Namespace) -> None:
             raise ValueError("--llm-api-key-env requires --enable-llm")
         if args.llm_base_url is not None:
             raise ValueError("--llm-base-url requires --enable-llm")
+        if args.llm_markdown_output is not None:
+            raise ValueError("--llm-markdown-output requires --enable-llm")
         if args.include_llm_report:
             raise ValueError("--include-llm-report requires --enable-llm")
         return
@@ -565,6 +577,8 @@ def _validate_batch_llm_args(args: argparse.Namespace) -> None:
             raise ValueError("--llm-api-key-env requires --enable-llm")
         if args.llm_base_url is not None:
             raise ValueError("--llm-base-url requires --enable-llm")
+        if args.llm_markdown_output is not None:
+            raise ValueError("--llm-markdown-output requires --enable-llm")
         return
 
     if args.llm_output_dir is None:
@@ -665,12 +679,24 @@ def _build_batch_llm_manifest_path(*, llm_output_dir: str) -> Path:
 
 
 def _clone_llm_sidecar_file_without_review(file: LLMSidecarFile) -> LLMSidecarFile:
-    return LLMSidecarFile(
-        path=file.path,
-        status=file.status,
-        finding_count=file.finding_count,
-        error=file.error,
-    )
+    return LLMSidecarFile.model_validate(file.model_dump(mode="python"))
+
+
+def _write_llm_markdown_report(
+    *,
+    sidecar_result: LLMSidecarResult,
+    output_path: str,
+) -> None:
+    report_path = Path(output_path)
+    try:
+        report_path.write_text(
+            render_llm_sidecar_markdown_report(sidecar_result),
+            encoding="utf-8",
+        )
+    except OSError as exc:
+        raise ValueError(
+            f"Failed to write LLM Markdown report: {report_path}: {exc}"
+        ) from exc
 
 
 def _run_llm_sidecar_for_file(
@@ -772,10 +798,16 @@ def _run_review_command(args: argparse.Namespace) -> int:
     if output_exit_code != 0:
         return output_exit_code
     if args.enable_llm:
+        llm_sidecar_result = build_llm_sidecar_result([llm_sidecar_file])
         _write_llm_sidecar(
-            sidecar_result=build_llm_sidecar_result([llm_sidecar_file]),
+            sidecar_result=llm_sidecar_result,
             output_path=args.llm_output,
         )
+        if args.llm_markdown_output is not None:
+            _write_llm_markdown_report(
+                sidecar_result=llm_sidecar_result,
+                output_path=args.llm_markdown_output,
+            )
     return _quality_gate_exit_code(
         review_result.summary.severity_counts,
         args.fail_on,
@@ -802,13 +834,18 @@ def _run_batch_command(args: argparse.Namespace) -> int:
     if output_exit_code != 0:
         return output_exit_code
     if args.enable_llm:
-        _write_batch_llm_sidecars(
+        manifest_result = _write_batch_llm_sidecars(
             batch_result=batch_result,
             input_dir=args.input_dir,
             llm_output_dir=args.llm_output_dir,
             profile_name=profile.name,
             reviewer=llm_reviewer,
         )
+        if args.llm_markdown_output is not None:
+            _write_llm_markdown_report(
+                sidecar_result=manifest_result,
+                output_path=args.llm_markdown_output,
+            )
     return _quality_gate_exit_code(
         batch_result.summary.severity_counts,
         args.fail_on,

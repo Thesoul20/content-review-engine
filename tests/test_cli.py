@@ -730,6 +730,31 @@ def test_cli_review_llm_base_url_requires_enable_llm(
     assert "Error: --llm-base-url requires --enable-llm" in captured.err
 
 
+def test_cli_review_llm_markdown_output_requires_enable_llm(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    markdown_path = "tests/fixtures/markdown/clean_article.md"
+    profile_path = "tests/fixtures/profiles/default.yml"
+
+    exit_code = main(
+        [
+            "review",
+            markdown_path,
+            "--profile",
+            profile_path,
+            "--llm-markdown-output",
+            str(tmp_path / "review.llm.md"),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert captured.out == ""
+    assert "Error: --llm-markdown-output requires --enable-llm" in captured.err
+
+
 def test_cli_review_rejects_unsupported_llm_provider(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
@@ -934,6 +959,143 @@ def test_cli_review_pydanticai_provider_writes_sidecar_with_fake_provider(
     assert llm_payload["files"][0]["review"]["provider"] == "pydanticai-openai"
     assert llm_payload["files"][0]["review"]["model"] == "gpt-4o-mini"
     assert llm_payload["files"][0]["review"]["findings"][0]["rule_id"] == "llm_semantic_risk"
+
+
+def test_cli_review_llm_markdown_output_writes_single_file_report(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    markdown_path = "tests/fixtures/markdown/clean_article.md"
+    profile_path = "tests/fixtures/profiles/default.yml"
+    llm_output_path = tmp_path / "review.llm.json"
+    llm_markdown_output_path = tmp_path / "review.llm.md"
+
+    from content_review_engine.llm import LLMReviewFinding, LLMReviewResult
+
+    def fake_review(self, request):  # type: ignore[no-untyped-def]
+        del self, request
+        return LLMReviewResult(
+            findings=(
+                LLMReviewFinding(
+                    rule_id="llm_semantic_risk",
+                    severity="warning",
+                    message="Possible unsupported claim.",
+                    suggestion="Add evidence.",
+                ),
+            )
+        )
+
+    monkeypatch.setattr("content_review_engine.llm.mock.MockLLMReviewer.review", fake_review)
+
+    exit_code = main(
+        [
+            "review",
+            markdown_path,
+            "--profile",
+            profile_path,
+            "--enable-llm",
+            "--llm-output",
+            str(llm_output_path),
+            "--llm-markdown-output",
+            str(llm_markdown_output_path),
+        ]
+    )
+
+    captured = capsys.readouterr()
+    markdown_report = llm_markdown_output_path.read_text(encoding="utf-8")
+
+    assert exit_code == 0
+    assert captured.err == ""
+    assert markdown_report.startswith("# LLM Sidecar Review Report\n")
+    assert "| File | Status | Findings | Error |" in markdown_report
+    assert "| tests/fixtures/markdown/clean_article.md | success | 1 | - |" in markdown_report
+    assert "Possible unsupported claim." in markdown_report
+    assert "Add evidence." in markdown_report
+
+
+def test_cli_review_llm_markdown_output_does_not_change_deterministic_markdown_output(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    markdown_path = "tests/fixtures/markdown/clean_article.md"
+    profile_path = "tests/fixtures/profiles/default.yml"
+    llm_output_path = tmp_path / "review.llm.json"
+    llm_markdown_output_path = tmp_path / "review.llm.md"
+
+    exit_code = main(
+        [
+            "review",
+            markdown_path,
+            "--profile",
+            profile_path,
+            "--format",
+            "markdown",
+            "--enable-llm",
+            "--llm-output",
+            str(llm_output_path),
+            "--llm-markdown-output",
+            str(llm_markdown_output_path),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "# Content Review Report" in captured.out
+    assert "## LLM Review" not in captured.out
+    assert "LLM Sidecar Review Report" in llm_markdown_output_path.read_text(
+        encoding="utf-8"
+    )
+
+
+def test_cli_review_quality_gate_ignores_llm_markdown_report(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    markdown_path = "tests/fixtures/markdown/clean_article.md"
+    profile_path = "tests/fixtures/profiles/default.yml"
+    llm_output_path = tmp_path / "review.llm.json"
+    llm_markdown_output_path = tmp_path / "review.llm.md"
+
+    from content_review_engine.llm import LLMReviewFinding, LLMReviewResult
+
+    def fake_review(self, request):  # type: ignore[no-untyped-def]
+        del self, request
+        return LLMReviewResult(
+            findings=(
+                LLMReviewFinding(
+                    rule_id="llm_critical_issue",
+                    severity="critical",
+                    message="Critical semantic issue.",
+                ),
+            )
+        )
+
+    monkeypatch.setattr("content_review_engine.llm.mock.MockLLMReviewer.review", fake_review)
+
+    exit_code = main(
+        [
+            "review",
+            markdown_path,
+            "--profile",
+            profile_path,
+            "--fail-on",
+            "warning",
+            "--enable-llm",
+            "--llm-output",
+            str(llm_output_path),
+            "--llm-markdown-output",
+            str(llm_markdown_output_path),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "Findings: 0" in captured.out
+    assert captured.err == ""
 
 
 def test_cli_missing_markdown_file_returns_non_zero(
@@ -2417,16 +2579,28 @@ def test_cli_batch_enable_llm_writes_mock_sidecars_without_changing_batch_json(
                 "path": "tests/fixtures/batch/articles/clean.md",
                 "status": "success",
                 "finding_count": 0,
+                "review": {
+                    "schema_version": "llm-review-result.v1",
+                    "findings": [],
+                },
             },
             {
                 "path": "tests/fixtures/batch/articles/forbidden.md",
                 "status": "success",
                 "finding_count": 0,
+                "review": {
+                    "schema_version": "llm-review-result.v1",
+                    "findings": [],
+                },
             },
             {
                 "path": "tests/fixtures/batch/articles/nested/nested_forbidden.md",
                 "status": "success",
                 "finding_count": 0,
+                "review": {
+                    "schema_version": "llm-review-result.v1",
+                    "findings": [],
+                },
             },
         ],
     }
@@ -2636,6 +2810,31 @@ def test_cli_batch_llm_base_url_requires_enable_llm(
     assert "Error: --llm-base-url requires --enable-llm" in captured.err
 
 
+def test_cli_batch_llm_markdown_output_requires_enable_llm(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    input_dir = "tests/fixtures/batch/articles"
+    profile_path = "tests/fixtures/batch/profile.yml"
+
+    exit_code = main(
+        [
+            "batch",
+            input_dir,
+            "--profile",
+            profile_path,
+            "--llm-markdown-output",
+            str(tmp_path / "batch.llm.md"),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert captured.out == ""
+    assert "Error: --llm-markdown-output requires --enable-llm" in captured.err
+
+
 def test_cli_batch_rejects_unsupported_llm_provider(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
@@ -2824,6 +3023,64 @@ def test_cli_batch_pydanticai_provider_writes_sidecars_with_fake_provider(
     )
 
 
+def test_cli_batch_llm_markdown_output_writes_batch_report(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    input_dir = "tests/fixtures/batch/articles"
+    profile_path = "tests/fixtures/batch/profile.yml"
+    llm_output_dir = tmp_path / "llm-sidecars"
+    llm_markdown_output_path = tmp_path / "batch.llm.md"
+
+    from content_review_engine.llm import LLMProviderError, LLMReviewFinding, LLMReviewResult
+
+    def fake_review(self, request):  # type: ignore[no-untyped-def]
+        del self
+        if Path(request.content_path).name == "forbidden.md":
+            raise LLMProviderError("mock provider failure")
+        return LLMReviewResult(
+            findings=(
+                LLMReviewFinding(
+                    rule_id="llm_semantic_risk",
+                    severity="warning",
+                    message=f"Finding for {Path(request.content_path).name}.",
+                ),
+            )
+        )
+
+    monkeypatch.setattr("content_review_engine.llm.mock.MockLLMReviewer.review", fake_review)
+
+    exit_code = main(
+        [
+            "batch",
+            input_dir,
+            "--profile",
+            profile_path,
+            "--recursive",
+            "--enable-llm",
+            "--llm-output-dir",
+            str(llm_output_dir),
+            "--llm-markdown-output",
+            str(llm_markdown_output_path),
+        ]
+    )
+
+    captured = capsys.readouterr()
+    markdown_report = llm_markdown_output_path.read_text(encoding="utf-8")
+
+    assert exit_code == 0
+    assert captured.err == ""
+    assert markdown_report.startswith("# Batch LLM Sidecar Review Report\n")
+    assert "| Files | 3 |" in markdown_report
+    assert "| Succeeded | 2 |" in markdown_report
+    assert "| Failed | 1 |" in markdown_report
+    assert "| tests/fixtures/batch/articles/forbidden.md | failed | 0 | LLMProviderError: mock provider failure |" in markdown_report
+    assert "Finding for clean.md." in markdown_report
+    assert "Finding for nested_forbidden.md." in markdown_report
+    assert "LLM review failed." in markdown_report
+
+
 def test_cli_batch_quality_gate_ignores_llm_findings(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -2930,6 +3187,10 @@ def test_cli_batch_llm_partial_failure_writes_manifest_and_keeps_deterministic_o
             "path": "tests/fixtures/batch/articles/clean.md",
             "status": "success",
             "finding_count": 0,
+            "review": {
+                "schema_version": "llm-review-result.v1",
+                "findings": [],
+            },
         },
         {
             "path": "tests/fixtures/batch/articles/forbidden.md",
@@ -2944,6 +3205,10 @@ def test_cli_batch_llm_partial_failure_writes_manifest_and_keeps_deterministic_o
             "path": "tests/fixtures/batch/articles/nested/nested_forbidden.md",
             "status": "success",
             "finding_count": 0,
+            "review": {
+                "schema_version": "llm-review-result.v1",
+                "findings": [],
+            },
         },
     ]
     assert failed_sidecar_payload["files"] == [
@@ -2957,6 +3222,42 @@ def test_cli_batch_llm_partial_failure_writes_manifest_and_keeps_deterministic_o
             },
         }
     ]
+
+
+def test_cli_batch_llm_markdown_output_does_not_change_deterministic_markdown_output(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    input_dir = "tests/fixtures/batch/articles"
+    profile_path = "tests/fixtures/batch/profile.yml"
+    llm_output_dir = tmp_path / "llm-sidecars"
+    llm_markdown_output_path = tmp_path / "batch.llm.md"
+
+    exit_code = main(
+        [
+            "batch",
+            input_dir,
+            "--profile",
+            profile_path,
+            "--recursive",
+            "--format",
+            "markdown",
+            "--enable-llm",
+            "--llm-output-dir",
+            str(llm_output_dir),
+            "--llm-markdown-output",
+            str(llm_markdown_output_path),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "# Batch Content Review Report" in captured.out
+    assert "## LLM Review" not in captured.out
+    assert "Batch LLM Sidecar Review Report" in llm_markdown_output_path.read_text(
+        encoding="utf-8"
+    )
 
 
 def test_cli_batch_sidecar_write_failure_returns_friendly_error(

@@ -215,14 +215,17 @@ Current status:
 - PydanticAI exists only in the LLM provider layer
 - the CLI can optionally route single-file and batch sidecar review to `mock`
   or `pydanticai-openai`
+- the CLI can optionally write a separate LLM sidecar Markdown report for
+  single-file or batch sidecar output through `--llm-markdown-output`
 - the single-file Markdown report can now optionally append a separate
   `LLMReviewResult` section when `--format markdown`, `--enable-llm`, and
   `--include-llm-report` are all enabled
 - no LLM output is merged into the current `ReviewResult`
 - no LLM output is merged into deterministic severity counts, rule counts, or
   quality-gate evaluation
-- batch review now supports per-file `LLMReviewResult` sidecars only and still
-  has no LLM report integration
+- batch review now supports per-file `LLMSidecarResult` JSON sidecars, an
+  aggregate `llm-review-manifest.json`, and an optional separate batch LLM
+  sidecar Markdown report
 - the canonical deterministic JSON output schema remains unchanged
 
 The intended future boundary is:
@@ -258,7 +261,17 @@ LLM Markdown section
 Deterministic Markdown report + optional appended LLM section
 ```
 
-The optional Markdown integration is a presentation-only adapter boundary:
+Independent LLM sidecar Markdown report boundary:
+
+```text
+LLMSidecarResult
+  ↓ optional explicit CLI opt-in
+render_llm_sidecar_markdown_report
+  ↓
+Standalone LLM sidecar Markdown report
+```
+
+The optional Markdown integrations are presentation-only adapter boundaries:
 
 Current batch sidecar boundary:
 
@@ -296,11 +309,13 @@ Current batch path guarantees:
 - the sidecar path preserves the file path relative to the batch input
   directory and appends `.llm-review.json`
 - each batch run also writes `llm-review-manifest.json` with aggregate status
-  counts and per-file status entries
+  counts, per-file status entries, and success-entry nested `review` payloads
+- the batch CLI can also render that manifest into a separate Markdown sidecar
+  report through `--llm-markdown-output`
 - a failed LLM review for one file is recorded in sidecar JSON and does not
   stop LLM sidecar generation for other files
 - the canonical `BatchReviewResult` schema is unchanged
-- batch Markdown reports remain deterministic-only
+- deterministic batch Markdown reports remain deterministic-only
 - batch quality gates still read only deterministic findings
 
 - `render_markdown_report` can accept `llm_result: LLMReviewResult | None`
@@ -312,6 +327,8 @@ Current batch path guarantees:
   `--fail-on`
 - the separate `LLMSidecarResult` JSON sidecar is still written and remains
   the machine-readable contract
+- the separate LLM sidecar Markdown report is derived from
+  `LLMSidecarResult` and does not alter deterministic report structure
 
 The current `LLMReviewFinding`, `LLMReviewSummary`, and `LLMReviewResult`
 models exist so later tasks can add provider adapters, prompt versioning, and

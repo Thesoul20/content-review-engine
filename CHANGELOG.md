@@ -8,6 +8,47 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0042
+
+### Added
+
+- Added `src/content_review_engine/reports/llm_markdown.py` with a stable
+  standalone Markdown renderer for `LLMSidecarResult`.
+- Added optional `--llm-markdown-output` to `content-review review` and
+  `content-review batch`.
+- Added `tests/test_llm_markdown_report.py` covering single-file success,
+  empty findings, failed entries, batch success, partial failure, all failed,
+  skipped entries, summary output, and Markdown table escaping.
+- Added CLI tests covering single-file and batch LLM sidecar Markdown report
+  output, argument validation, deterministic Markdown isolation, and quality
+  gate isolation.
+
+### Changed
+
+- Updated `src/content_review_engine/cli.py` so single-file and batch LLM
+  sidecar flows can write a separate Markdown report derived from the same
+  `LLMSidecarResult` data.
+- Updated batch manifest generation to retain nested successful `review`
+  payloads so `llm-review-manifest.json` can be rendered directly into a
+  human-readable Markdown sidecar report.
+- Updated `docs/CLI.md`, `docs/ARCHITECTURE.md`, `docs/DATA_MODELS.md`, and
+  `docs/CI.md` to document the standalone LLM sidecar Markdown report path and
+  its continued separation from deterministic quality gates.
+- Updated `PROJECT_STATE.md` to record TASK-0042 completion.
+- Kept the canonical deterministic review and batch JSON schemas unchanged.
+- Kept deterministic Markdown report structure unchanged.
+- Kept deterministic quality-gate semantics unchanged.
+
+### Not Added
+
+- No real OpenAI, Anthropic, or new provider integration.
+- No new external LLM SDK dependency.
+- No LLM merge into `ReviewResult` or deterministic Markdown report sections.
+- No quality-gate counting of LLM findings, LLM sidecar failures, or LLM
+  sidecar Markdown reports.
+- No API, MCP, GUI, streaming, retry policy, cache, token accounting, cost
+  tracking, telemetry, or tracing integration.
+
 ## TASK-0041
 
 ### Added

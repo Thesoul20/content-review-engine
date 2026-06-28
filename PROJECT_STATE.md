@@ -85,6 +85,30 @@ use.
 
 ## Recent Completion
 
+- TASK-0042 is complete.
+- Added `render_llm_sidecar_markdown_report` for standalone LLM sidecar
+  Markdown output from `LLMSidecarResult`.
+- Single-file `review` now supports optional `--llm-markdown-output` for a
+  separate LLM sidecar Markdown report.
+- Batch `batch` now supports optional `--llm-markdown-output` for a separate
+  Markdown report rendered from `llm-review-manifest.json`.
+- The standalone LLM sidecar Markdown report shows top-level summary,
+  per-file status, structured errors, skipped entries, and successful-file
+  LLM findings.
+- Batch manifests now retain nested success `review` payloads so the optional
+  batch Markdown sidecar report can render per-file findings directly from the
+  manifest.
+- Added dedicated LLM Markdown report tests plus CLI tests for single-file and
+  batch Markdown sidecar output, deterministic Markdown isolation, and quality
+  gate isolation.
+- Updated CLI, architecture, data-model, and CI documentation for the new
+  standalone sidecar Markdown report path.
+- Kept deterministic review and batch JSON schemas unchanged.
+- Kept deterministic Markdown report structure unchanged.
+- Kept deterministic quality-gate semantics unchanged.
+- Added no real provider integration, no new API-key configuration, no new
+  external LLM SDK dependency, and no LLM merge into `ReviewResult`.
+
 - TASK-0041 is complete.
 - Added `LLMSidecarResult`, `LLMSidecarSummary`, per-file sidecar status, and
   structured sidecar errors for CLI LLM output.

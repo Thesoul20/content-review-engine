@@ -14,8 +14,8 @@ suppression comments, counts, and quality gates, see
 ## Current Command
 
 ```bash
-uv run content-review review <markdown_file> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--fail-on info|warning|error|critical] [--enable-llm --llm-output <file> [--llm-provider mock|pydanticai-openai] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>] [--include-llm-report]]
-uv run content-review batch <input_dir> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--recursive] [--pattern "*.md"] [--fail-on info|warning|error|critical] [--enable-llm --llm-output-dir <dir> [--llm-provider mock|pydanticai-openai] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>]]
+uv run content-review review <markdown_file> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--fail-on info|warning|error|critical] [--enable-llm --llm-output <file> [--llm-markdown-output <file>] [--llm-provider mock|pydanticai-openai] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>] [--include-llm-report]]
+uv run content-review batch <input_dir> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--recursive] [--pattern "*.md"] [--fail-on info|warning|error|critical] [--enable-llm --llm-output-dir <dir> [--llm-markdown-output <file>] [--llm-provider mock|pydanticai-openai] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>]]
 uv run content-review profile validate <profile_file> [--format text|json]
 uv run content-review profile init --template <general-basic|general-publishing|health-content|marketing-copy|technical-blog|wechat-basic|wechat-article|wechat-strict> --output <profile_file> [--force]
 uv run content-review profile list [--format text|json]
@@ -35,6 +35,7 @@ Single-file `review` now supports an explicit experimental LLM sidecar flow:
 ```bash
 uv run content-review review article.md --profile profile.yaml --enable-llm --llm-output article.llm.json
 uv run content-review review article.md --profile profile.yaml --enable-llm --llm-provider mock --llm-output article.llm.json
+uv run content-review review article.md --profile profile.yaml --enable-llm --llm-output article.llm.json --llm-markdown-output article.llm.md
 uv run content-review review article.md --profile profile.yaml --format markdown --enable-llm --llm-output article.llm.json --include-llm-report
 OPENAI_API_KEY=your-key uv run content-review review article.md --profile profile.yaml --enable-llm --llm-provider pydanticai-openai --llm-model gpt-4o-mini --llm-output article.llm.json
 LLM_GATEWAY_KEY=your-key uv run content-review review article.md --profile profile.yaml --enable-llm --llm-provider pydanticai-openai --llm-model gpt-4o-mini --llm-api-key-env LLM_GATEWAY_KEY --llm-base-url https://example.com/v1 --llm-output article.llm.json
@@ -51,6 +52,7 @@ Single-file `review` constraints:
 - `--llm-model` without `--enable-llm` fails
 - `--llm-api-key-env` without `--enable-llm` fails
 - `--llm-base-url` without `--enable-llm` fails
+- `--llm-markdown-output` without `--enable-llm` fails
 - `--include-llm-report` without `--enable-llm` fails
 - `--include-llm-report` requires `--format markdown`
 - `--include-llm-report` fails for `--format json`
@@ -63,6 +65,8 @@ Single-file `review` constraints:
   endpoint for `pydanticai-openai`
 - the LLM result is written as a separate UTF-8 JSON sidecar file in
   `LLMSidecarResult` format
+- `--llm-markdown-output` optionally writes a separate UTF-8 Markdown sidecar
+  report rendered from the same `LLMSidecarResult`
 - `--include-llm-report` only affects single-file Markdown report rendering and
   does not replace the required `--llm-output` sidecar JSON
 
@@ -77,6 +81,9 @@ Single-file sidecar shape:
 - failed entries include `error.error_type` and `error.message`
 - LLM sidecar failure does not change deterministic review output or
   quality-gate evaluation
+- the optional sidecar Markdown report shows the same summary, per-file
+  status, structured errors, and successful-file findings without changing
+  the main deterministic Markdown report
 
 Current behavior guarantees:
 
@@ -108,6 +115,7 @@ flow:
 ```bash
 uv run content-review batch articles --profile profile.yaml --recursive --enable-llm --llm-output-dir llm-sidecars
 uv run content-review batch articles --profile profile.yaml --recursive --enable-llm --llm-provider mock --llm-output-dir llm-sidecars
+uv run content-review batch articles --profile profile.yaml --recursive --enable-llm --llm-output-dir llm-sidecars --llm-markdown-output llm-sidecars.md
 OPENAI_API_KEY=your-key uv run content-review batch articles --profile profile.yaml --recursive --enable-llm --llm-provider pydanticai-openai --llm-model gpt-4o-mini --llm-output-dir llm-sidecars
 LLM_GATEWAY_KEY=your-key uv run content-review batch articles --profile profile.yaml --recursive --enable-llm --llm-provider pydanticai-openai --llm-model gpt-4o-mini --llm-api-key-env LLM_GATEWAY_KEY --llm-base-url https://example.com/v1 --llm-output-dir llm-sidecars
 ```
@@ -121,6 +129,7 @@ Batch constraints:
 - `--llm-model` without `--enable-llm` fails
 - `--llm-api-key-env` without `--enable-llm` fails
 - `--llm-base-url` without `--enable-llm` fails
+- `--llm-markdown-output` without `--enable-llm` fails
 - `--llm-provider` supports `mock` and `pydanticai-openai`
 - `--llm-provider mock` does not require `--llm-model`
 - `--llm-provider mock` does not read any API key
@@ -135,6 +144,8 @@ Batch constraints:
 - the batch command also writes
   `--llm-output-dir/llm-review-manifest.json` as an aggregate
   `LLMSidecarResult` summary
+- `--llm-markdown-output` optionally writes one separate UTF-8 Markdown sidecar
+  report rendered from the aggregate manifest
 
 Sidecar path rule:
 
@@ -155,6 +166,8 @@ Batch sidecar behavior:
   `status`, `finding_count`, optional nested `review`, and optional `error`
 - `llm-review-manifest.json` aggregates the full run with `file_count`,
   `succeeded_count`, `failed_count`, `skipped_count`, and `finding_count`
+- successful manifest entries can include nested `review` payloads so the
+  optional batch Markdown sidecar report can show per-file LLM findings
 - batch LLM review supports partial success; one file with `status = failed`
   does not block other files from generating sidecars
 - failed entries expose only `error_type` and `message`, not tracebacks or
@@ -170,7 +183,8 @@ Batch behavior guarantees:
 - deterministic severity counts and rule counts are unchanged
 - deterministic finding order is unchanged
 - quality-gate evaluation still reads only deterministic findings
-- no batch aggregate LLM report is produced
+- the optional batch LLM sidecar Markdown report is independent from the
+  deterministic batch Markdown report and does not affect `--fail-on`
 
 ## Regex Rules
 
