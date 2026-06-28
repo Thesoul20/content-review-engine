@@ -85,6 +85,32 @@ use.
 
 ## Recent Completion
 
+- TASK-0047 is complete.
+- Updated `src/content_review_engine/llm/pydanticai.py` so
+  `PydanticAIReviewer.review()` now resolves secrets, builds the stable
+  request payload, executes a real PydanticAI runtime call, validates the
+  structured response, and maps it back into `LLMReviewResult`.
+- Updated CLI/provider wiring so `--enable-llm --llm-provider pydanticai`
+  keeps secret preflight, no longer returns not-implemented when the secret
+  exists, and now attempts a real sidecar review for single-file and batch
+  commands.
+- Added runtime-focused PydanticAI provider tests for empty/single/multiple
+  findings, summary mapping, invalid responses, runtime exception
+  normalization, no fallback to `mock`, no-network fake runtime execution,
+  missing-model config errors, and secret redaction.
+- Added CLI coverage for fake-runtime `pydanticai` single-file sidecar JSON +
+  Markdown output and batch sidecar JSON + Markdown output without real
+  network access.
+- Updated architecture, data-model, CLI, and CI docs for the real runtime
+  boundary and continued deterministic quality-gate isolation.
+- Kept `LLMSidecarResult` JSON schema unchanged.
+- Kept LLM sidecar Markdown report structure unchanged.
+- Kept deterministic review and batch JSON schemas unchanged.
+- Kept deterministic Markdown report structure unchanged.
+- Kept deterministic quality-gate semantics unchanged.
+- Added no retry, timeout, rate-limit, streaming, batch concurrency, fallback
+  model, API/MCP/GUI, or deterministic/LLM merge behavior.
+
 - TASK-0046 is complete.
 - Added `src/content_review_engine/llm/pydanticai_mapping.py` with a stable
   request payload builder, system/user prompt construction, structured

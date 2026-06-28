@@ -362,19 +362,19 @@ Current LLM provider-boundary status:
   `ResolvedLLMSecret`
 - `src/content_review_engine/llm/mock.py` defines `MockLLMReviewer`, a
   deterministic adapter for tests and future wiring work
-- `src/content_review_engine/llm/pydanticai.py` is now only an explicit future
-  provider skeleton; it can import the minimal PydanticAI dependency, validate
-  secret availability through the shared resolver, build a stable request
-  payload through the mapping layer, and still stops before any real review
-  call or network request
+- `src/content_review_engine/llm/pydanticai.py` now implements the real
+  provider adapter boundary for `pydanticai`; it resolves secrets through the
+  shared resolver, builds provider-local request payloads through the mapping
+  layer, executes the PydanticAI runtime, maps structured responses back into
+  `LLMReviewResult`, and normalizes runtime failures into stable provider
+  errors
 - `src/content_review_engine/llm/pydanticai_mapping.py` now defines the
   provider-local request builder, system/user prompt construction, structured
   response schema, response validation, and conversion back into
   `LLMReviewResult`
-- the current runnable provider is only `mock`
-- the reserved provider name `pydanticai` is recognized by config loading, can
-  be instantiated as a future skeleton through the factory, and still returns
-  a secret or not-implemented error before any real provider execution
+- the current runnable providers are `mock` and `pydanticai`
+- `pydanticai` still performs CLI secret preflight before sidecar review
+  execution and does not fallback to `mock`
 
 TASK-0036 adds the runner boundary:
 
@@ -424,15 +424,13 @@ Important current boundaries:
 - batch review does not participate in this LLM path
 - provider config parsing and reviewer construction are confined to the
   sidecar adapter path
-- the reserved `pydanticai` adapter path now has an explicit dependency +
-  secret-preflight boundary plus a non-network request/response mapping layer,
-  but it is still intentionally non-runnable until a later task implements the
-  real provider boundary
+- the `pydanticai` adapter path now has an explicit dependency +
+  secret-preflight boundary plus a runtime request/response mapping layer
 - the runner does not read environment variables
 - the deterministic review pipeline, canonical JSON schema, Markdown report,
   and batch flow do not depend on provider-specific secret resolution
 
-Current future `pydanticai` mapping boundary:
+Current `pydanticai` runtime boundary:
 
 ```text
 LLMReviewRequest
@@ -440,7 +438,7 @@ LLMReviewRequest
 PydanticAIReviewMapper
   ↓
 PydanticAIReviewRequestPayload
-  ↓ future runtime call, not implemented yet
+  ↓ PydanticAI runtime call
 PydanticAIReviewResponse
   ↓
 LLMReviewResult
@@ -455,6 +453,8 @@ Mapping-layer notes:
 - response validation raises `LLMResponseValidationError` with stable field
   paths and without embedding full prompts, full article bodies, or secret
   values
+- runtime exceptions are normalized into `LLMProviderError` without leaking
+  secrets, full prompts, full article content, or tracebacks
 - the mapping layer is provider-local; it does not change `LLMReviewResult`,
   `LLMSidecarResult`, deterministic review JSON, deterministic Markdown
   reports, or quality-gate behavior

@@ -1,3 +1,6 @@
+import content_review_engine.llm.mock as mock
+import content_review_engine.llm.pydanticai as pydanticai
+
 from content_review_engine.llm.config import (
     LLM_DEFAULT_PROVIDER_NAME,
     LLM_PROVIDER_NAMES,
@@ -135,6 +138,8 @@ __all__ = [
     "llm_sidecar_result_to_json",
     "llm_sidecar_summary_to_dict",
     "load_llm_provider_config",
+    "mock",
+    "pydanticai",
     "pydanticai_response_to_llm_review_result",
     "resolve_llm_api_key",
     "raise_pydanticai_not_implemented",

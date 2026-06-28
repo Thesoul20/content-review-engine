@@ -433,10 +433,10 @@ Current fields:
 
 | Field | Required | Description |
 |---|---|---|
-| `provider` | Yes | Provider name, default `mock`; recognized values are `mock` and reserved `pydanticai` |
-| `model` | No | Optional model identifier stored for future provider use |
+| `provider` | Yes | Provider name, default `mock`; recognized values are `mock` and `pydanticai` |
+| `model` | No | Optional model identifier; required at runtime for `pydanticai` review execution |
 | `api_key_env` | No | Optional environment variable name only; stores the variable name, not the secret |
-| `base_url` | No | Optional base URL stored for future provider use |
+| `base_url` | No | Optional provider base URL; passed to the `pydanticai` OpenAI-compatible runtime when configured |
 
 Notes:
 
@@ -473,8 +473,8 @@ Notes:
 
 ## PydanticAIReviewRequestPayload
 
-`PydanticAIReviewRequestPayload` stores the internal future-facing request
-payload built for the reserved `pydanticai` provider.
+`PydanticAIReviewRequestPayload` stores the internal request payload built for
+the `pydanticai` provider.
 
 Current fields:
 
@@ -497,7 +497,7 @@ Notes:
 ## PydanticAIReviewFinding
 
 `PydanticAIReviewFinding` stores one structured finding expected from the
-future reserved `pydanticai` provider response.
+`pydanticai` provider response.
 
 Current fields intentionally mirror `LLMReviewFinding` closely:
 
@@ -527,7 +527,7 @@ Notes:
 ## PydanticAIReviewSummary
 
 `PydanticAIReviewSummary` stores optional article-level summary data expected
-from the future reserved `pydanticai` provider response.
+from the `pydanticai` provider response.
 
 Current fields:
 
@@ -543,7 +543,7 @@ Current fields:
 ## PydanticAIReviewResponse
 
 `PydanticAIReviewResponse` stores the structured response contract expected by
-the future reserved `pydanticai` provider.
+the `pydanticai` provider.
 
 Current fields:
 
@@ -569,15 +569,15 @@ Notes:
 Current behavior:
 
 - `provider = "mock"` returns `MockLLMReviewer`
-- `provider = "pydanticai"` returns `PydanticAIReviewer`, a future skeleton
-  that still requires secret preflight, can build provider-local request
-  payloads through `PydanticAIReviewMapper`, and still raises
-  `LLMProviderNotImplementedError` before any real review call
+- `provider = "pydanticai"` returns `PydanticAIReviewer`, which still requires
+  secret preflight, requires `model`, builds provider-local request payloads
+  through `PydanticAIReviewMapper`, executes the PydanticAI runtime, and maps
+  `PydanticAIReviewResponse` back into `LLMReviewResult`
 - unknown providers raise `LLMProviderConfigError`
 - the factory does not read environment variables, perform network requests,
   or depend on the CLI layer
-- `src/content_review_engine/llm/pydanticai.py` is only a future skeleton and
-  does not implement provider review logic
+- response validation failures use `LLMResponseValidationError`
+- runtime execution failures are normalized into `LLMProviderError`
 
 ---
 
@@ -591,7 +591,6 @@ The future LLM adapter boundary now defines minimal error types in
 | `LLMReviewError` | Base exception for future LLM review failures |
 | `LLMProviderConfigError` | Invalid or unsupported provider configuration |
 | `LLMProviderSecretError` | Missing, unset, or empty provider secret configuration |
-| `LLMProviderNotImplementedError` | Recognized provider name that is not implemented yet |
 | `LLMProviderError` | Provider adapter failure, such as transport or upstream execution failure |
 | `LLMResponseValidationError` | Provider output could not be validated as an `LLMReviewResult` or provider-local structured response contract |
 

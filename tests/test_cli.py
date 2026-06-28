@@ -849,16 +849,40 @@ def test_cli_review_mock_provider_accepts_llm_model_and_api_key_env_config(
     assert llm_payload["files"][0]["status"] == "success"
 
 
-def test_cli_review_pydanticai_provider_returns_not_implemented_error(
+def test_cli_review_pydanticai_provider_writes_sidecar_json_and_markdown_report(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     markdown_path = "tests/fixtures/markdown/clean_article.md"
     profile_path = "tests/fixtures/profiles/default.yml"
+    review_output_path = tmp_path / "review.json"
     llm_output_path = tmp_path / "review.llm.json"
+    llm_markdown_output_path = tmp_path / "review.llm.md"
 
     monkeypatch.setenv("CONTENT_REVIEW_TEST_LLM_API_KEY", "test-secret-value")
+    monkeypatch.setattr(
+        "content_review_engine.llm.pydanticai.build_pydanticai_runtime_agent",
+        lambda **kwargs: object(),
+    )
+    monkeypatch.setattr(
+        "content_review_engine.llm.pydanticai.run_pydanticai_runtime_agent",
+        lambda _agent, _payload: {
+            "findings": [
+                {
+                    "rule_id": "llm_semantic_risk",
+                    "severity": "warning",
+                    "message": "Possible unsupported claim.",
+                    "suggestion": "Add evidence.",
+                }
+            ],
+            "summary": {
+                "overall_risk": "medium",
+                "summary": "One issue was detected.",
+                "recommended_action": "Revise before publishing.",
+            },
+        },
+    )
 
     exit_code = main(
         [
@@ -866,6 +890,12 @@ def test_cli_review_pydanticai_provider_returns_not_implemented_error(
             markdown_path,
             "--profile",
             profile_path,
+            "--format",
+            "json",
+            "--output",
+            str(review_output_path),
+            "--fail-on",
+            "warning",
             "--enable-llm",
             "--llm-provider",
             "pydanticai",
@@ -875,19 +905,36 @@ def test_cli_review_pydanticai_provider_returns_not_implemented_error(
             "CONTENT_REVIEW_TEST_LLM_API_KEY",
             "--llm-output",
             str(llm_output_path),
+            "--llm-markdown-output",
+            str(llm_markdown_output_path),
         ]
     )
 
     captured = capsys.readouterr()
+    review_payload = json.loads(review_output_path.read_text(encoding="utf-8"))
+    llm_payload = json.loads(llm_output_path.read_text(encoding="utf-8"))
+    markdown_report = llm_markdown_output_path.read_text(encoding="utf-8")
 
-    assert exit_code == 2
+    assert exit_code == 0
     assert captured.out == ""
-    assert (
-        "Error: Provider 'pydanticai' dependency and secret boundary is available, but review is not implemented yet."
-        in captured.err
-    )
-    assert "test-secret-value" not in captured.err
-    assert not llm_output_path.exists()
+    assert captured.err == ""
+    assert review_payload["schema_version"] == "review-result.v1"
+    assert "llm_review" not in review_payload
+    assert llm_payload["summary"] == {
+        "file_count": 1,
+        "succeeded_count": 1,
+        "failed_count": 0,
+        "skipped_count": 0,
+        "finding_count": 1,
+    }
+    assert llm_payload["files"][0]["status"] == "success"
+    assert llm_payload["files"][0]["review"]["provider"] == "pydanticai"
+    assert llm_payload["files"][0]["review"]["model"] == "gpt-4o-mini"
+    assert llm_payload["files"][0]["review"]["findings"][0]["rule_id"] == "llm_semantic_risk"
+    assert markdown_report.startswith("# LLM Sidecar Review Report\n")
+    assert "llm_semantic_risk" in markdown_report
+    assert "Possible unsupported claim." in markdown_report
+    assert "test-secret-value" not in markdown_report
 
 
 def test_cli_review_pydanticai_provider_requires_api_key_env(
@@ -2901,16 +2948,34 @@ def test_cli_batch_mock_provider_accepts_llm_model_and_api_key_env_config(
     assert llm_payload["files"][0]["status"] == "success"
 
 
-def test_cli_batch_pydanticai_provider_returns_not_implemented_error(
+def test_cli_batch_pydanticai_provider_writes_sidecars_and_markdown_report(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     input_dir = "tests/fixtures/batch/articles"
     profile_path = "tests/fixtures/batch/profile.yml"
+    batch_output_path = tmp_path / "batch.json"
     llm_output_dir = tmp_path / "llm-sidecars"
+    llm_markdown_output_path = tmp_path / "batch.llm.md"
 
     monkeypatch.setenv("CONTENT_REVIEW_TEST_LLM_API_KEY", "test-secret-value")
+    monkeypatch.setattr(
+        "content_review_engine.llm.pydanticai.build_pydanticai_runtime_agent",
+        lambda **kwargs: object(),
+    )
+    monkeypatch.setattr(
+        "content_review_engine.llm.pydanticai.run_pydanticai_runtime_agent",
+        lambda _agent, _payload: {
+            "findings": [
+                {
+                    "rule_id": "llm_semantic_risk",
+                    "severity": "warning",
+                    "message": "Possible unsupported claim.",
+                }
+            ]
+        },
+    )
 
     exit_code = main(
         [
@@ -2919,6 +2984,12 @@ def test_cli_batch_pydanticai_provider_returns_not_implemented_error(
             "--profile",
             profile_path,
             "--recursive",
+            "--format",
+            "json",
+            "--output",
+            str(batch_output_path),
+            "--fail-on",
+            "error",
             "--enable-llm",
             "--llm-provider",
             "pydanticai",
@@ -2928,19 +2999,32 @@ def test_cli_batch_pydanticai_provider_returns_not_implemented_error(
             "CONTENT_REVIEW_TEST_LLM_API_KEY",
             "--llm-output-dir",
             str(llm_output_dir),
+            "--llm-markdown-output",
+            str(llm_markdown_output_path),
         ]
     )
 
     captured = capsys.readouterr()
-
-    assert exit_code == 2
-    assert captured.out == ""
-    assert (
-        "Error: Provider 'pydanticai' dependency and secret boundary is available, but review is not implemented yet."
-        in captured.err
+    batch_payload = json.loads(batch_output_path.read_text(encoding="utf-8"))
+    clean_payload = json.loads(
+        (llm_output_dir / "clean.md.llm-review.json").read_text(encoding="utf-8")
     )
-    assert "test-secret-value" not in captured.err
-    assert not llm_output_dir.exists()
+    manifest_payload = json.loads(
+        (llm_output_dir / "llm-review-manifest.json").read_text(encoding="utf-8")
+    )
+    markdown_report = llm_markdown_output_path.read_text(encoding="utf-8")
+
+    assert exit_code == 0
+    assert captured.out == ""
+    assert captured.err == ""
+    assert batch_payload["schema_version"] == "batch-review-result.v1"
+    assert manifest_payload["summary"]["succeeded_count"] == 3
+    assert manifest_payload["summary"]["finding_count"] == 3
+    assert clean_payload["files"][0]["status"] == "success"
+    assert clean_payload["files"][0]["review"]["provider"] == "pydanticai"
+    assert markdown_report.startswith("# Batch LLM Sidecar Review Report\n")
+    assert "llm_semantic_risk" in markdown_report
+    assert "test-secret-value" not in markdown_report
 
 
 def test_cli_batch_llm_markdown_output_writes_batch_report(

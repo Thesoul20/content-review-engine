@@ -3,22 +3,34 @@ from __future__ import annotations
 import importlib
 import socket
 import sys
+from typing import Any
 
 import pytest
 
 from content_review_engine.llm import (
     LLMProviderConfig,
-    LLMProviderNotImplementedError,
+    LLMProviderConfigError,
+    LLMProviderError,
     LLMProviderSecretError,
+    LLMResponseValidationError,
     LLMReviewRequest,
     LLMReviewer,
     PydanticAIReviewMapper,
     PydanticAIReviewer,
-    PYDANTICAI_NOT_IMPLEMENTED_MESSAGE,
 )
+from content_review_engine.llm.mock import MockLLMReviewer
 
 
-def test_pydanticai_skeleton_satisfies_provider_protocol() -> None:
+def _build_request() -> LLMReviewRequest:
+    return LLMReviewRequest(
+        content="This article claims it is always safe.",
+        profile_name="wechat-strict",
+        content_path="articles/example.md",
+        review_goal="semantic_review",
+    )
+
+
+def test_pydanticai_reviewer_satisfies_provider_protocol() -> None:
     reviewer = PydanticAIReviewer(
         LLMProviderConfig(
             provider="pydanticai",
@@ -31,7 +43,7 @@ def test_pydanticai_skeleton_satisfies_provider_protocol() -> None:
     assert isinstance(reviewer, LLMReviewer)
 
 
-def test_pydanticai_skeleton_review_raises_secret_error_without_secret(
+def test_pydanticai_review_raises_secret_error_without_secret(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.delenv("CONTENT_REVIEW_TEST_LLM_API_KEY", raising=False)
@@ -44,7 +56,7 @@ def test_pydanticai_skeleton_review_raises_secret_error_without_secret(
     )
 
     with pytest.raises(LLMProviderSecretError) as exc_info:
-        reviewer.review(LLMReviewRequest(content="Future provider skeleton request."))
+        reviewer.review(_build_request())
 
     assert (
         str(exc_info.value)
@@ -52,27 +64,154 @@ def test_pydanticai_skeleton_review_raises_secret_error_without_secret(
     )
 
 
-def test_pydanticai_skeleton_review_still_raises_not_implemented_with_secret(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setenv("CONTENT_REVIEW_TEST_LLM_API_KEY", "test-secret-value")
+def test_pydanticai_review_returns_empty_findings_with_fake_runtime() -> None:
+    captured: dict[str, Any] = {}
+
+    def fake_agent_builder(**kwargs):  # type: ignore[no-untyped-def]
+        captured.update(kwargs)
+        return object()
+
+    def fake_runtime_runner(agent, payload):  # type: ignore[no-untyped-def]
+        assert agent is not None
+        assert payload.prompt_version == "pydanticai-review-prompt.v1"
+        return {"findings": []}
+
     reviewer = PydanticAIReviewer(
         LLMProviderConfig(
             provider="pydanticai",
             model="gpt-4o-mini",
             api_key_env="CONTENT_REVIEW_TEST_LLM_API_KEY",
             base_url="https://example.com/v1",
-        )
+        ),
+        secret_resolver=lambda config: reviewer_secret(config.api_key_env or "missing"),
+        agent_builder=fake_agent_builder,
+        runtime_runner=fake_runtime_runner,
     )
 
-    with pytest.raises(LLMProviderNotImplementedError) as exc_info:
-        reviewer.review(LLMReviewRequest(content="Future provider skeleton request."))
+    result = reviewer.review(_build_request())
 
-    assert str(exc_info.value) == PYDANTICAI_NOT_IMPLEMENTED_MESSAGE
+    assert result.provider == "pydanticai"
+    assert result.model == "gpt-4o-mini"
+    assert result.findings == ()
+    assert captured["model"] == "gpt-4o-mini"
+    assert captured["base_url"] == "https://example.com/v1"
+    assert "test-secret-value" not in repr(captured["secret"])
+
+
+def test_pydanticai_review_maps_single_finding_with_fake_runtime() -> None:
+    reviewer = PydanticAIReviewer(
+        LLMProviderConfig(
+            provider="pydanticai",
+            model="gpt-4o-mini",
+            api_key_env="CONTENT_REVIEW_TEST_LLM_API_KEY",
+        ),
+        secret_resolver=lambda config: reviewer_secret(config.api_key_env or "missing"),
+        agent_builder=lambda **kwargs: object(),
+        runtime_runner=lambda _agent, _payload: {
+            "findings": [
+                {
+                    "rule_id": "llm_semantic_risk",
+                    "severity": "warning",
+                    "message": "The claim sounds absolute.",
+                }
+            ]
+        },
+    )
+
+    result = reviewer.review(_build_request())
+
+    assert len(result.findings) == 1
+    assert result.findings[0].rule_id == "llm_semantic_risk"
+    assert result.findings[0].severity == "warning"
+
+
+def test_pydanticai_review_maps_multiple_findings_and_summary_with_fake_runtime() -> None:
+    reviewer = PydanticAIReviewer(
+        LLMProviderConfig(
+            provider="pydanticai",
+            model="gpt-4o-mini",
+            api_key_env="CONTENT_REVIEW_TEST_LLM_API_KEY",
+        ),
+        secret_resolver=lambda config: reviewer_secret(config.api_key_env or "missing"),
+        agent_builder=lambda **kwargs: object(),
+        runtime_runner=lambda _agent, _payload: {
+            "findings": [
+                {
+                    "rule_id": "llm_semantic_risk",
+                    "severity": "warning",
+                    "message": "First finding.",
+                },
+                {
+                    "rule_id": "llm_compliance_gap",
+                    "severity": "error",
+                    "message": "Second finding.",
+                },
+            ],
+            "summary": {
+                "overall_risk": "medium",
+                "summary": "Two issues were detected.",
+                "recommended_action": "Revise before publishing.",
+                "confidence": 0.7,
+            },
+        },
+    )
+
+    result = reviewer.review(_build_request())
+
+    assert [finding.rule_id for finding in result.findings] == [
+        "llm_semantic_risk",
+        "llm_compliance_gap",
+    ]
+    assert result.summary is not None
+    assert result.summary.summary == "Two issues were detected."
+
+
+def test_pydanticai_review_raises_response_validation_error_for_invalid_response() -> None:
+    reviewer = PydanticAIReviewer(
+        LLMProviderConfig(
+            provider="pydanticai",
+            model="gpt-4o-mini",
+            api_key_env="CONTENT_REVIEW_TEST_LLM_API_KEY",
+        ),
+        secret_resolver=lambda config: reviewer_secret(config.api_key_env or "missing"),
+        agent_builder=lambda **kwargs: object(),
+        runtime_runner=lambda _agent, _payload: {
+            "findings": [{"rule_id": "x", "severity": "medium", "message": "bad"}]
+        },
+    )
+
+    with pytest.raises(LLMResponseValidationError) as exc_info:
+        reviewer.review(_build_request())
+
+    message = str(exc_info.value)
+    assert "findings.0.severity" in message
+    assert "test-secret-value" not in message
+    assert _build_request().content not in message
+
+
+def test_pydanticai_review_converts_runtime_exception_to_provider_error() -> None:
+    reviewer = PydanticAIReviewer(
+        LLMProviderConfig(
+            provider="pydanticai",
+            model="gpt-4o-mini",
+            api_key_env="CONTENT_REVIEW_TEST_LLM_API_KEY",
+        ),
+        secret_resolver=lambda config: reviewer_secret(config.api_key_env or "missing"),
+        agent_builder=lambda **kwargs: object(),
+        runtime_runner=lambda _agent, _payload: (_ for _ in ()).throw(
+            RuntimeError("test-secret-value should stay hidden")
+        ),
+    )
+
+    with pytest.raises(LLMProviderError) as exc_info:
+        reviewer.review(_build_request())
+
+    assert str(exc_info.value) == "PydanticAI runtime call failed: RuntimeError."
     assert "test-secret-value" not in str(exc_info.value)
+    assert _build_request().content not in str(exc_info.value)
 
 
-def test_pydanticai_skeleton_only_stores_config_names() -> None:
+def test_pydanticai_reviewer_only_stores_config_names() -> None:
     config = LLMProviderConfig(
         provider="pydanticai",
         model="gpt-4o-mini",
@@ -88,7 +227,7 @@ def test_pydanticai_skeleton_only_stores_config_names() -> None:
     assert isinstance(reviewer.mapping, PydanticAIReviewMapper)
 
 
-def test_pydanticai_skeleton_builds_request_payload_without_network() -> None:
+def test_pydanticai_reviewer_builds_request_payload_without_network() -> None:
     reviewer = PydanticAIReviewer(
         LLMProviderConfig(
             provider="pydanticai",
@@ -97,14 +236,7 @@ def test_pydanticai_skeleton_builds_request_payload_without_network() -> None:
         )
     )
 
-    payload = reviewer.build_request_payload(
-        LLMReviewRequest(
-            content="This content says it is always safe.",
-            profile_name="wechat-strict",
-            content_path="articles/example.md",
-            review_goal="semantic_review",
-        )
-    )
+    payload = reviewer.build_request_payload(_build_request())
 
     assert payload.prompt_version == "pydanticai-review-prompt.v1"
     assert "Severity must be one of: info, warning, error, critical." in payload.system_prompt
@@ -124,35 +256,84 @@ def test_pydanticai_module_can_import_sdk_dependency() -> None:
     assert reviewer._agent_type.__name__ == "Agent"
 
 
-def test_pydanticai_skeleton_does_not_make_network_calls(
+def test_pydanticai_review_does_not_make_network_calls_with_fake_runtime(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     def fail_create_connection(*args, **kwargs):  # type: ignore[no-untyped-def]
         raise AssertionError(f"Unexpected network call: {args!r} {kwargs!r}")
 
     monkeypatch.setattr(socket, "create_connection", fail_create_connection)
-    monkeypatch.setenv("CONTENT_REVIEW_TEST_LLM_API_KEY", "test-secret-value")
+
     reviewer = PydanticAIReviewer(
         LLMProviderConfig(
             provider="pydanticai",
             model="gpt-4o-mini",
             api_key_env="CONTENT_REVIEW_TEST_LLM_API_KEY",
-        )
+        ),
+        secret_resolver=lambda config: reviewer_secret(config.api_key_env or "missing"),
+        agent_builder=lambda **kwargs: object(),
+        runtime_runner=lambda _agent, _payload: {"findings": []},
     )
 
-    with pytest.raises(LLMProviderNotImplementedError):
-        reviewer.review(LLMReviewRequest(content="No network should happen."))
+    result = reviewer.review(_build_request())
+
+    assert result.findings == ()
 
 
-def test_pydanticai_skeleton_secret_resolution_redacts_secret(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setenv("CONTENT_REVIEW_TEST_LLM_API_KEY", "test-secret-value")
+def test_pydanticai_review_does_not_fallback_to_mock() -> None:
+    called = {"mock": False}
+
+    def fail_mock_review(self, request):  # type: ignore[no-untyped-def]
+        called["mock"] = True
+        raise AssertionError("Mock reviewer should not be used for pydanticai.")
+
+    original_review = MockLLMReviewer.review
+    MockLLMReviewer.review = fail_mock_review  # type: ignore[assignment]
+
+    try:
+        reviewer = PydanticAIReviewer(
+            LLMProviderConfig(
+                provider="pydanticai",
+                model="gpt-4o-mini",
+                api_key_env="CONTENT_REVIEW_TEST_LLM_API_KEY",
+            ),
+            secret_resolver=lambda config: reviewer_secret(config.api_key_env or "missing"),
+            agent_builder=lambda **kwargs: object(),
+            runtime_runner=lambda _agent, _payload: {"findings": []},
+        )
+
+        result = reviewer.review(_build_request())
+
+        assert result.findings == ()
+        assert called["mock"] is False
+    finally:
+        MockLLMReviewer.review = original_review  # type: ignore[assignment]
+
+
+def test_pydanticai_review_requires_model_to_be_configured() -> None:
     reviewer = PydanticAIReviewer(
         LLMProviderConfig(
             provider="pydanticai",
             api_key_env="CONTENT_REVIEW_TEST_LLM_API_KEY",
-        )
+        ),
+        secret_resolver=lambda config: reviewer_secret(config.api_key_env or "missing"),
+        agent_builder=lambda **kwargs: object(),
+        runtime_runner=lambda _agent, _payload: {"findings": []},
+    )
+
+    with pytest.raises(LLMProviderConfigError) as exc_info:
+        reviewer.review(_build_request())
+
+    assert str(exc_info.value) == "LLM provider 'pydanticai' requires model to be configured."
+
+
+def test_pydanticai_review_secret_resolution_redacts_secret() -> None:
+    reviewer = PydanticAIReviewer(
+        LLMProviderConfig(
+            provider="pydanticai",
+            api_key_env="CONTENT_REVIEW_TEST_LLM_API_KEY",
+        ),
+        secret_resolver=lambda config: reviewer_secret(config.api_key_env or "missing"),
     )
 
     secret = reviewer.resolve_secret()
@@ -160,3 +341,13 @@ def test_pydanticai_skeleton_secret_resolution_redacts_secret(
     assert secret.api_key_env == "CONTENT_REVIEW_TEST_LLM_API_KEY"
     assert "test-secret-value" not in repr(secret)
     assert secret.model_dump() == {"api_key_env": "CONTENT_REVIEW_TEST_LLM_API_KEY"}
+
+
+def reviewer_secret(env_name: str):
+    from content_review_engine.llm.secrets import ResolvedLLMSecret
+    from pydantic import SecretStr
+
+    return ResolvedLLMSecret(
+        api_key_env=env_name,
+        api_key=SecretStr("test-secret-value"),
+    )

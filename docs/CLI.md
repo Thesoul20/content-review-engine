@@ -44,7 +44,7 @@ Single-file `review` constraints:
 
 - this path is opt-in and disabled by default
 - only the single-file `review` command supports it
-- `--llm-provider` supports `mock` and the reserved provider name `pydanticai`
+- `--llm-provider` supports `mock` and `pydanticai`
 - `--enable-llm` requires `--llm-output`
 - `--llm-output` without `--enable-llm` fails
 - `--llm-markdown-output` without `--enable-llm` fails
@@ -55,21 +55,22 @@ Single-file `review` constraints:
 - `--llm-provider`, `--llm-model`, `--llm-api-key-env`, and `--llm-base-url`
   can still be parsed without `--enable-llm`, but they do not affect the
   deterministic review path
-- `--llm-provider mock` is the default and the only runnable provider
-- `--llm-provider pydanticai` now runs a dependency + secret preflight and
-  still returns a clear not-implemented error before any real review call
+- `--llm-provider mock` is the default provider
+- `--llm-provider pydanticai` performs secret preflight and then executes a
+  real PydanticAI runtime call through the provider interface
+- `--llm-model` is required for `--llm-provider pydanticai`
 - `--llm-model`, `--llm-api-key-env`, and `--llm-base-url` are stored in
-  `LLMProviderConfig` for future provider work
-- the reserved `pydanticai` path now also has a tested request/prompt/response
-  mapping layer, but the CLI still does not execute a real provider call
+  `LLMProviderConfig`
+- the `pydanticai` path reuses the tested request/prompt/response mapping
+  layer from the provider adapter
 - `--llm-api-key-env` stores the environment variable name in config; when
   `pydanticai` is selected, the CLI resolves that env var only to verify the
   secret exists and never prints its value
 - if `--llm-provider pydanticai` omits `--llm-api-key-env`, points to an
   unset env var, or points to an empty env var, the command exits with a
   structured secret error
-- the reserved `pydanticai` adapter path is still only a future skeleton and
-  does not perform a real model call or network review request
+- `--llm-base-url` is optional and, when provided, is passed to the
+  OpenAI-compatible runtime provider used by `pydanticai`
 - the CLI does not support a plaintext `--llm-api-key` argument
 - the LLM result is written as a separate UTF-8 JSON sidecar file in
   `LLMSidecarResult` format
@@ -110,11 +111,11 @@ Provider notes:
 
 - `mock` keeps the deterministic sidecar behavior from TASK-0037 and remains
   the default provider
-- `pydanticai` is reserved for a future real provider boundary and currently
-  fails fast after secret preflight with a clear not-implemented error
-- the reserved `pydanticai` skeleton can already build a stable structured
-  prompt payload and validate a future structured response contract, but that
-  mapping layer is not wired to runtime review execution yet
+- `pydanticai` now performs a real runtime call after secret preflight
+- `pydanticai` uses the shared structured prompt builder, structured response
+  schema, and response mapper
+- `pydanticai` normalizes runtime failures into stable provider errors and
+  response-shape failures into `LLMResponseValidationError`
 - `pydanticai` does not fallback to `mock`
 - the CLI stores only the `api_key_env` name in config and never prints secret
   values
@@ -137,20 +138,16 @@ Batch constraints:
 - `--enable-llm` requires `--llm-output-dir`
 - `--llm-output-dir` without `--enable-llm` fails
 - `--llm-markdown-output` without `--enable-llm` fails
-- `--llm-provider` supports `mock` and the reserved provider name `pydanticai`
+- `--llm-provider` supports `mock` and `pydanticai`
 - `--llm-provider mock` does not require `--llm-model`
 - `--llm-provider mock` does not read any API key
 - `--llm-provider pydanticai` resolves `--llm-api-key-env` as a secret
-  preflight and still returns a clear not-implemented error before any real
-  review call
-- `--llm-model`, `--llm-api-key-env`, and `--llm-base-url` are config-only
-  fields until a future real provider is implemented, except that `pydanticai`
-  now verifies the configured env var exists and is non-empty
-- the reserved `pydanticai` path also has an internal request/prompt/response
-  mapping contract for future runtime work, but the CLI still does not execute
-  any real provider request
-- the reserved `pydanticai` adapter path is still only a future skeleton and
-  does not perform a real model call or network review request
+  preflight and then executes a real runtime call for each file
+- `--llm-model` is required for `--llm-provider pydanticai`
+- `--llm-base-url` is optional and is passed through for OpenAI-compatible
+  endpoints when configured
+- the `pydanticai` path reuses the same internal request/prompt/response
+  mapping contract used in single-file review
 - the CLI does not support a plaintext `--llm-api-key` argument
 - the batch command writes one separate UTF-8 `LLMSidecarResult` JSON sidecar
   per reviewed Markdown file

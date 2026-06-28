@@ -46,7 +46,6 @@ from content_review_engine.llm import (
     create_llm_reviewer,
     llm_sidecar_result_to_json,
     load_llm_provider_config,
-    raise_pydanticai_not_implemented,
 )
 from content_review_engine.parser import read_markdown
 from content_review_engine.reports import (
@@ -571,7 +570,6 @@ def _build_llm_reviewer(args: argparse.Namespace):
     reviewer = create_llm_reviewer(_build_llm_provider_config(args))
     if isinstance(reviewer, PydanticAIReviewer):
         reviewer.resolve_secret()
-        raise_pydanticai_not_implemented()
     return reviewer
 
 

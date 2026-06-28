@@ -8,6 +8,50 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0047
+
+### Added
+
+- Added real `pydanticai` runtime execution in
+  `src/content_review_engine/llm/pydanticai.py` through the existing provider
+  interface, using the already-stabilized prompt payload, structured response
+  schema, and response mapper.
+- Added runtime-focused `tests/test_llm_pydanticai_provider.py` coverage for
+  empty findings, single finding, multiple findings, summary mapping, invalid
+  structured responses, runtime exception normalization, no fallback to
+  `mock`, missing-model config errors, no-network fake runtime execution, and
+  secret redaction.
+- Added CLI coverage in `tests/test_cli.py` for fake-runtime `pydanticai`
+  single-file sidecar JSON + Markdown output and batch sidecar JSON +
+  Markdown output without real network access.
+
+### Changed
+
+- Updated `src/content_review_engine/llm/pydanticai.py` so
+  `PydanticAIReviewer.review()` now resolves secrets, builds a structured
+  runtime agent with the configured model and optional base URL, executes the
+  PydanticAI runtime, normalizes runtime failures into `LLMProviderError`, and
+  preserves `LLMResponseValidationError` for invalid structured responses.
+- Updated `src/content_review_engine/cli.py` so
+  `--enable-llm --llm-provider pydanticai` still performs secret preflight but
+  no longer returns `LLMProviderNotImplementedError` when the secret exists.
+- Updated `docs/ARCHITECTURE.md`, `docs/DATA_MODELS.md`, `docs/CLI.md`, and
+  `docs/CI.md` to document the runnable `pydanticai` provider boundary and
+  unchanged deterministic quality-gate semantics.
+- Updated `PROJECT_STATE.md` to record TASK-0047 completion.
+- Kept `LLMSidecarResult` JSON schema unchanged.
+- Kept LLM sidecar Markdown report structure unchanged.
+- Kept deterministic review and batch JSON schemas unchanged.
+- Kept deterministic Markdown report structure unchanged.
+- Kept deterministic quality-gate semantics unchanged.
+
+### Not Added
+
+- No real-network tests or real API-key test dependency.
+- No retry, timeout, rate limit, streaming, batch concurrency, or multi-model
+  fallback behavior.
+- No LLM merge into deterministic review results or quality-gate evaluation.
+
 ## TASK-0046
 
 ### Added
