@@ -364,8 +364,13 @@ Current LLM provider-boundary status:
   deterministic adapter for tests and future wiring work
 - `src/content_review_engine/llm/pydanticai.py` is now only an explicit future
   provider skeleton; it can import the minimal PydanticAI dependency, validate
-  secret availability through the shared resolver, and still stops before any
-  real review call or network request
+  secret availability through the shared resolver, build a stable request
+  payload through the mapping layer, and still stops before any real review
+  call or network request
+- `src/content_review_engine/llm/pydanticai_mapping.py` now defines the
+  provider-local request builder, system/user prompt construction, structured
+  response schema, response validation, and conversion back into
+  `LLMReviewResult`
 - the current runnable provider is only `mock`
 - the reserved provider name `pydanticai` is recognized by config loading, can
   be instantiated as a future skeleton through the factory, and still returns
@@ -420,11 +425,39 @@ Important current boundaries:
 - provider config parsing and reviewer construction are confined to the
   sidecar adapter path
 - the reserved `pydanticai` adapter path now has an explicit dependency +
-  secret-preflight boundary, but it is still intentionally non-runnable until
-  a later task implements the real provider boundary
+  secret-preflight boundary plus a non-network request/response mapping layer,
+  but it is still intentionally non-runnable until a later task implements the
+  real provider boundary
 - the runner does not read environment variables
 - the deterministic review pipeline, canonical JSON schema, Markdown report,
   and batch flow do not depend on provider-specific secret resolution
+
+Current future `pydanticai` mapping boundary:
+
+```text
+LLMReviewRequest
+  ↓
+PydanticAIReviewMapper
+  ↓
+PydanticAIReviewRequestPayload
+  ↓ future runtime call, not implemented yet
+PydanticAIReviewResponse
+  ↓
+LLMReviewResult
+```
+
+Mapping-layer notes:
+
+- prompt construction includes content, file path, profile name, review goal,
+  sorted metadata, and explicit structured-output rules
+- sensitive metadata keys such as `api_key`, `token`, `secret`, and
+  `password` are redacted before entering the provider prompt
+- response validation raises `LLMResponseValidationError` with stable field
+  paths and without embedding full prompts, full article bodies, or secret
+  values
+- the mapping layer is provider-local; it does not change `LLMReviewResult`,
+  `LLMSidecarResult`, deterministic review JSON, deterministic Markdown
+  reports, or quality-gate behavior
 
 TASK-0036 adds a dedicated execution boundary between request construction and
 provider invocation:

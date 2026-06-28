@@ -471,6 +471,96 @@ Notes:
 
 ---
 
+## PydanticAIReviewRequestPayload
+
+`PydanticAIReviewRequestPayload` stores the internal future-facing request
+payload built for the reserved `pydanticai` provider.
+
+Current fields:
+
+| Field | Required | Description |
+|---|---|---|
+| `prompt_version` | Yes | Stable mapping/prompt contract version, currently `pydanticai-review-prompt.v1` |
+| `system_prompt` | Yes | Stable instruction string for structured output behavior |
+| `user_prompt` | Yes | Stable request-specific prompt containing content and review context |
+
+Notes:
+
+- this payload is provider-local and not part of the CLI sidecar JSON schema
+- the builder uses `LLMReviewRequest` only; it does not include provider
+  secrets or runtime transport state
+- sensitive metadata keys such as `api_key`, `token`, `secret`, and
+  `password` are redacted before they enter the prompt
+
+---
+
+## PydanticAIReviewFinding
+
+`PydanticAIReviewFinding` stores one structured finding expected from the
+future reserved `pydanticai` provider response.
+
+Current fields intentionally mirror `LLMReviewFinding` closely:
+
+| Field | Required | Description |
+|---|---|---|
+| `rule_id` | Yes | Stable non-empty finding identifier |
+| `severity` | Yes | `info`, `warning`, `error`, or `critical` |
+| `message` | Yes | Human-readable non-empty finding summary |
+| `suggestion` | No | Optional remediation guidance |
+| `rationale` | No | Optional explanation for the finding |
+| `confidence` | No | Optional confidence score constrained to `0.0 <= x <= 1.0` |
+| `line` | No | Optional 1-based start line |
+| `column` | No | Optional 1-based start column |
+| `end_line` | No | Optional 1-based end line |
+| `end_column` | No | Optional 1-based end column |
+| `matched_text` | No | Optional associated text span |
+| `category` | No | Optional semantic category |
+
+Notes:
+
+- the response model forbids extra fields
+- `rule_id` and `message` must not be empty
+- `severity` reuses the canonical finding severity enum
+
+---
+
+## PydanticAIReviewSummary
+
+`PydanticAIReviewSummary` stores optional article-level summary data expected
+from the future reserved `pydanticai` provider response.
+
+Current fields:
+
+| Field | Required | Description |
+|---|---|---|
+| `overall_risk` | No | `low`, `medium`, `high`, or `unknown` |
+| `summary` | No | Optional short review summary |
+| `recommended_action` | No | Optional high-level follow-up suggestion |
+| `confidence` | No | Optional confidence score constrained to `0.0 <= x <= 1.0` |
+
+---
+
+## PydanticAIReviewResponse
+
+`PydanticAIReviewResponse` stores the structured response contract expected by
+the future reserved `pydanticai` provider.
+
+Current fields:
+
+| Field | Required | Description |
+|---|---|---|
+| `findings` | Yes | List of `PydanticAIReviewFinding`; use `[]` when there are no findings |
+| `summary` | No | Optional `PydanticAIReviewSummary` |
+
+Notes:
+
+- the response model forbids extra fields
+- invalid responses are normalized into `LLMResponseValidationError`
+- validation errors report stable field paths and do not include full prompts,
+  full article content, or secret values
+
+---
+
 ## LLM Provider Factory
 
 `src/content_review_engine/llm/factory.py` owns reviewer construction from
@@ -480,7 +570,8 @@ Current behavior:
 
 - `provider = "mock"` returns `MockLLMReviewer`
 - `provider = "pydanticai"` returns `PydanticAIReviewer`, a future skeleton
-  that still requires secret preflight and still raises
+  that still requires secret preflight, can build provider-local request
+  payloads through `PydanticAIReviewMapper`, and still raises
   `LLMProviderNotImplementedError` before any real review call
 - unknown providers raise `LLMProviderConfigError`
 - the factory does not read environment variables, perform network requests,
@@ -502,7 +593,7 @@ The future LLM adapter boundary now defines minimal error types in
 | `LLMProviderSecretError` | Missing, unset, or empty provider secret configuration |
 | `LLMProviderNotImplementedError` | Recognized provider name that is not implemented yet |
 | `LLMProviderError` | Provider adapter failure, such as transport or upstream execution failure |
-| `LLMResponseValidationError` | Provider output could not be validated as an `LLMReviewResult` |
+| `LLMResponseValidationError` | Provider output could not be validated as an `LLMReviewResult` or provider-local structured response contract |
 
 ---
 

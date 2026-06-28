@@ -8,6 +8,47 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0046
+
+### Added
+
+- Added `src/content_review_engine/llm/pydanticai_mapping.py` with
+  `PydanticAIReviewRequestPayload`, stable prompt-building helpers,
+  structured response models, response validation, and response-to-
+  `LLMReviewResult` conversion for the reserved `pydanticai` boundary.
+- Added `tests/test_llm_pydanticai_mapping.py` covering prompt content,
+  structured output requirements, metadata secret redaction, empty finding
+  mapping, single and multiple finding mapping, summary mapping, invalid
+  severity, empty `rule_id`, empty `message`, missing `findings`,
+  non-list `findings`, `None` responses, and non-leaking validation errors.
+
+### Changed
+
+- Updated `src/content_review_engine/llm/pydanticai.py` so the future
+  skeleton now holds a `PydanticAIReviewMapper`, can build a stable
+  request payload from `LLMReviewRequest`, and still stops at the same
+  not-implemented boundary before any real provider execution.
+- Updated `src/content_review_engine/llm/__init__.py` to export the new
+  PydanticAI mapping components.
+- Updated `tests/test_llm_pydanticai_provider.py` so the future skeleton also
+  asserts prompt payload construction in addition to the existing secret,
+  not-implemented, and no-network boundaries.
+- Updated `docs/ARCHITECTURE.md`, `docs/DATA_MODELS.md`, `docs/CLI.md`, and
+  `docs/CI.md` to document the new mapping contract while keeping CLI/runtime
+  behavior unchanged.
+- Updated `PROJECT_STATE.md` to record TASK-0046 completion.
+- Kept `LLMSidecarResult` JSON schema unchanged.
+- Kept LLM sidecar Markdown report structure unchanged.
+- Kept deterministic review and batch JSON schemas unchanged.
+- Kept deterministic Markdown report structure unchanged.
+- Kept deterministic quality-gate semantics unchanged.
+
+### Not Added
+
+- No real PydanticAI runtime review execution or network requests.
+- No fallback from `pydanticai` to `mock`.
+- No CLI path that lets `pydanticai` produce a real `LLMReviewResult`.
+
 ## TASK-0045
 
 ### Added

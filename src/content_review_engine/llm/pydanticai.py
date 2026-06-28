@@ -9,6 +9,10 @@ from content_review_engine.llm.errors import (
     LLMProviderNotImplementedError,
 )
 from content_review_engine.llm.models import LLMReviewRequest, LLMReviewResult
+from content_review_engine.llm.pydanticai_mapping import (
+    PydanticAIReviewMapper,
+    PydanticAIReviewRequestPayload,
+)
 from content_review_engine.llm.secrets import ResolvedLLMSecret, resolve_llm_api_key
 
 PYDANTICAI_PROVIDER_NAME = "pydanticai"
@@ -37,12 +41,22 @@ class PydanticAIReviewer:
         self.base_url = config.base_url
         self._secret_resolver = secret_resolver
         self._agent_type = Agent
+        self.mapping = PydanticAIReviewMapper(
+            provider=PYDANTICAI_PROVIDER_NAME,
+            model=config.model,
+        )
 
     def resolve_secret(self) -> ResolvedLLMSecret:
         return self._secret_resolver(self.config)
 
+    def build_request_payload(
+        self,
+        request: LLMReviewRequest,
+    ) -> PydanticAIReviewRequestPayload:
+        return self.mapping.build_request(request)
+
     def review(self, request: LLMReviewRequest) -> LLMReviewResult:
-        del request
+        self.build_request_payload(request)
         self.resolve_secret()
         raise_pydanticai_not_implemented()
 

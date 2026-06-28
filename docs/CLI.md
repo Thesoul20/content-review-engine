@@ -60,6 +60,8 @@ Single-file `review` constraints:
   still returns a clear not-implemented error before any real review call
 - `--llm-model`, `--llm-api-key-env`, and `--llm-base-url` are stored in
   `LLMProviderConfig` for future provider work
+- the reserved `pydanticai` path now also has a tested request/prompt/response
+  mapping layer, but the CLI still does not execute a real provider call
 - `--llm-api-key-env` stores the environment variable name in config; when
   `pydanticai` is selected, the CLI resolves that env var only to verify the
   secret exists and never prints its value
@@ -110,6 +112,9 @@ Provider notes:
   the default provider
 - `pydanticai` is reserved for a future real provider boundary and currently
   fails fast after secret preflight with a clear not-implemented error
+- the reserved `pydanticai` skeleton can already build a stable structured
+  prompt payload and validate a future structured response contract, but that
+  mapping layer is not wired to runtime review execution yet
 - `pydanticai` does not fallback to `mock`
 - the CLI stores only the `api_key_env` name in config and never prints secret
   values
@@ -141,6 +146,9 @@ Batch constraints:
 - `--llm-model`, `--llm-api-key-env`, and `--llm-base-url` are config-only
   fields until a future real provider is implemented, except that `pydanticai`
   now verifies the configured env var exists and is non-empty
+- the reserved `pydanticai` path also has an internal request/prompt/response
+  mapping contract for future runtime work, but the CLI still does not execute
+  any real provider request
 - the reserved `pydanticai` adapter path is still only a future skeleton and
   does not perform a real model call or network review request
 - the CLI does not support a plaintext `--llm-api-key` argument

@@ -40,6 +40,20 @@ from content_review_engine.llm.pydanticai import (
     PydanticAIReviewer,
     raise_pydanticai_not_implemented,
 )
+from content_review_engine.llm.pydanticai_mapping import (
+    PYDANTICAI_ALLOWED_SEVERITIES,
+    PYDANTICAI_PROMPT_VERSION,
+    PydanticAIReviewFinding,
+    PydanticAIReviewMapper,
+    PydanticAIReviewRequestPayload,
+    PydanticAIReviewResponse,
+    PydanticAIReviewSummary,
+    build_pydanticai_review_prompt,
+    build_pydanticai_review_request,
+    build_pydanticai_system_prompt,
+    pydanticai_response_to_llm_review_result,
+    validate_pydanticai_review_response,
+)
 from content_review_engine.llm.provider import LLMReviewer
 from content_review_engine.llm.runner import LLMReviewRunner
 from content_review_engine.llm.secrets import ResolvedLLMSecret, resolve_llm_api_key
@@ -92,8 +106,18 @@ __all__ = [
     "MockLLMReviewer",
     "PYDANTICAI_NOT_IMPLEMENTED_MESSAGE",
     "PYDANTICAI_PROVIDER_NAME",
+    "PYDANTICAI_ALLOWED_SEVERITIES",
+    "PYDANTICAI_PROMPT_VERSION",
+    "PydanticAIReviewFinding",
+    "PydanticAIReviewMapper",
+    "PydanticAIReviewRequestPayload",
+    "PydanticAIReviewResponse",
+    "PydanticAIReviewSummary",
     "PydanticAIReviewer",
     "ResolvedLLMSecret",
+    "build_pydanticai_review_prompt",
+    "build_pydanticai_review_request",
+    "build_pydanticai_system_prompt",
     "build_llm_sidecar_error",
     "build_llm_sidecar_file_failed",
     "build_llm_sidecar_file_success",
@@ -111,6 +135,8 @@ __all__ = [
     "llm_sidecar_result_to_json",
     "llm_sidecar_summary_to_dict",
     "load_llm_provider_config",
+    "pydanticai_response_to_llm_review_result",
     "resolve_llm_api_key",
     "raise_pydanticai_not_implemented",
+    "validate_pydanticai_review_response",
 ]

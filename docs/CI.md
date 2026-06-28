@@ -147,6 +147,8 @@ At the moment, the only runnable provider is `mock`; reserved `pydanticai`
 still fails fast after secret preflight and does not change deterministic gate
 semantics. A missing or empty `--llm-api-key-env` for `pydanticai` is still a
 command error with exit code `2`, not a deterministic quality-gate failure.
+The internal future `pydanticai` request/response mapping contract also does
+not change CI behavior until a later task wires real provider execution.
 Only deterministic findings contribute to exit code `1`.
 
 In GitHub Actions, exit code `0` passes the step. Exit code `1` or `2` fails

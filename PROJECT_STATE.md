@@ -85,6 +85,30 @@ use.
 
 ## Recent Completion
 
+- TASK-0046 is complete.
+- Added `src/content_review_engine/llm/pydanticai_mapping.py` with a stable
+  request payload builder, system/user prompt construction, structured
+  response models, response validation, and response-to-`LLMReviewResult`
+  conversion for the reserved `pydanticai` provider boundary.
+- Updated `src/content_review_engine/llm/pydanticai.py` so the future skeleton
+  now holds a mapping component and can build a stable provider-local request
+  payload before stopping at the same not-implemented boundary.
+- Added dedicated mapping coverage for prompt content, structured output
+  requirements, secret redaction, empty/single/multiple finding mapping, and
+  non-leaking validation errors.
+- Updated the PydanticAI skeleton tests so they assert request-payload
+  construction in addition to the existing secret-error, not-implemented, and
+  no-network guarantees.
+- Updated architecture, data-model, CLI, and CI docs for the new mapping
+  boundary while keeping runtime behavior unchanged.
+- Kept `LLMSidecarResult` JSON schema unchanged.
+- Kept LLM sidecar Markdown report structure unchanged.
+- Kept deterministic review and batch JSON schemas unchanged.
+- Kept deterministic Markdown report structure unchanged.
+- Kept deterministic quality-gate semantics unchanged.
+- Added no real PydanticAI review execution, no real LLM API requests, and no
+  CLI/runtime path that turns `pydanticai` into a runnable provider.
+
 - TASK-0045 is complete.
 - Reintroduced the minimal `pydantic-ai-slim[openai]` dependency and refreshed
   `uv.lock` so the future `pydanticai` provider entry can import its SDK
