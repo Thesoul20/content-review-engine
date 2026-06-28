@@ -53,6 +53,7 @@ def test_usage_docs_exist_and_cover_required_provider_flags_and_boundaries() -> 
     content = USAGE_DOC_PATH.read_text(encoding="utf-8")
 
     assert "--llm-provider pydanticai" in content
+    assert "--llm-provider pydantic-ai-testmodel" in content
     assert "--llm-config" in content
     assert "llm-check" in content
     assert "--runtime" in content
@@ -102,5 +103,6 @@ def test_docs_and_fixtures_do_not_require_real_network_or_real_api_key() -> None
 
     assert "replace-with-your-real-key" in usage_doc
     assert "mock`: safe for local tests and CI" in usage_doc
+    assert "batch `--llm-provider` supports only `mock` and `pydantic-ai-testmodel`" in usage_doc
     assert "default `pytest` or CI" in usage_doc
     assert "YOUR_OPENAI_API_KEY_HERE" in env_example

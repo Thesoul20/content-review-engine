@@ -17,8 +17,8 @@ suppression comments, counts, and quality gates, see
 ## Current Command
 
 ```bash
-uv run content-review review <markdown_file> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--fail-on info|warning|error|critical] [--enable-llm --llm-output <file> [--llm-markdown-output <file>] [--llm-config <path>] [--llm-provider mock|pydanticai] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>] [--llm-timeout-seconds <seconds>] [--llm-retry-attempts <count>] [--llm-retry-backoff-seconds <seconds>] [--llm-min-request-interval-seconds <seconds>] [--include-llm-report]]
-uv run content-review batch <input_dir> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--recursive] [--pattern "*.md"] [--fail-on info|warning|error|critical] [--enable-llm --llm-output-dir <dir> [--llm-markdown-output <file>] [--llm-config <path>] [--llm-provider mock|pydanticai] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>] [--llm-timeout-seconds <seconds>] [--llm-retry-attempts <count>] [--llm-retry-backoff-seconds <seconds>] [--llm-min-request-interval-seconds <seconds>]]
+uv run content-review review <markdown_file> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--fail-on info|warning|error|critical] [--enable-llm --llm-output <file> [--llm-markdown-output <file>] [--llm-config <path>] [--llm-provider mock|pydantic-ai-testmodel] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>] [--llm-timeout-seconds <seconds>] [--llm-retry-attempts <count>] [--llm-retry-backoff-seconds <seconds>] [--llm-min-request-interval-seconds <seconds>] [--include-llm-report]]
+uv run content-review batch <input_dir> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--recursive] [--pattern "*.md"] [--fail-on info|warning|error|critical] [--enable-llm --llm-output-dir <dir> [--llm-markdown-output <file>] [--llm-config <path>] [--llm-provider mock|pydantic-ai-testmodel] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>] [--llm-timeout-seconds <seconds>] [--llm-retry-attempts <count>] [--llm-retry-backoff-seconds <seconds>] [--llm-min-request-interval-seconds <seconds>]]
 uv run content-review llm-check [--provider mock|pydantic-ai-testmodel] [--llm-config <path>] [--llm-provider mock|pydanticai] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>] [--llm-timeout-seconds <seconds>] [--llm-retry-attempts <count>] [--llm-retry-backoff-seconds <seconds>] [--llm-min-request-interval-seconds <seconds>] [--runtime]
 uv run content-review profile validate <profile_file> [--format text|json]
 uv run content-review profile init --template <general-basic|general-publishing|health-content|marketing-copy|technical-blog|wechat-basic|wechat-article|wechat-strict> --output <profile_file> [--force]
@@ -183,7 +183,7 @@ Current behavior guarantees:
   deterministic report and does not change deterministic counts or finding
   order
 - quality-gate evaluation still reads only deterministic findings
-- batch review behavior is unchanged and does not accept LLM flags
+- batch review behavior is unchanged by default when LLM flags are omitted
 
 Provider notes:
 
@@ -221,6 +221,7 @@ flow:
 ```bash
 uv run content-review batch articles --profile profile.yaml --recursive --enable-llm --llm-output-dir llm-sidecars
 uv run content-review batch articles --profile profile.yaml --recursive --enable-llm --llm-provider mock --llm-output-dir llm-sidecars
+uv run content-review batch articles --profile profile.yaml --recursive --enable-llm --llm-provider pydantic-ai-testmodel --llm-output-dir llm-sidecars
 uv run content-review batch articles --profile profile.yaml --recursive --enable-llm --llm-config examples/llm/mock/llm-provider.yml --llm-output-dir llm-sidecars
 uv run content-review batch articles --profile profile.yaml --recursive --enable-llm --llm-output-dir llm-sidecars --llm-markdown-output llm-sidecars.md
 uv run content-review batch articles --profile profile.yaml --recursive --enable-llm --llm-config examples/llm/pydanticai/llm-provider.yml --llm-output-dir llm-sidecars
@@ -232,13 +233,16 @@ Batch constraints:
 - `--enable-llm` requires `--llm-output-dir`
 - `--llm-output-dir` without `--enable-llm` fails
 - `--llm-markdown-output` without `--enable-llm` fails
-- `--llm-provider` supports `mock` and `pydanticai`
+- explicit batch `--llm-provider` supports only `mock` and `pydantic-ai-testmodel`
+- `--llm-provider` without `--enable-llm` fails
 - `--llm-config` loads a YAML `LLMProviderConfig` file for batch review too
-- `--llm-provider mock` does not require `--llm-model`
-- `--llm-provider mock` does not read any API key
-- `--llm-provider pydanticai` resolves `--llm-api-key-env` as a secret
-  preflight and then executes a real runtime call for each file
-- `--llm-model` is required for `--llm-provider pydanticai`
+- omitted batch `--llm-provider` keeps the existing config-driven sidecar behavior
+- explicit batch `--llm-provider` uses `create_llm_reviewer()` directly
+- explicit batch `--llm-provider mock` requires no API key and does not access the network
+- explicit batch `--llm-provider pydantic-ai-testmodel` requires no API key and does not access the network
+- unsupported explicit batch `--llm-provider` values fail explicitly and do not fall back
+- real `pydanticai` batch sidecar usage remains available through `--llm-config` plus the shared config-driven provider path
+- `--llm-model` is required for config-driven `pydanticai`
 - `--llm-base-url` is optional and is passed through for OpenAI-compatible
   endpoints when configured
 - `--llm-timeout-seconds` is optional, must be greater than `0`, and is passed

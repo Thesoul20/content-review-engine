@@ -85,6 +85,29 @@ use.
 
 ## Recent Completion
 
+- TASK-0058 is complete.
+- Added explicit batch LLM sidecar reviewer selection for
+  `content-review batch` through `--llm-provider mock` and
+  `--llm-provider pydantic-ai-testmodel`.
+- Updated `src/content_review_engine/cli.py` so explicit batch
+  `--llm-provider` uses `create_llm_reviewer()` directly, unsupported values
+  fail clearly without fallback, and `--llm-provider` without batch sidecar
+  output returns a clear error.
+- Kept omitted batch `--llm-provider` behavior on the existing config-driven
+  sidecar path, so current default batch sidecar behavior remains unchanged.
+- Added and updated `tests/test_cli.py`,
+  `tests/test_llm_provider_factory.py`, and
+  `tests/test_llm_provider_usage_docs.py` for batch default sidecar behavior,
+  `--llm-provider mock`, `--llm-provider pydantic-ai-testmodel`,
+  unsupported-provider failures, no-fallback behavior, no-network/no-API-key
+  boundaries, and unchanged deterministic output boundaries.
+- Updated `docs/CLI.md`, `docs/LLM_PROVIDER_USAGE.md`, and
+  `docs/ARCHITECTURE.md` to document the new batch sidecar provider selection
+  boundary and its relationship to the existing config-driven path.
+- Kept `BatchReviewResult`, single-file behavior, `llm-check` user-visible
+  behavior, sidecar JSON schema, Markdown report structure, and quality-gate
+  semantics unchanged.
+
 - TASK-0057 is complete.
 - Added explicit single-file LLM sidecar reviewer selection for
   `content-review review` through `--llm-provider mock` and

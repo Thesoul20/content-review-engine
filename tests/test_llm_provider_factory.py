@@ -128,3 +128,11 @@ def test_supported_reviewer_provider_names_are_stable() -> None:
 
 def test_registered_config_provider_names_remain_stable() -> None:
     assert get_registered_llm_provider_names() == ("mock", "pydanticai")
+
+
+def test_reviewer_provider_names_remain_distinct_from_config_provider_names() -> None:
+    assert get_supported_llm_reviewer_provider_names() == (
+        "mock",
+        "pydantic-ai-testmodel",
+    )
+    assert get_registered_llm_provider_names() == ("mock", "pydanticai")

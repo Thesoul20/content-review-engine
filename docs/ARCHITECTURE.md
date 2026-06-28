@@ -225,9 +225,11 @@ Current status:
 - `content-review llm-check --provider` now uses that name-driven factory path
   for safe local smoke checks, while the existing config-driven `llm-check`
   path remains available for `mock` and `pydanticai`
-- batch sidecar review still routes through the config/config-loader/factory
-  boundary
 - single-file sidecar review now has two explicit paths:
+  omitted `--llm-provider` keeps the existing config-driven boundary, while
+  explicit `--llm-provider mock|pydantic-ai-testmodel` uses the name-driven
+  `create_llm_reviewer()` boundary
+- batch sidecar review now follows that same split:
   omitted `--llm-provider` keeps the existing config-driven boundary, while
   explicit `--llm-provider mock|pydantic-ai-testmodel` uses the name-driven
   `create_llm_reviewer()` boundary
@@ -389,6 +391,12 @@ Per reviewed Markdown file:
     ↓
   LLMReviewRunner
     ↓
+  explicit --llm-provider mock|pydantic-ai-testmodel
+    ↓
+  create_llm_reviewer("<provider-name>")
+    or
+  omitted --llm-provider
+    ↓
   create_llm_reviewer(LLMProviderConfig)
     ↓
   LLMReviewResult
@@ -405,6 +413,11 @@ Current batch path guarantees:
 - batch LLM sidecars are opt-in and generated only when `--enable-llm` is set
 - each reviewed Markdown file gets an independent `LLMSidecarResult` JSON
   sidecar
+- explicit batch `--llm-provider` supports only `mock` and
+  `pydantic-ai-testmodel`, fails explicitly for unsupported values, and does
+  not fall back
+- explicit batch `--llm-provider` without batch sidecar output fails clearly
+- omitted batch `--llm-provider` keeps the existing config-driven runtime path
 - the sidecar path preserves the file path relative to the batch input
   directory and appends `.llm-review.json`
 - each batch run also writes `llm-review-manifest.json` with aggregate status

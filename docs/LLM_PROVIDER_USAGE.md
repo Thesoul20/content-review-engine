@@ -56,9 +56,10 @@ Factory behavior:
 This is a package boundary for future adapters. `llm-check --provider` now
 reuses it for the safe local reviewer providers above. Single-file
 `content-review review --enable-llm --llm-output ... --llm-provider <name>`
-now also reuses it for those same safe local reviewer providers. It still
-does not change the default behavior of `review`, `batch`, or `llm-check`
-when `--llm-provider` is omitted.
+and batch `content-review batch --enable-llm --llm-output-dir ...
+--llm-provider <name>` now also reuse it for those same safe local reviewer
+providers. It still does not change the default behavior of `review`,
+`batch`, or `llm-check` when `--llm-provider` is omitted.
 
 ## PydanticAI TestModel Provider
 
@@ -77,9 +78,11 @@ Current limitations:
 - it is available only through the package-level reviewer provider factory and
   CLI paths that explicitly opt into that reviewer-name factory boundary:
   `llm-check --provider` and single-file `review --enable-llm --llm-output ...
-  --llm-provider pydantic-ai-testmodel`
+  --llm-provider pydantic-ai-testmodel`, plus batch
+  `batch --enable-llm --llm-output-dir ... --llm-provider pydantic-ai-testmodel`
 - it does not read `LLMProviderConfig`
-- it does not participate in config-driven `batch` sidecar review
+- omitted `--llm-provider` still leaves batch sidecar review on the existing
+  config-driven path
 - it should not be treated as a production LLM integration
 
 ## LLM Check Command
@@ -125,13 +128,12 @@ Use `llm-check --runtime` only for explicit manual verification.
 
 ## PydanticAI Provider
 
-Use `--llm-provider pydanticai` only when you intentionally want a real LLM
+Use config-driven `pydanticai` only when you intentionally want a real LLM
 sidecar review through the shared config-driven provider path.
 
 Provider parameters covered by the current CLI:
 
 - `--llm-config examples/llm/pydanticai/llm-provider.yml`
-- `--llm-provider pydanticai`
 - `--llm-model openai:gpt-4o-mini`
 - `--llm-api-key-env OPENAI_API_KEY`
 - `--llm-base-url https://your-openai-compatible-endpoint.example/v1`
@@ -155,6 +157,9 @@ sleep before each retryable retry.
 the minimum spacing between consecutive real runtime call start times on the
 same `pydanticai` reviewer instance.
 The same fields can also be used with `content-review llm-check`.
+For `review` and `batch`, explicit `--llm-provider` is reserved for the
+reviewer-factory names `mock` and `pydantic-ai-testmodel`; real `pydanticai`
+stays on the existing omitted-`--llm-provider` config-driven path.
 
 ## Single-file Sidecar Provider Selection
 
@@ -173,6 +178,24 @@ Behavior:
 - `--llm-provider` without the sidecar path fails clearly
 - omitting explicit `--llm-provider` keeps the existing single-file sidecar behavior unchanged
 - explicit single-file `--llm-provider` does not require an API key, does not read `.env`, and does not access the network for the supported providers above
+
+## Batch Sidecar Provider Selection
+
+Use explicit batch `--llm-provider` only with the existing batch sidecar path:
+
+```bash
+uv run content-review batch articles --profile profile.yml --recursive --enable-llm --llm-output-dir llm-sidecars --llm-provider mock
+uv run content-review batch articles --profile profile.yml --recursive --enable-llm --llm-output-dir llm-sidecars --llm-provider pydantic-ai-testmodel
+```
+
+Behavior:
+
+- explicit batch `--llm-provider` supports only `mock` and `pydantic-ai-testmodel`
+- explicit batch `--llm-provider` calls `create_llm_reviewer()` directly
+- unsupported explicit provider names fail clearly and do not fall back
+- `--llm-provider` without the batch sidecar path fails clearly
+- omitting explicit batch `--llm-provider` keeps the existing batch sidecar behavior unchanged
+- explicit batch `--llm-provider` does not require an API key, does not read `.env`, and does not access the network for the supported providers above
 
 ## Required Environment Variables
 
