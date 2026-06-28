@@ -137,6 +137,10 @@ Workflow example:
 - `1`: review completed, but at least one finding met the `--fail-on` threshold.
 - `2`: command usage, input, profile, or filesystem error.
 
+If you also enable the experimental LLM sidecar path, LLM finding content and
+LLM sidecar failures still do not affect the deterministic quality-gate exit
+code. Only deterministic findings contribute to exit code `1`.
+
 In GitHub Actions, exit code `0` passes the step. Exit code `1` or `2` fails
 the step.
 If you also use `--format markdown --output ...`, exit code `1` still means the

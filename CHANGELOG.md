@@ -8,6 +8,42 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0041
+
+### Added
+
+- Added `LLMSidecarResult`, `LLMSidecarSummary`, per-file sidecar status, and
+  structured `error_type` / `message` output for CLI LLM sidecars.
+- Added `llm-review-manifest.json` under batch `--llm-output-dir` to record
+  aggregate sidecar counts and per-file status for partial-success runs.
+- Added tests covering sidecar summary serialization, failed-entry
+  serialization, single-file failed sidecars, batch partial failure, and
+  quality-gate isolation.
+
+### Changed
+
+- Updated `src/content_review_engine/cli.py` so single-file and batch LLM
+  sidecars write `llm-sidecar-result.v1` envelopes instead of raw top-level
+  `LLMReviewResult` payloads.
+- Updated batch LLM sidecar generation to continue after per-file LLM review
+  failures and serialize them as `status = failed` entries.
+- Updated `docs/CLI.md`, `docs/ARCHITECTURE.md`, `docs/DATA_MODELS.md`, and
+  `docs/CI.md` to document sidecar summary fields, per-file status/error
+  fields, partial success behavior, and deterministic quality-gate isolation.
+- Updated `PROJECT_STATE.md` to record TASK-0041 completion.
+- Kept the canonical deterministic review and batch JSON schemas unchanged.
+- Kept deterministic Markdown report structure unchanged.
+- Kept deterministic quality-gate semantics unchanged.
+
+### Not Added
+
+- No real OpenAI, Anthropic, or new provider integration.
+- No new external LLM SDK dependency.
+- No LLM merge into `ReviewResult` or `BatchReviewResult`.
+- No quality-gate counting of LLM findings or LLM sidecar failures.
+- No API, MCP, GUI, streaming, retry policy, cache, token accounting, cost
+  tracking, telemetry, or tracing integration.
+
 ## TASK-0040
 
 ### Added

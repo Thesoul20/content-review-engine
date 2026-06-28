@@ -189,6 +189,9 @@ without changing the canonical deterministic `ReviewResult` schema.
 TASK-0040 also allows the batch CLI command to emit one independent
 `LLMReviewResult` sidecar per reviewed Markdown file, while keeping the batch
 result schema unchanged.
+TASK-0041 keeps `LLMReviewResult` as the nested success payload, but wraps CLI
+sidecar output in a separate `LLMSidecarResult` envelope that records summary,
+per-file status, and structured non-sensitive errors.
 
 | Field | Required | Description |
 |---|---|---|
@@ -224,8 +227,9 @@ Current CLI sidecar boundary:
 ReviewResult JSON
   = canonical deterministic review output
 
-LLMReviewResult JSON
+LLMSidecarResult JSON
   = separate optional sidecar file
+  -> success entries can include nested LLMReviewResult
 ```
 
 Current batch CLI sidecar boundary:
@@ -235,7 +239,10 @@ BatchReviewResult JSON
   = canonical deterministic batch output
 
 Each reviewed Markdown file
-  = separate optional LLMReviewResult sidecar JSON
+  = separate optional LLMSidecarResult JSON
+
+--llm-output-dir/llm-review-manifest.json
+  = aggregate LLMSidecarResult summary for the batch run
 ```
 
 Current optional Markdown report boundary:
@@ -263,9 +270,57 @@ Current guarantees:
   order, or batch Markdown report structure
 - batch sidecar files preserve the input path relative to the batch input
   directory and append `.llm-review.json`
-- provider-specific structured output is converted before serialization, so the
-  sidecar remains `LLMReviewResult`-shaped even when the provider uses
-  PydanticAI internally
+- batch sidecars also write `llm-review-manifest.json` with aggregate
+  `file_count`, `succeeded_count`, `failed_count`, `skipped_count`, and
+  `finding_count`
+- provider-specific structured output is converted before serialization, so a
+  successful sidecar entry can still embed an `LLMReviewResult` even when the
+  provider uses PydanticAI internally
+
+---
+
+## LLMSidecarResult
+
+`LLMSidecarResult` stores the CLI-facing machine-readable LLM sidecar output.
+
+The stable schema version is `llm-sidecar-result.v1`.
+
+It is distinct from both `ReviewResult` and `LLMReviewResult`.
+It exists to let CLI callers record success, failure, and partial success
+without changing the deterministic review schema or quality-gate behavior.
+
+| Field | Required | Description |
+|---|---|---|
+| `schema_version` | Yes | Stable sidecar envelope schema version |
+| `summary` | Yes | `LLMSidecarSummary` with aggregate counts |
+| `files` | Yes | Tuple of `LLMSidecarFile` entries |
+
+`LLMSidecarSummary` fields:
+
+| Field | Required | Description |
+|---|---|---|
+| `file_count` | Yes | Number of files represented in this sidecar |
+| `succeeded_count` | Yes | Count of entries with `status = success` |
+| `failed_count` | Yes | Count of entries with `status = failed` |
+| `skipped_count` | Yes | Count of entries with `status = skipped` |
+| `finding_count` | Yes | Sum of nested LLM finding counts for successful entries |
+
+`LLMSidecarFile` fields:
+
+| Field | Required | Description |
+|---|---|---|
+| `path` | Yes | Markdown file path represented by this entry |
+| `status` | Yes | `success`, `failed`, or `skipped` |
+| `finding_count` | Yes | Finding count for this file, `0` on failed or skipped entries |
+| `review` | No | Nested `LLMReviewResult` for successful runs |
+| `error` | No | `LLMSidecarError` for failed runs |
+
+`LLMSidecarError` fields:
+
+| Field | Required | Description |
+|---|---|---|
+| `error_type` | Yes | Stable exception class name such as `LLMProviderError` |
+| `message` | Yes | Human-readable non-traceback error message |
 
 ---
 

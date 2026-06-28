@@ -61,9 +61,22 @@ Single-file `review` constraints:
 - the CLI does not support a plaintext `--llm-api-key` argument
 - `--llm-base-url` is optional and only configures an OpenAI-compatible
   endpoint for `pydanticai-openai`
-- the LLM result is written as a separate UTF-8 JSON sidecar file using the existing `LLMReviewResult` serialization helper
+- the LLM result is written as a separate UTF-8 JSON sidecar file in
+  `LLMSidecarResult` format
 - `--include-llm-report` only affects single-file Markdown report rendering and
   does not replace the required `--llm-output` sidecar JSON
+
+Single-file sidecar shape:
+
+- top-level `schema_version` is `llm-sidecar-result.v1`
+- top-level `summary` includes `file_count`, `succeeded_count`,
+  `failed_count`, `skipped_count`, and `finding_count`
+- `files[0].status` is `success` or `failed` in the current implementation
+- successful entries include nested `review` with the original
+  `LLMReviewResult`
+- failed entries include `error.error_type` and `error.message`
+- LLM sidecar failure does not change deterministic review output or
+  quality-gate evaluation
 
 Current behavior guarantees:
 
@@ -117,9 +130,11 @@ Batch constraints:
 - `--llm-base-url` is optional and only configures an OpenAI-compatible
   endpoint for `pydanticai-openai`
 - the CLI does not support a plaintext `--llm-api-key` argument
-- the batch command writes one separate UTF-8 `LLMReviewResult` JSON sidecar
-  per successfully reviewed Markdown file using the existing serialization
-  helper
+- the batch command writes one separate UTF-8 `LLMSidecarResult` JSON sidecar
+  per reviewed Markdown file
+- the batch command also writes
+  `--llm-output-dir/llm-review-manifest.json` as an aggregate
+  `LLMSidecarResult` summary
 
 Sidecar path rule:
 
@@ -133,6 +148,17 @@ articles/nested/post-b.md
 
 The path is computed relative to the batch input directory. Parent
 directories are created automatically under `--llm-output-dir`.
+
+Batch sidecar behavior:
+
+- per-file sidecars use `summary.file_count = 1` and record that file's
+  `status`, `finding_count`, optional nested `review`, and optional `error`
+- `llm-review-manifest.json` aggregates the full run with `file_count`,
+  `succeeded_count`, `failed_count`, `skipped_count`, and `finding_count`
+- batch LLM review supports partial success; one file with `status = failed`
+  does not block other files from generating sidecars
+- failed entries expose only `error_type` and `message`, not tracebacks or
+  secrets
 
 Batch behavior guarantees:
 

@@ -85,6 +85,30 @@ use.
 
 ## Recent Completion
 
+- TASK-0041 is complete.
+- Added `LLMSidecarResult`, `LLMSidecarSummary`, per-file sidecar status, and
+  structured sidecar errors for CLI LLM output.
+- Single-file `--llm-output` now writes `llm-sidecar-result.v1` with
+  `summary`, `files[0].status`, optional nested `review`, and structured
+  failure output.
+- Batch `--llm-output-dir` now keeps the existing per-file sidecar paths and
+  also writes `llm-review-manifest.json` with aggregate
+  `file_count`, `succeeded_count`, `failed_count`, `skipped_count`, and
+  `finding_count`.
+- Batch LLM sidecar generation now tolerates per-file LLM failures and records
+  them as `status = failed` with `error_type` and `message` instead of
+  aborting the whole batch run.
+- Added LLM sidecar tests for summary serialization, failed-entry structure,
+  single-file failure handling, batch partial failure handling, and quality
+  gate isolation.
+- Updated CLI, architecture, data-model, and CI documentation for the new
+  sidecar envelope and the continued deterministic quality-gate boundary.
+- Kept the canonical deterministic review and batch JSON schemas unchanged.
+- Kept deterministic Markdown report structure unchanged.
+- Kept deterministic quality-gate semantics unchanged.
+- Added no real provider integration, no new API-key configuration, no new
+  external LLM SDK dependency, and no LLM merge into `ReviewResult`.
+
 - TASK-0040 is complete.
 - Added explicit batch CLI LLM sidecar support behind `--enable-llm`.
 - Added batch `--llm-output-dir`, `--llm-provider`, `--llm-model`,

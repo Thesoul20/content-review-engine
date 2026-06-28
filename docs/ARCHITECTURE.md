@@ -250,8 +250,9 @@ ReviewResult
   ↓
 Deterministic Markdown report sections
 
-LLMReviewResult sidecar
+LLMSidecarResult sidecar
   ↓ optional explicit CLI opt-in
+  -> success entries can include nested LLMReviewResult
 LLM Markdown section
 
 Deterministic Markdown report + optional appended LLM section
@@ -280,16 +281,24 @@ Per reviewed Markdown file:
     ↓
   LLMReviewResult
     ↓
-  Separate sidecar JSON under --llm-output-dir
+  LLMSidecarResult per-file JSON under --llm-output-dir
+
+Batch manifest:
+  LLMSidecarResult summary under
+  --llm-output-dir/llm-review-manifest.json
 ```
 
 Current batch path guarantees:
 
 - batch LLM sidecars are opt-in and generated only when `--enable-llm` is set
-- each reviewed Markdown file gets an independent `LLMReviewResult` JSON
+- each reviewed Markdown file gets an independent `LLMSidecarResult` JSON
   sidecar
 - the sidecar path preserves the file path relative to the batch input
   directory and appends `.llm-review.json`
+- each batch run also writes `llm-review-manifest.json` with aggregate status
+  counts and per-file status entries
+- a failed LLM review for one file is recorded in sidecar JSON and does not
+  stop LLM sidecar generation for other files
 - the canonical `BatchReviewResult` schema is unchanged
 - batch Markdown reports remain deterministic-only
 - batch quality gates still read only deterministic findings
@@ -301,8 +310,8 @@ Current batch path guarantees:
 - LLM findings do not mutate `ReviewResult`
 - LLM findings do not affect deterministic summary counts, rule counts, or
   `--fail-on`
-- the separate `LLMReviewResult` JSON sidecar is still written and remains the
-  machine-readable contract
+- the separate `LLMSidecarResult` JSON sidecar is still written and remains
+  the machine-readable contract
 
 The current `LLMReviewFinding`, `LLMReviewSummary`, and `LLMReviewResult`
 models exist so later tasks can add provider adapters, prompt versioning, and

@@ -32,6 +32,8 @@ from content_review_engine.core.serialization import (
     review_result_to_json,
 )
 from content_review_engine.llm import (
+    LLMSidecarFile,
+    LLMSidecarResult,
     LLMReviewRequest,
     LLMReviewError,
     LLMReviewResult,
@@ -39,7 +41,10 @@ from content_review_engine.llm import (
     MockLLMReviewer,
     PYDANTICAI_OPENAI_PROVIDER_NAME,
     PydanticAIOpenAIReviewer,
-    llm_review_result_to_json,
+    build_llm_sidecar_file_failed,
+    build_llm_sidecar_file_success,
+    build_llm_sidecar_result,
+    llm_sidecar_result_to_json,
 )
 from content_review_engine.parser import read_markdown
 from content_review_engine.reports import (
@@ -49,6 +54,8 @@ from content_review_engine.reports import (
 from content_review_engine.review import review_document, review_markdown_directory
 from content_review_engine.rules import UnknownRuleError
 from pydantic import ValidationError
+
+LLM_BATCH_SIDECAR_MANIFEST_FILENAME = "llm-review-manifest.json"
 
 
 def _parse_fail_on(value: str) -> str:
@@ -625,7 +632,7 @@ def _run_llm_review(
 
 def _write_llm_sidecar(
     *,
-    llm_result: LLMReviewResult,
+    sidecar_result: LLMSidecarResult,
     output_path: str,
     create_parent_dirs: bool = False,
 ) -> None:
@@ -634,7 +641,7 @@ def _write_llm_sidecar(
         sidecar_path.parent.mkdir(parents=True, exist_ok=True)
     try:
         sidecar_path.write_text(
-            llm_review_result_to_json(llm_result),
+            llm_sidecar_result_to_json(sidecar_result),
             encoding="utf-8",
         )
     except OSError as exc:
@@ -653,6 +660,42 @@ def _build_batch_llm_sidecar_path(
     return Path(llm_output_dir) / Path(f"{relative_path.as_posix()}.llm-review.json")
 
 
+def _build_batch_llm_manifest_path(*, llm_output_dir: str) -> Path:
+    return Path(llm_output_dir) / LLM_BATCH_SIDECAR_MANIFEST_FILENAME
+
+
+def _clone_llm_sidecar_file_without_review(file: LLMSidecarFile) -> LLMSidecarFile:
+    return LLMSidecarFile(
+        path=file.path,
+        status=file.status,
+        finding_count=file.finding_count,
+        error=file.error,
+    )
+
+
+def _run_llm_sidecar_for_file(
+    *,
+    markdown_text: str,
+    markdown_path: str,
+    profile_name: str,
+    reviewer,
+) -> LLMSidecarFile:
+    try:
+        llm_result = _run_llm_review(
+            markdown_text=markdown_text,
+            markdown_path=markdown_path,
+            profile_name=profile_name,
+            reviewer=reviewer,
+        )
+    except Exception as exc:
+        return build_llm_sidecar_file_failed(path=markdown_path, exc=exc)
+
+    return build_llm_sidecar_file_success(
+        path=markdown_path,
+        review=llm_result,
+    )
+
+
 def _write_batch_llm_sidecars(
     *,
     batch_result: BatchReviewResult,
@@ -660,29 +703,42 @@ def _write_batch_llm_sidecars(
     llm_output_dir: str,
     profile_name: str,
     reviewer,
-) -> None:
+) -> LLMSidecarResult:
+    manifest_files: list[LLMSidecarFile] = []
     for review_result in batch_result.results:
         document = review_result.document
         if document is None:
             continue
         markdown_path = document.path
-        markdown_text = read_markdown(markdown_path)
-        llm_result = _run_llm_review(
-            markdown_text=markdown_text,
-            markdown_path=markdown_path,
-            profile_name=profile_name,
-            reviewer=reviewer,
-        )
+        try:
+            markdown_text = read_markdown(markdown_path)
+        except Exception as exc:
+            sidecar_file = build_llm_sidecar_file_failed(path=markdown_path, exc=exc)
+        else:
+            sidecar_file = _run_llm_sidecar_for_file(
+                markdown_text=markdown_text,
+                markdown_path=markdown_path,
+                profile_name=profile_name,
+                reviewer=reviewer,
+            )
         sidecar_path = _build_batch_llm_sidecar_path(
             input_dir=input_dir,
             llm_output_dir=llm_output_dir,
             markdown_path=markdown_path,
         )
         _write_llm_sidecar(
-            llm_result=llm_result,
+            sidecar_result=build_llm_sidecar_result([sidecar_file]),
             output_path=str(sidecar_path),
             create_parent_dirs=True,
         )
+        manifest_files.append(_clone_llm_sidecar_file_without_review(sidecar_file))
+    manifest_result = build_llm_sidecar_result(manifest_files)
+    _write_llm_sidecar(
+        sidecar_result=manifest_result,
+        output_path=str(_build_batch_llm_manifest_path(llm_output_dir=llm_output_dir)),
+        create_parent_dirs=True,
+    )
+    return manifest_result
 
 
 def _run_review_command(args: argparse.Namespace) -> int:
@@ -697,13 +753,15 @@ def _run_review_command(args: argparse.Namespace) -> int:
         profile_path=args.profile,
     )
     llm_result = None
+    llm_sidecar_file = None
     if args.enable_llm:
-        llm_result = _run_llm_review(
+        llm_sidecar_file = _run_llm_sidecar_for_file(
             markdown_text=markdown_text,
             markdown_path=args.markdown_file,
             profile_name=profile.name,
             reviewer=llm_reviewer,
         )
+        llm_result = llm_sidecar_file.review
     rendered_output = _render_output(
         review_result,
         output_format=args.format,
@@ -715,7 +773,7 @@ def _run_review_command(args: argparse.Namespace) -> int:
         return output_exit_code
     if args.enable_llm:
         _write_llm_sidecar(
-            llm_result=llm_result,
+            sidecar_result=build_llm_sidecar_result([llm_sidecar_file]),
             output_path=args.llm_output,
         )
     return _quality_gate_exit_code(

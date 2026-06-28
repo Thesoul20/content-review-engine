@@ -4,11 +4,14 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 from pydantic import field_validator
+from pydantic import model_validator
 
 from content_review_engine.core.models import FindingSeverity
 
 LLM_REVIEW_RESULT_SCHEMA_VERSION = "llm-review-result.v1"
+LLM_SIDECAR_RESULT_SCHEMA_VERSION = "llm-sidecar-result.v1"
 LLM_OVERALL_RISK_VALUES: tuple[str, ...] = ("low", "medium", "high", "unknown")
+LLM_SIDECAR_STATUS_VALUES: tuple[str, ...] = ("success", "failed", "skipped")
 
 
 def _validate_optional_non_empty(value: str | None, field_name: str) -> str | None:
@@ -81,6 +84,59 @@ class LLMReviewResult(BaseModel):
         return _validate_optional_non_empty(value, info.field_name)
 
 
+class LLMSidecarError(BaseModel):
+    error_type: str
+    message: str
+
+    @field_validator("error_type", "message")
+    @classmethod
+    def validate_required_non_empty(cls, value: str, info) -> str:
+        normalized = value.strip()
+        if normalized == "":
+            raise ValueError(f"{info.field_name} must not be empty")
+        return normalized
+
+
+class LLMSidecarSummary(BaseModel):
+    file_count: int = Field(ge=0)
+    succeeded_count: int = Field(ge=0)
+    failed_count: int = Field(ge=0)
+    skipped_count: int = Field(ge=0)
+    finding_count: int = Field(ge=0)
+
+
+class LLMSidecarFile(BaseModel):
+    path: str
+    status: Literal["success", "failed", "skipped"]
+    finding_count: int = Field(default=0, ge=0)
+    review: LLMReviewResult | None = None
+    error: LLMSidecarError | None = None
+
+    @field_validator("path")
+    @classmethod
+    def validate_path(cls, value: str) -> str:
+        normalized = value.strip()
+        if normalized == "":
+            raise ValueError("path must not be empty")
+        return normalized
+
+    @model_validator(mode="after")
+    def validate_status_payload(self) -> "LLMSidecarFile":
+        if self.status == "success" and self.error is not None:
+            raise ValueError("success sidecar files must not include error")
+        if self.status == "failed" and self.error is None:
+            raise ValueError("failed sidecar files must include error")
+        if self.status == "skipped" and self.error is not None:
+            raise ValueError("skipped sidecar files must not include error")
+        return self
+
+
+class LLMSidecarResult(BaseModel):
+    schema_version: str = LLM_SIDECAR_RESULT_SCHEMA_VERSION
+    summary: LLMSidecarSummary
+    files: tuple[LLMSidecarFile, ...] = Field(default_factory=tuple)
+
+
 class LLMReviewRequest(BaseModel):
     content: str
     profile_name: str | None = None
@@ -122,6 +178,12 @@ class LLMReviewRequest(BaseModel):
 __all__ = [
     "LLM_OVERALL_RISK_VALUES",
     "LLM_REVIEW_RESULT_SCHEMA_VERSION",
+    "LLM_SIDECAR_RESULT_SCHEMA_VERSION",
+    "LLM_SIDECAR_STATUS_VALUES",
+    "LLMSidecarError",
+    "LLMSidecarFile",
+    "LLMSidecarResult",
+    "LLMSidecarSummary",
     "LLMReviewFinding",
     "LLMReviewRequest",
     "LLMReviewResult",

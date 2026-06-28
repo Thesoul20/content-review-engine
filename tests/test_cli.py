@@ -230,8 +230,25 @@ def test_cli_review_enable_llm_writes_mock_sidecar_without_changing_main_json(
     assert captured.err == ""
     assert review_payload["schema_version"] == "review-result.v1"
     assert "llm_review" not in review_payload
-    assert llm_payload["schema_version"] == "llm-review-result.v1"
-    assert llm_payload["findings"] == []
+    assert llm_payload["schema_version"] == "llm-sidecar-result.v1"
+    assert llm_payload["summary"] == {
+        "file_count": 1,
+        "succeeded_count": 1,
+        "failed_count": 0,
+        "skipped_count": 0,
+        "finding_count": 0,
+    }
+    assert llm_payload["files"] == [
+        {
+            "path": markdown_path,
+            "status": "success",
+            "finding_count": 0,
+            "review": {
+                "schema_version": "llm-review-result.v1",
+                "findings": [],
+            },
+        }
+    ]
 
 
 def test_cli_review_markdown_enable_llm_without_include_report_keeps_report_unchanged(
@@ -261,8 +278,12 @@ def test_cli_review_markdown_enable_llm_without_include_report_keeps_report_unch
 
     assert exit_code == 0
     assert "## LLM Review" not in captured.out
-    assert llm_payload["schema_version"] == "llm-review-result.v1"
-    assert llm_payload["findings"] == []
+    assert llm_payload["schema_version"] == "llm-sidecar-result.v1"
+    assert llm_payload["files"][0]["status"] == "success"
+    assert llm_payload["files"][0]["review"] == {
+        "schema_version": "llm-review-result.v1",
+        "findings": [],
+    }
     assert captured.err == ""
 
 
@@ -316,7 +337,8 @@ def test_cli_review_markdown_include_llm_report_appends_llm_section(
     assert "llm_semantic_risk" in captured.out
     assert "Possible unsupported claim." in captured.out
     assert "Add evidence." in captured.out
-    assert llm_payload["findings"][0]["rule_id"] == "llm_semantic_risk"
+    assert llm_payload["files"][0]["status"] == "success"
+    assert llm_payload["files"][0]["review"]["findings"][0]["rule_id"] == "llm_semantic_risk"
     assert captured.err == ""
 
 
@@ -452,6 +474,63 @@ def test_cli_review_quality_gate_ignores_llm_findings_when_report_is_included(
     assert "| Matched Gate Findings | 0 |" in captured.out
     assert "llm_critical_issue" in captured.out
     assert captured.err == ""
+
+
+def test_cli_review_llm_failure_writes_failed_sidecar_and_keeps_deterministic_exit_code(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    markdown_path = "tests/fixtures/markdown/clean_article.md"
+    profile_path = "tests/fixtures/profiles/default.yml"
+    llm_output_path = tmp_path / "review.llm.json"
+
+    from content_review_engine.llm import LLMProviderError
+
+    def fake_review(self, request):  # type: ignore[no-untyped-def]
+        del self, request
+        raise LLMProviderError("provider temporarily unavailable")
+
+    monkeypatch.setattr("content_review_engine.llm.mock.MockLLMReviewer.review", fake_review)
+
+    exit_code = main(
+        [
+            "review",
+            markdown_path,
+            "--profile",
+            profile_path,
+            "--fail-on",
+            "warning",
+            "--enable-llm",
+            "--llm-output",
+            str(llm_output_path),
+        ]
+    )
+
+    captured = capsys.readouterr()
+    llm_payload = json.loads(llm_output_path.read_text(encoding="utf-8"))
+
+    assert exit_code == 0
+    assert "Findings: 0" in captured.out
+    assert captured.err == ""
+    assert llm_payload["summary"] == {
+        "file_count": 1,
+        "succeeded_count": 0,
+        "failed_count": 1,
+        "skipped_count": 0,
+        "finding_count": 0,
+    }
+    assert llm_payload["files"] == [
+        {
+            "path": markdown_path,
+            "status": "failed",
+            "finding_count": 0,
+            "error": {
+                "error_type": "LLMProviderError",
+                "message": "provider temporarily unavailable",
+            },
+        }
+    ]
 
 
 def test_cli_review_enable_llm_builds_request_from_current_input(
@@ -850,10 +929,11 @@ def test_cli_review_pydanticai_provider_writes_sidecar_with_fake_provider(
     assert captured.err == ""
     assert review_payload["schema_version"] == "review-result.v1"
     assert "llm_review" not in review_payload
-    assert llm_payload["schema_version"] == "llm-review-result.v1"
-    assert llm_payload["provider"] == "pydanticai-openai"
-    assert llm_payload["model"] == "gpt-4o-mini"
-    assert llm_payload["findings"][0]["rule_id"] == "llm_semantic_risk"
+    assert llm_payload["schema_version"] == "llm-sidecar-result.v1"
+    assert llm_payload["files"][0]["status"] == "success"
+    assert llm_payload["files"][0]["review"]["provider"] == "pydanticai-openai"
+    assert llm_payload["files"][0]["review"]["model"] == "gpt-4o-mini"
+    assert llm_payload["files"][0]["review"]["findings"][0]["rule_id"] == "llm_semantic_risk"
 
 
 def test_cli_missing_markdown_file_returns_non_zero(
@@ -2249,6 +2329,7 @@ def test_cli_batch_enable_llm_writes_mock_sidecars_without_changing_batch_json(
     clean_sidecar = llm_output_dir / "clean.md.llm-review.json"
     forbidden_sidecar = llm_output_dir / "forbidden.md.llm-review.json"
     nested_sidecar = llm_output_dir / "nested" / "nested_forbidden.md.llm-review.json"
+    manifest_sidecar = llm_output_dir / "llm-review-manifest.json"
 
     assert exit_code == 0
     assert captured.out == ""
@@ -2258,17 +2339,96 @@ def test_cli_batch_enable_llm_writes_mock_sidecars_without_changing_batch_json(
     assert clean_sidecar.exists()
     assert forbidden_sidecar.exists()
     assert nested_sidecar.exists()
+    assert manifest_sidecar.exists()
     assert json.loads(clean_sidecar.read_text(encoding="utf-8")) == {
-        "schema_version": "llm-review-result.v1",
-        "findings": [],
+        "schema_version": "llm-sidecar-result.v1",
+        "summary": {
+            "file_count": 1,
+            "succeeded_count": 1,
+            "failed_count": 0,
+            "skipped_count": 0,
+            "finding_count": 0,
+        },
+        "files": [
+            {
+                "path": "tests/fixtures/batch/articles/clean.md",
+                "status": "success",
+                "finding_count": 0,
+                "review": {
+                    "schema_version": "llm-review-result.v1",
+                    "findings": [],
+                },
+            }
+        ],
     }
     assert json.loads(forbidden_sidecar.read_text(encoding="utf-8")) == {
-        "schema_version": "llm-review-result.v1",
-        "findings": [],
+        "schema_version": "llm-sidecar-result.v1",
+        "summary": {
+            "file_count": 1,
+            "succeeded_count": 1,
+            "failed_count": 0,
+            "skipped_count": 0,
+            "finding_count": 0,
+        },
+        "files": [
+            {
+                "path": "tests/fixtures/batch/articles/forbidden.md",
+                "status": "success",
+                "finding_count": 0,
+                "review": {
+                    "schema_version": "llm-review-result.v1",
+                    "findings": [],
+                },
+            }
+        ],
     }
     assert json.loads(nested_sidecar.read_text(encoding="utf-8")) == {
-        "schema_version": "llm-review-result.v1",
-        "findings": [],
+        "schema_version": "llm-sidecar-result.v1",
+        "summary": {
+            "file_count": 1,
+            "succeeded_count": 1,
+            "failed_count": 0,
+            "skipped_count": 0,
+            "finding_count": 0,
+        },
+        "files": [
+            {
+                "path": "tests/fixtures/batch/articles/nested/nested_forbidden.md",
+                "status": "success",
+                "finding_count": 0,
+                "review": {
+                    "schema_version": "llm-review-result.v1",
+                    "findings": [],
+                },
+            }
+        ],
+    }
+    assert json.loads(manifest_sidecar.read_text(encoding="utf-8")) == {
+        "schema_version": "llm-sidecar-result.v1",
+        "summary": {
+            "file_count": 3,
+            "succeeded_count": 3,
+            "failed_count": 0,
+            "skipped_count": 0,
+            "finding_count": 0,
+        },
+        "files": [
+            {
+                "path": "tests/fixtures/batch/articles/clean.md",
+                "status": "success",
+                "finding_count": 0,
+            },
+            {
+                "path": "tests/fixtures/batch/articles/forbidden.md",
+                "status": "success",
+                "finding_count": 0,
+            },
+            {
+                "path": "tests/fixtures/batch/articles/nested/nested_forbidden.md",
+                "status": "success",
+                "finding_count": 0,
+            },
+        ],
     }
 
 
@@ -2654,10 +2814,14 @@ def test_cli_batch_pydanticai_provider_writes_sidecars_with_fake_provider(
     assert captured.err == ""
     assert review_payload["schema_version"] == "batch-review-result.v1"
     assert "llm_review" not in review_payload
-    assert llm_payload["schema_version"] == "llm-review-result.v1"
-    assert llm_payload["provider"] == "pydanticai-openai"
-    assert llm_payload["model"] == "gpt-4o-mini"
-    assert llm_payload["findings"][0]["rule_id"] == "llm_semantic_risk"
+    assert llm_payload["schema_version"] == "llm-sidecar-result.v1"
+    assert llm_payload["files"][0]["status"] == "success"
+    assert llm_payload["files"][0]["review"]["provider"] == "pydanticai-openai"
+    assert llm_payload["files"][0]["review"]["model"] == "gpt-4o-mini"
+    assert (
+        llm_payload["files"][0]["review"]["findings"][0]["rule_id"]
+        == "llm_semantic_risk"
+    )
 
 
 def test_cli_batch_quality_gate_ignores_llm_findings(
@@ -2707,6 +2871,92 @@ def test_cli_batch_quality_gate_ignores_llm_findings(
     assert "Files with findings: 0" in captured.out
     assert "Findings: 0" in captured.out
     assert captured.err == ""
+
+
+def test_cli_batch_llm_partial_failure_writes_manifest_and_keeps_deterministic_output(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    input_dir = "tests/fixtures/batch/articles"
+    profile_path = "tests/fixtures/batch/profile.yml"
+    llm_output_dir = tmp_path / "llm-sidecars"
+
+    from content_review_engine.llm import LLMProviderError, LLMReviewResult
+
+    def fake_review(self, request):  # type: ignore[no-untyped-def]
+        del self
+        if Path(request.content_path).name == "forbidden.md":
+            raise LLMProviderError("mock provider failure")
+        return LLMReviewResult()
+
+    monkeypatch.setattr("content_review_engine.llm.mock.MockLLMReviewer.review", fake_review)
+
+    exit_code = main(
+        [
+            "batch",
+            input_dir,
+            "--profile",
+            profile_path,
+            "--recursive",
+            "--enable-llm",
+            "--llm-output-dir",
+            str(llm_output_dir),
+        ]
+    )
+
+    captured = capsys.readouterr()
+    manifest_payload = json.loads(
+        (llm_output_dir / "llm-review-manifest.json").read_text(encoding="utf-8")
+    )
+    failed_sidecar_payload = json.loads(
+        (llm_output_dir / "forbidden.md.llm-review.json").read_text(encoding="utf-8")
+    )
+
+    assert exit_code == 0
+    assert "Files discovered: 3" in captured.out
+    assert "Files with findings: 2" in captured.out
+    assert "Findings: 2" in captured.out
+    assert captured.err == ""
+    assert manifest_payload["summary"] == {
+        "file_count": 3,
+        "succeeded_count": 2,
+        "failed_count": 1,
+        "skipped_count": 0,
+        "finding_count": 0,
+    }
+    assert manifest_payload["files"] == [
+        {
+            "path": "tests/fixtures/batch/articles/clean.md",
+            "status": "success",
+            "finding_count": 0,
+        },
+        {
+            "path": "tests/fixtures/batch/articles/forbidden.md",
+            "status": "failed",
+            "finding_count": 0,
+            "error": {
+                "error_type": "LLMProviderError",
+                "message": "mock provider failure",
+            },
+        },
+        {
+            "path": "tests/fixtures/batch/articles/nested/nested_forbidden.md",
+            "status": "success",
+            "finding_count": 0,
+        },
+    ]
+    assert failed_sidecar_payload["files"] == [
+        {
+            "path": "tests/fixtures/batch/articles/forbidden.md",
+            "status": "failed",
+            "finding_count": 0,
+            "error": {
+                "error_type": "LLMProviderError",
+                "message": "mock provider failure",
+            },
+        }
+    ]
 
 
 def test_cli_batch_sidecar_write_failure_returns_friendly_error(

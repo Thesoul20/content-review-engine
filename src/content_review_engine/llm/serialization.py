@@ -4,6 +4,10 @@ import json
 from typing import Any
 
 from content_review_engine.llm.models import (
+    LLMSidecarError,
+    LLMSidecarFile,
+    LLMSidecarResult,
+    LLMSidecarSummary,
     LLMReviewFinding,
     LLMReviewResult,
     LLMReviewSummary,
@@ -26,9 +30,34 @@ def llm_review_result_to_json(result: LLMReviewResult) -> str:
     return json.dumps(llm_review_result_to_dict(result), ensure_ascii=False, indent=2)
 
 
+def llm_sidecar_error_to_dict(error: LLMSidecarError) -> dict[str, Any]:
+    return error.model_dump(mode="json", exclude_none=True)
+
+
+def llm_sidecar_file_to_dict(file: LLMSidecarFile) -> dict[str, Any]:
+    return file.model_dump(mode="json", exclude_none=True)
+
+
+def llm_sidecar_summary_to_dict(summary: LLMSidecarSummary) -> dict[str, Any]:
+    return summary.model_dump(mode="json", exclude_none=True)
+
+
+def llm_sidecar_result_to_dict(result: LLMSidecarResult) -> dict[str, Any]:
+    return result.model_dump(mode="json", exclude_none=True)
+
+
+def llm_sidecar_result_to_json(result: LLMSidecarResult) -> str:
+    return json.dumps(llm_sidecar_result_to_dict(result), ensure_ascii=False, indent=2)
+
+
 __all__ = [
     "llm_review_finding_to_dict",
     "llm_review_result_to_dict",
     "llm_review_result_to_json",
     "llm_review_summary_to_dict",
+    "llm_sidecar_error_to_dict",
+    "llm_sidecar_file_to_dict",
+    "llm_sidecar_result_to_dict",
+    "llm_sidecar_result_to_json",
+    "llm_sidecar_summary_to_dict",
 ]
