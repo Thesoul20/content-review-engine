@@ -2,6 +2,7 @@ import pytest
 from pydantic import ValidationError
 
 from content_review_engine.llm import (
+    build_llm_smoke_check_request,
     LLMSidecarFile,
     LLMProviderError,
     LLMReviewFinding,
@@ -9,6 +10,7 @@ from content_review_engine.llm import (
     build_llm_sidecar_file_failed,
     build_llm_sidecar_file_success,
     build_llm_sidecar_result,
+    create_llm_reviewer,
     llm_sidecar_result_to_dict,
 )
 
@@ -100,3 +102,20 @@ def test_llm_sidecar_failed_file_requires_error() -> None:
             status="failed",
             finding_count=0,
         )
+
+
+def test_llm_sidecar_serialization_keeps_envelope_stable_for_testmodel_provider() -> None:
+    review = create_llm_reviewer("pydantic-ai-testmodel").review(
+        build_llm_smoke_check_request()
+    )
+
+    payload = llm_sidecar_result_to_dict(
+        build_llm_sidecar_result(
+            [build_llm_sidecar_file_success(path="article.md", review=review)]
+        )
+    )
+
+    assert payload["schema_version"] == "llm-sidecar-result.v1"
+    assert payload["summary"]["file_count"] == 1
+    assert payload["files"][0]["status"] == "success"
+    assert payload["files"][0]["review"]["provider"] == "pydanticai-testmodel"

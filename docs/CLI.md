@@ -82,6 +82,7 @@ Single-file `review` now supports an explicit experimental LLM sidecar flow:
 ```bash
 uv run content-review review article.md --profile profile.yaml --enable-llm --llm-output article.llm.json
 uv run content-review review article.md --profile profile.yaml --enable-llm --llm-provider mock --llm-output article.llm.json
+uv run content-review review article.md --profile profile.yaml --enable-llm --llm-provider pydantic-ai-testmodel --llm-output article.llm.json
 uv run content-review review article.md --profile profile.yaml --enable-llm --llm-config examples/llm/mock/llm-provider.yml --llm-output article.llm.json
 uv run content-review review article.md --profile profile.yaml --enable-llm --llm-output article.llm.json --llm-markdown-output article.llm.md
 uv run content-review review article.md --profile profile.yaml --format markdown --enable-llm --llm-output article.llm.json --include-llm-report
@@ -92,11 +93,12 @@ Single-file `review` constraints:
 
 - this path is opt-in and disabled by default
 - only the single-file `review` command supports it
-- `--llm-provider` supports `mock` and `pydanticai`
+- explicit single-file `--llm-provider` supports only `mock` and `pydantic-ai-testmodel`
 - `--enable-llm` requires `--llm-output`
 - `--llm-output` without `--enable-llm` fails
 - `--llm-markdown-output` without `--enable-llm` fails
 - `--include-llm-report` without `--enable-llm` fails
+- `--llm-provider` without `--enable-llm` fails
 - `--include-llm-report` requires `--format markdown`
 - `--include-llm-report` fails for `--format json`
 - `--include-llm-report` fails for `--format text`
@@ -108,10 +110,13 @@ Single-file `review` constraints:
 - `--llm-config` loads a YAML `LLMProviderConfig` file
 - explicit CLI flags override the same field from `--llm-config`
 - parser defaults do not override config-file values
-- `--llm-provider mock` is the default provider
-- `--llm-provider pydanticai` performs secret preflight and then executes a
-  real PydanticAI runtime call through the provider interface
-- `--llm-model` is required for `--llm-provider pydanticai`
+- when omitted, single-file sidecar keeps the existing config-driven default behavior
+- explicit `--llm-provider` uses `create_llm_reviewer()` directly
+- explicit `--llm-provider mock` requires no API key and does not access the network
+- explicit `--llm-provider pydantic-ai-testmodel` requires no API key and does not access the network
+- unsupported explicit `--llm-provider` values fail explicitly and do not fall back
+- real `pydanticai` single-file sidecar usage remains available through `--llm-config` plus the shared config-driven provider path
+- `--llm-model` is required for config-driven `pydanticai`
 - `--llm-model`, `--llm-api-key-env`, `--llm-base-url`, and
   `--llm-timeout-seconds`, `--llm-retry-attempts`, and
   `--llm-retry-backoff-seconds`, and
@@ -183,7 +188,10 @@ Current behavior guarantees:
 Provider notes:
 
 - `mock` keeps the deterministic sidecar behavior from TASK-0037 and remains
-  the default provider
+  the default single-file sidecar behavior when no explicit reviewer provider
+  name is selected
+- `pydantic-ai-testmodel` is available only through explicit single-file
+  `--llm-provider` reviewer selection and runs through `create_llm_reviewer()`
 - `pydanticai` now performs a real runtime call after secret preflight
 - `pydanticai` uses the shared structured prompt builder, structured response
   schema, and response mapper

@@ -183,8 +183,8 @@ def build_parser() -> argparse.ArgumentParser:
         type=_parse_llm_provider,
         default=None,
         help=(
-            "LLM provider for experimental sidecar review. "
-            "Current runnable provider: 'mock'. Reserved provider name: 'pydanticai'."
+            "LLM reviewer provider for experimental single-file sidecar review. "
+            "Supported values: 'mock', 'pydantic-ai-testmodel'."
         ),
     )
     review_parser.add_argument(
@@ -717,6 +717,8 @@ def _quality_gate_exit_code(
 
 def _validate_review_llm_args(args: argparse.Namespace) -> None:
     if not args.enable_llm:
+        if args.llm_provider is not None:
+            raise ValueError("--llm-provider can only be used with --enable-llm and --llm-output")
         if args.llm_output is not None:
             raise ValueError("--llm-output requires --enable-llm")
         if args.llm_markdown_output is not None:
@@ -767,6 +769,12 @@ def _build_llm_reviewer(args: argparse.Namespace):
     if isinstance(reviewer, PydanticAIReviewer):
         reviewer.resolve_secret()
     return reviewer
+
+
+def _build_single_review_llm_reviewer(args: argparse.Namespace):
+    if args.llm_provider is not None:
+        return create_llm_reviewer(args.llm_provider)
+    return _build_llm_reviewer(args)
 
 
 def _build_llm_review_request(
@@ -924,7 +932,7 @@ def _write_batch_llm_sidecars(
 
 def _run_review_command(args: argparse.Namespace) -> int:
     _validate_review_llm_args(args)
-    llm_reviewer = _build_llm_reviewer(args) if args.enable_llm else None
+    llm_reviewer = _build_single_review_llm_reviewer(args) if args.enable_llm else None
     markdown_text = read_markdown(args.markdown_file)
     profile = load_profile(args.profile)
     review_result = review_document(

@@ -85,6 +85,29 @@ use.
 
 ## Recent Completion
 
+- TASK-0057 is complete.
+- Added explicit single-file LLM sidecar reviewer selection for
+  `content-review review` through `--llm-provider mock` and
+  `--llm-provider pydantic-ai-testmodel`.
+- Updated `src/content_review_engine/cli.py` so explicit single-file
+  `--llm-provider` uses `create_llm_reviewer()` directly, unsupported values
+  fail clearly without fallback, and `--llm-provider` without sidecar output
+  returns a clear error.
+- Kept omitted single-file `--llm-provider` behavior on the existing
+  config-driven sidecar path, so current default sidecar behavior remains
+  unchanged.
+- Added and updated `tests/test_cli.py`, `tests/test_llm_sidecar.py`, and
+  `tests/test_llm_provider_factory.py` for default sidecar behavior,
+  `--llm-provider mock`, `--llm-provider pydantic-ai-testmodel`,
+  unsupported-provider failures, no-fallback behavior, no-network/no-API-key
+  boundaries, and unchanged deterministic output boundaries.
+- Updated `docs/CLI.md`, `docs/LLM_PROVIDER_USAGE.md`, and
+  `docs/ARCHITECTURE.md` to document the new single-file sidecar provider
+  selection boundary and its relationship to the existing config-driven path.
+- Kept `ReviewResult`, batch behavior, `llm-check` user-visible behavior,
+  sidecar JSON schema, Markdown report structure, and quality-gate semantics
+  unchanged.
+
 - TASK-0056 is complete.
 - Added `--provider` to `content-review llm-check` for factory-based reviewer
   selection with `mock` and `pydantic-ai-testmodel`.

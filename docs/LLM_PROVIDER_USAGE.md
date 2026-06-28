@@ -54,8 +54,11 @@ Factory behavior:
   does not access the network for the supported reviewer providers above
 
 This is a package boundary for future adapters. `llm-check --provider` now
-reuses it for the safe local reviewer providers above. It still does not
-change the default behavior of `review`, `batch`, or `llm-check`.
+reuses it for the safe local reviewer providers above. Single-file
+`content-review review --enable-llm --llm-output ... --llm-provider <name>`
+now also reuses it for those same safe local reviewer providers. It still
+does not change the default behavior of `review`, `batch`, or `llm-check`
+when `--llm-provider` is omitted.
 
 ## PydanticAI TestModel Provider
 
@@ -71,11 +74,12 @@ Use it when you need:
 
 Current limitations:
 
-- it is a Python package provider only, available through the package-level
-  reviewer provider factory, not as a CLI-selectable provider
+- it is available only through the package-level reviewer provider factory and
+  CLI paths that explicitly opt into that reviewer-name factory boundary:
+  `llm-check --provider` and single-file `review --enable-llm --llm-output ...
+  --llm-provider pydantic-ai-testmodel`
 - it does not read `LLMProviderConfig`
-- it does not participate in `content-review review`, `batch`, or
-  `llm-check`
+- it does not participate in config-driven `batch` sidecar review
 - it should not be treated as a production LLM integration
 
 ## LLM Check Command
@@ -122,7 +126,7 @@ Use `llm-check --runtime` only for explicit manual verification.
 ## PydanticAI Provider
 
 Use `--llm-provider pydanticai` only when you intentionally want a real LLM
-sidecar review.
+sidecar review through the shared config-driven provider path.
 
 Provider parameters covered by the current CLI:
 
@@ -151,6 +155,24 @@ sleep before each retryable retry.
 the minimum spacing between consecutive real runtime call start times on the
 same `pydanticai` reviewer instance.
 The same fields can also be used with `content-review llm-check`.
+
+## Single-file Sidecar Provider Selection
+
+Use explicit single-file `--llm-provider` only with the existing sidecar path:
+
+```bash
+uv run content-review review article.md --profile profile.yml --enable-llm --llm-output article.llm.json --llm-provider mock
+uv run content-review review article.md --profile profile.yml --enable-llm --llm-output article.llm.json --llm-provider pydantic-ai-testmodel
+```
+
+Behavior:
+
+- explicit single-file `--llm-provider` supports only `mock` and `pydantic-ai-testmodel`
+- explicit single-file `--llm-provider` calls `create_llm_reviewer()` directly
+- unsupported explicit provider names fail clearly and do not fall back
+- `--llm-provider` without the sidecar path fails clearly
+- omitting explicit `--llm-provider` keeps the existing single-file sidecar behavior unchanged
+- explicit single-file `--llm-provider` does not require an API key, does not read `.env`, and does not access the network for the supported providers above
 
 ## Required Environment Variables
 

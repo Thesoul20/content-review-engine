@@ -635,7 +635,7 @@ def test_cli_review_llm_output_requires_enable_llm(
     assert "Error: --llm-output requires --enable-llm" in captured.err
 
 
-def test_cli_review_llm_provider_without_enable_llm_does_not_affect_deterministic_review(
+def test_cli_review_llm_provider_without_enable_llm_returns_clear_error(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     markdown_path = "tests/fixtures/markdown/clean_article.md"
@@ -654,9 +654,12 @@ def test_cli_review_llm_provider_without_enable_llm_does_not_affect_deterministi
 
     captured = capsys.readouterr()
 
-    assert exit_code == 0
-    assert "Findings: 0" in captured.out
-    assert captured.err == ""
+    assert exit_code == 2
+    assert captured.out == ""
+    assert (
+        "Error: --llm-provider can only be used with --enable-llm and --llm-output"
+        in captured.err
+    )
 
 
 def test_cli_review_llm_model_without_enable_llm_does_not_affect_deterministic_review(
@@ -979,6 +982,23 @@ def test_cli_review_parser_accepts_llm_config_argument() -> None:
     assert args.llm_min_request_interval_seconds is None
 
 
+def test_cli_review_parser_accepts_single_file_sidecar_provider_argument() -> None:
+    parser = build_parser()
+
+    args = parser.parse_args(
+        [
+            "review",
+            "article.md",
+            "--profile",
+            "profile.yml",
+            "--llm-provider",
+            "pydantic-ai-testmodel",
+        ]
+    )
+
+    assert args.llm_provider == "pydantic-ai-testmodel"
+
+
 def test_cli_llm_check_parser_accepts_runtime_and_llm_config_arguments() -> None:
     parser = build_parser()
 
@@ -1067,9 +1087,39 @@ def test_cli_review_rejects_unsupported_llm_provider(
     assert exit_code == 2
     assert captured.out == ""
     assert (
-        "Error: Unknown LLM provider 'openai'. Supported providers: 'mock', 'pydanticai'."
+        "Error: Unknown LLM provider 'openai'. Supported providers: 'mock', 'pydantic-ai-testmodel'."
         in captured.err
     )
+    assert not (tmp_path / "review.llm.json").exists()
+
+
+def test_cli_review_rejects_pydanticai_as_explicit_single_file_sidecar_provider_without_fallback(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = main(
+        [
+            "review",
+            "tests/fixtures/markdown/clean_article.md",
+            "--profile",
+            "tests/fixtures/profiles/default.yml",
+            "--enable-llm",
+            "--llm-provider",
+            "pydanticai",
+            "--llm-output",
+            str(tmp_path / "review.llm.json"),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert captured.out == ""
+    assert (
+        "Error: Unknown LLM provider 'pydanticai'. Supported providers: 'mock', 'pydantic-ai-testmodel'."
+        in captured.err
+    )
+    assert not (tmp_path / "review.llm.json").exists()
 
 
 def test_cli_review_mock_provider_still_works_without_llm_model(
@@ -1099,13 +1149,62 @@ def test_cli_review_mock_provider_still_works_without_llm_model(
     assert captured.err == ""
 
 
-def test_cli_review_mock_provider_accepts_llm_model_and_api_key_env_config(
+def test_cli_review_explicit_provider_uses_create_llm_reviewer_name_path(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    from content_review_engine.llm import LLMReviewResult
+
+    captured_provider: dict[str, object] = {}
+
+    class DummyReviewer:
+        def review(self, request):  # type: ignore[no-untyped-def]
+            del request
+            return LLMReviewResult(provider="mock")
+
+    def fake_create_llm_reviewer(provider):  # type: ignore[no-untyped-def]
+        captured_provider["value"] = provider
+        return DummyReviewer()
+
+    monkeypatch.setattr("content_review_engine.cli.create_llm_reviewer", fake_create_llm_reviewer)
+
+    exit_code = main(
+        [
+            "review",
+            "tests/fixtures/markdown/clean_article.md",
+            "--profile",
+            "tests/fixtures/profiles/default.yml",
+            "--enable-llm",
+            "--llm-provider",
+            "mock",
+            "--llm-output",
+            str(tmp_path / "review.llm.json"),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert captured.err == ""
+    assert captured_provider == {"value": "mock"}
+
+
+def test_cli_review_pydantic_ai_testmodel_provider_writes_sidecar_without_api_key_or_network(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     markdown_path = "tests/fixtures/markdown/clean_article.md"
     profile_path = "tests/fixtures/profiles/default.yml"
     llm_output_path = tmp_path / "review.llm.json"
+
+    import socket
+
+    def fail_create_connection(*args, **kwargs):  # type: ignore[no-untyped-def]
+        raise AssertionError(f"Unexpected network call: {args!r} {kwargs!r}")
+
+    monkeypatch.setattr(socket, "create_connection", fail_create_connection)
 
     exit_code = main(
         [
@@ -1115,13 +1214,7 @@ def test_cli_review_mock_provider_accepts_llm_model_and_api_key_env_config(
             profile_path,
             "--enable-llm",
             "--llm-provider",
-            "mock",
-            "--llm-model",
-            "mock-model",
-            "--llm-api-key-env",
-            "OPENAI_API_KEY",
-            "--llm-base-url",
-            "https://example.com/v1",
+            "pydantic-ai-testmodel",
             "--llm-output",
             str(llm_output_path),
         ]
@@ -1133,9 +1226,11 @@ def test_cli_review_mock_provider_accepts_llm_model_and_api_key_env_config(
     assert exit_code == 0
     assert captured.err == ""
     assert llm_payload["files"][0]["status"] == "success"
+    assert llm_payload["files"][0]["review"]["provider"] == "pydanticai-testmodel"
+    assert llm_payload["files"][0]["review"]["model"] == "test"
 
 
-def test_cli_review_pydanticai_provider_writes_sidecar_json_and_markdown_report(
+def test_cli_review_llm_config_file_can_drive_pydanticai_sidecar_json_and_markdown_report(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
@@ -1184,10 +1279,8 @@ def test_cli_review_pydanticai_provider_writes_sidecar_json_and_markdown_report(
             "--fail-on",
             "warning",
             "--enable-llm",
-            "--llm-provider",
-            "pydanticai",
-            "--llm-model",
-            "gpt-4o-mini",
+            "--llm-config",
+            "examples/llm/pydanticai/llm-provider.yml",
             "--llm-api-key-env",
             "CONTENT_REVIEW_TEST_LLM_API_KEY",
             "--llm-timeout-seconds",
@@ -1218,7 +1311,7 @@ def test_cli_review_pydanticai_provider_writes_sidecar_json_and_markdown_report(
     }
     assert llm_payload["files"][0]["status"] == "success"
     assert llm_payload["files"][0]["review"]["provider"] == "pydanticai"
-    assert llm_payload["files"][0]["review"]["model"] == "gpt-4o-mini"
+    assert llm_payload["files"][0]["review"]["model"] == "openai:gpt-4o-mini"
     assert llm_payload["files"][0]["review"]["findings"][0]["rule_id"] == "llm_semantic_risk"
     assert markdown_report.startswith("# LLM Sidecar Review Report\n")
     assert "llm_semantic_risk" in markdown_report
@@ -1227,7 +1320,7 @@ def test_cli_review_pydanticai_provider_writes_sidecar_json_and_markdown_report(
     assert captured_agent_kwargs["timeout_seconds"] == 21.0
 
 
-def test_cli_review_pydanticai_provider_passes_retry_config(
+def test_cli_review_pydanticai_config_path_passes_retry_config(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
@@ -1252,10 +1345,8 @@ def test_cli_review_pydanticai_provider_passes_retry_config(
             "--profile",
             "tests/fixtures/profiles/default.yml",
             "--enable-llm",
-            "--llm-provider",
-            "pydanticai",
-            "--llm-model",
-            "gpt-4o-mini",
+            "--llm-config",
+            "examples/llm/pydanticai/llm-provider.yml",
             "--llm-api-key-env",
             "CONTENT_REVIEW_TEST_LLM_API_KEY",
             "--llm-retry-attempts",
@@ -1275,7 +1366,7 @@ def test_cli_review_pydanticai_provider_passes_retry_config(
     assert captured["retry_backoff_seconds"] == 1.25
 
 
-def test_cli_review_pydanticai_provider_passes_min_request_interval_config(
+def test_cli_review_pydanticai_config_path_passes_min_request_interval_config(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
@@ -1299,10 +1390,8 @@ def test_cli_review_pydanticai_provider_passes_min_request_interval_config(
             "--profile",
             "tests/fixtures/profiles/default.yml",
             "--enable-llm",
-            "--llm-provider",
-            "pydanticai",
-            "--llm-model",
-            "gpt-4o-mini",
+            "--llm-config",
+            "examples/llm/pydanticai/llm-provider.yml",
             "--llm-api-key-env",
             "CONTENT_REVIEW_TEST_LLM_API_KEY",
             "--llm-min-request-interval-seconds",
@@ -1319,7 +1408,7 @@ def test_cli_review_pydanticai_provider_passes_min_request_interval_config(
     assert captured["min_request_interval_seconds"] == 2.5
 
 
-def test_cli_review_pydanticai_provider_requires_api_key_env(
+def test_cli_review_llm_config_file_rejects_empty_api_key_env_override(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
@@ -1332,10 +1421,10 @@ def test_cli_review_pydanticai_provider_requires_api_key_env(
             "--profile",
             "tests/fixtures/profiles/default.yml",
             "--enable-llm",
-            "--llm-provider",
-            "pydanticai",
-            "--llm-model",
-            "gpt-4o-mini",
+            "--llm-config",
+            "examples/llm/pydanticai/llm-provider.yml",
+            "--llm-api-key-env",
+            "",
             "--llm-output",
             str(llm_output_path),
         ]
@@ -1345,7 +1434,7 @@ def test_cli_review_pydanticai_provider_requires_api_key_env(
 
     assert exit_code == 2
     assert captured.out == ""
-    assert "Error: LLM provider 'pydanticai' requires api_key_env to be configured." in captured.err
+    assert "Error: api_key_env must not be empty" in captured.err
 
 
 def test_cli_review_llm_config_file_not_found_returns_error(
@@ -1580,7 +1669,7 @@ def test_cli_review_parser_defaults_do_not_override_llm_config_file(
     }
 
 
-def test_cli_review_pydanticai_provider_rejects_missing_environment_variable(
+def test_cli_review_llm_config_file_pydanticai_rejects_missing_environment_variable(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
@@ -1595,10 +1684,8 @@ def test_cli_review_pydanticai_provider_rejects_missing_environment_variable(
             "--profile",
             "tests/fixtures/profiles/default.yml",
             "--enable-llm",
-            "--llm-provider",
-            "pydanticai",
-            "--llm-model",
-            "gpt-4o-mini",
+            "--llm-config",
+            "examples/llm/pydanticai/llm-provider.yml",
             "--llm-api-key-env",
             "CONTENT_REVIEW_TEST_LLM_API_KEY",
             "--llm-output",

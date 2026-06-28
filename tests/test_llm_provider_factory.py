@@ -49,6 +49,17 @@ def test_provider_factory_rejects_unsupported_provider_without_fallback() -> Non
     assert "'pydantic-ai-testmodel'" in message
 
 
+def test_provider_factory_name_mode_rejects_pydanticai_without_fallback() -> None:
+    with pytest.raises(UnsupportedLLMProviderError) as exc_info:
+        create_llm_reviewer("pydanticai")
+
+    message = str(exc_info.value)
+
+    assert "Unknown LLM provider 'pydanticai'." in message
+    assert "'mock'" in message
+    assert "'pydantic-ai-testmodel'" in message
+
+
 def test_provider_factory_rejects_blank_provider_without_fallback() -> None:
     with pytest.raises(UnsupportedLLMProviderError) as exc_info:
         create_llm_reviewer("   ")

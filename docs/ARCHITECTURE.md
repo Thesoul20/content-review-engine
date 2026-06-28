@@ -225,8 +225,12 @@ Current status:
 - `content-review llm-check --provider` now uses that name-driven factory path
   for safe local smoke checks, while the existing config-driven `llm-check`
   path remains available for `mock` and `pydanticai`
-- the CLI can optionally route single-file and batch sidecar review through
-  that config/config-loader/factory boundary
+- batch sidecar review still routes through the config/config-loader/factory
+  boundary
+- single-file sidecar review now has two explicit paths:
+  omitted `--llm-provider` keeps the existing config-driven boundary, while
+  explicit `--llm-provider mock|pydantic-ai-testmodel` uses the name-driven
+  `create_llm_reviewer()` boundary
 - the CLI can optionally write a separate LLM sidecar Markdown report for
   single-file or batch sidecar output through `--llm-markdown-output`
 - the single-file Markdown report can now optionally append a separate
