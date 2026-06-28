@@ -85,6 +85,32 @@ use.
 
 ## Recent Completion
 
+- TASK-0053 is complete.
+- Added `content-review llm-check` for standalone LLM provider config, secret,
+  and optional runtime smoke checks.
+- Added `src/content_review_engine/llm/smoke_check.py` with a synthetic
+  minimal `LLMReviewRequest`, stage-oriented smoke-check execution, and stable
+  text rendering that avoids printing secrets, full prompts, or tracebacks.
+- Reused the existing `LLMProviderConfig`, `--llm-config` YAML loader, CLI
+  override precedence, secret resolver, and provider factory boundaries.
+- Kept default `llm-check` behavior at config check plus secret check only;
+  `--runtime` is now required for a real provider runtime smoke call.
+- Added and updated tests for mock config/runtime smoke checks, pydanticai
+  secret failures, fake-runtime success/failure paths, config-file errors,
+  no-network behavior, override precedence, and output-safety boundaries.
+- Updated CLI, CI, architecture, and provider-usage docs for the new
+  standalone smoke-check command and its manual-verification-only runtime
+  behavior.
+- Kept `ReviewProfile` schema unchanged.
+- Kept `LLMSidecarResult` JSON schema unchanged.
+- Kept LLM sidecar Markdown report structure unchanged.
+- Kept deterministic review and batch JSON schemas unchanged.
+- Kept deterministic Markdown report structure unchanged.
+- Kept deterministic quality-gate semantics unchanged.
+- Added no new provider, no fallback behavior, no streaming, no batch
+  concurrency, no rate-limit queue, and no real-network default test
+  dependency.
+
 - TASK-0052 is complete.
 - Added `src/content_review_engine/llm/config_loader.py` plus example
   YAML config files under `examples/llm/pydanticai/` and

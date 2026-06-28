@@ -979,6 +979,26 @@ def test_cli_review_parser_accepts_llm_config_argument() -> None:
     assert args.llm_min_request_interval_seconds is None
 
 
+def test_cli_llm_check_parser_accepts_runtime_and_llm_config_arguments() -> None:
+    parser = build_parser()
+
+    args = parser.parse_args(
+        [
+            "llm-check",
+            "--llm-config",
+            "examples/llm/pydanticai/llm-provider.yml",
+            "--runtime",
+        ]
+    )
+
+    assert args.command == "llm-check"
+    assert args.llm_config == "examples/llm/pydanticai/llm-provider.yml"
+    assert args.runtime is True
+    assert args.llm_retry_attempts is None
+    assert args.llm_retry_backoff_seconds is None
+    assert args.llm_min_request_interval_seconds is None
+
+
 def test_cli_review_llm_markdown_output_requires_enable_llm(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
@@ -4468,3 +4488,216 @@ def test_console_script_entrypoint_is_exposed() -> None:
 
     assert content_review_entrypoints, "content-review console script is missing"
     assert content_review_entrypoints[0].value == "content_review_engine.cli:main"
+
+
+def test_cli_llm_check_mock_config_succeeds(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = main(
+        [
+            "llm-check",
+            "--llm-config",
+            "examples/llm/mock/llm-provider.yml",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "LLM provider check passed." in captured.out
+    assert "Provider: mock" in captured.out
+    assert "Config: ok" in captured.out
+    assert "Secret: skipped" in captured.out
+    assert "Runtime: skipped" in captured.out
+    assert captured.err == ""
+
+
+def test_cli_llm_check_mock_runtime_succeeds_without_network(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    import socket
+
+    def fail_create_connection(*args, **kwargs):  # type: ignore[no-untyped-def]
+        raise AssertionError(f"Unexpected network call: {args!r} {kwargs!r}")
+
+    monkeypatch.setattr(socket, "create_connection", fail_create_connection)
+
+    exit_code = main(
+        [
+            "llm-check",
+            "--llm-provider",
+            "mock",
+            "--runtime",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "Runtime: ok" in captured.out
+    assert captured.err == ""
+
+
+def test_cli_llm_check_pydanticai_secret_missing_returns_error(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
+    exit_code = main(
+        [
+            "llm-check",
+            "--llm-config",
+            "examples/llm/pydanticai/llm-provider.yml",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert captured.out == ""
+    assert "Error: LLM API key environment variable 'OPENAI_API_KEY' is not set." in captured.err
+
+
+def test_cli_llm_check_missing_config_file_returns_error(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = main(
+        [
+            "llm-check",
+            "--llm-config",
+            str(tmp_path / "missing.yml"),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert captured.out == ""
+    assert "Error: LLM provider config file not found:" in captured.err
+
+
+def test_cli_llm_check_invalid_config_file_returns_error(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    config_path = tmp_path / "invalid.yml"
+    config_path.write_text("provider: [mock\n", encoding="utf-8")
+
+    exit_code = main(
+        [
+            "llm-check",
+            "--llm-config",
+            str(config_path),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert captured.out == ""
+    assert f"Error: Invalid YAML in LLM provider config file: {config_path}." in captured.err
+
+
+def test_cli_llm_check_uses_cli_override_precedence(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    from content_review_engine.llm.smoke_check import LLMSmokeCheckResult
+
+    captured_config: dict[str, object] = {}
+
+    def fake_run_llm_smoke_check(config, *, runtime):  # type: ignore[no-untyped-def]
+        captured_config["provider"] = config.provider
+        captured_config["model"] = config.model
+        captured_config["api_key_env"] = config.api_key_env
+        captured_config["timeout_seconds"] = config.timeout_seconds
+        captured_config["retry_attempts"] = config.retry_attempts
+        captured_config["retry_backoff_seconds"] = config.retry_backoff_seconds
+        captured_config["min_request_interval_seconds"] = config.min_request_interval_seconds
+        captured_config["runtime"] = runtime
+        return LLMSmokeCheckResult(
+            provider=config.provider,
+            config_status="ok",
+            secret_status="ok",
+            runtime_status="skipped",
+        )
+
+    monkeypatch.setattr("content_review_engine.cli.run_llm_smoke_check", fake_run_llm_smoke_check)
+
+    exit_code = main(
+        [
+            "llm-check",
+            "--llm-config",
+            "examples/llm/pydanticai/llm-provider.yml",
+            "--llm-model",
+            "openai:gpt-4.1-mini",
+            "--llm-api-key-env",
+            "OVERRIDE_OPENAI_API_KEY",
+            "--llm-timeout-seconds",
+            "9",
+            "--llm-retry-attempts",
+            "5",
+            "--llm-retry-backoff-seconds",
+            "0.25",
+            "--llm-min-request-interval-seconds",
+            "4.5",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert captured.err == ""
+    assert captured_config == {
+        "provider": "pydanticai",
+        "model": "openai:gpt-4.1-mini",
+        "api_key_env": "OVERRIDE_OPENAI_API_KEY",
+        "timeout_seconds": 9.0,
+        "retry_attempts": 5,
+        "retry_backoff_seconds": 0.25,
+        "min_request_interval_seconds": 4.5,
+        "runtime": False,
+    }
+
+
+def test_cli_llm_check_output_does_not_leak_secret_value_or_full_prompt(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    from content_review_engine.llm.smoke_check import LLMSmokeCheckResult
+
+    monkeypatch.setenv("OPENAI_API_KEY", "super-secret-value")
+
+    def fake_run_llm_smoke_check(config, *, runtime):  # type: ignore[no-untyped-def]
+        del config, runtime
+        return LLMSmokeCheckResult(
+            provider="pydanticai",
+            config_status="ok",
+            secret_status="ok",
+            runtime_status="ok",
+        )
+
+    monkeypatch.setattr("content_review_engine.cli.run_llm_smoke_check", fake_run_llm_smoke_check)
+
+    exit_code = main(
+        [
+            "llm-check",
+            "--llm-provider",
+            "pydanticai",
+            "--llm-model",
+            "openai:gpt-4o-mini",
+            "--llm-api-key-env",
+            "OPENAI_API_KEY",
+            "--runtime",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "super-secret-value" not in captured.out
+    assert "LLM smoke check synthetic request." not in captured.out
+    assert captured.err == ""

@@ -86,6 +86,7 @@ Current CLI adapter:
 ```text
 content-review review <markdown_file> --profile <profile_file>
 content-review batch <input_dir> --profile <profile_file>
+content-review llm-check [LLM config flags]
 content-review profile validate <profile_file>
 content-review profile init --template <template_name> --output <profile_file>
 content-review profile list [--format text|json]
@@ -214,6 +215,9 @@ Current status:
   `LLMProviderConfig`
 - `src/content_review_engine/llm/config_loader.py` now loads YAML LLM provider
   config files into `LLMProviderConfig`
+- `src/content_review_engine/llm/smoke_check.py` now runs standalone provider
+  config/secret/runtime smoke checks without entering the deterministic review
+  pipeline
 - `src/content_review_engine/llm/factory.py` now owns provider selection and
   reviewer construction
 - the CLI can optionally route single-file and batch sidecar review through
@@ -285,6 +289,30 @@ The LLM config loader is intentionally narrow:
 - it does not read environment variables
 - it does not instantiate provider runtimes
 - it does not make network calls
+
+Current LLM smoke-check boundary:
+
+```text
+content-review llm-check
+  ↓
+LLMProviderConfig load + CLI override merge
+  ↓
+Provider Factory
+  ↓
+Optional secret resolution
+  ↓ optional only when --runtime
+Synthetic minimal LLMReviewRequest
+  ↓
+Provider runtime smoke call
+```
+
+The smoke-check command is intentionally separate from `review` and `batch`:
+
+- it does not load a review profile
+- it does not read a Markdown article
+- it does not generate sidecars
+- it does not generate deterministic review output
+- it does not affect quality-gate semantics
 
 Deterministic Markdown report + optional appended LLM section
 ```

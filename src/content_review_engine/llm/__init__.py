@@ -93,6 +93,11 @@ from content_review_engine.llm.serialization import (
     llm_sidecar_result_to_json,
     llm_sidecar_summary_to_dict,
 )
+from content_review_engine.llm.smoke_check import (
+    build_llm_smoke_check_request,
+    render_llm_smoke_check_result,
+    run_llm_smoke_check,
+)
 
 __all__ = [
     "LLM_DEFAULT_PROVIDER_NAME",
@@ -164,12 +169,15 @@ __all__ = [
     "llm_sidecar_summary_to_dict",
     "merge_llm_provider_config",
     "load_llm_provider_config",
+    "build_llm_smoke_check_request",
     "mock",
     "pydanticai",
     "classify_pydanticai_runtime_error",
     "is_pydanticai_retryable_error",
     "pydanticai_response_to_llm_review_result",
     "resolve_llm_api_key",
+    "render_llm_smoke_check_result",
     "raise_pydanticai_not_implemented",
+    "run_llm_smoke_check",
     "validate_pydanticai_review_response",
 ]

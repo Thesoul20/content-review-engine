@@ -20,6 +20,35 @@ the deterministic review pipeline.
   environment variable, can call an external OpenAI-compatible endpoint, and
   should be used only for explicit manual verification.
 
+## LLM Check Command
+
+Use `llm-check` when you want to validate provider setup without mixing that
+verification into `review` or `batch`.
+
+Examples:
+
+```bash
+uv run content-review llm-check --llm-config examples/llm/mock/llm-provider.yml
+uv run content-review llm-check --llm-config examples/llm/pydanticai/llm-provider.yml
+uv run content-review llm-check --llm-config examples/llm/pydanticai/llm-provider.yml --runtime
+```
+
+Default behavior:
+
+- config check
+- secret check when the provider requires one
+- no runtime call
+
+`--runtime` behavior:
+
+- adds a synthetic minimal `LLMReviewRequest`
+- does not read a real article or review profile
+- does not write sidecars or deterministic review output
+- may access the real provider for `pydanticai`
+- may incur provider cost for `pydanticai`
+
+Use `llm-check --runtime` only for explicit manual verification.
+
 ## PydanticAI Provider
 
 Use `--llm-provider pydanticai` only when you intentionally want a real LLM
@@ -51,6 +80,7 @@ sleep before each retryable retry.
 `--llm-min-request-interval-seconds` is optional, defaults to `0.0`, and is
 the minimum spacing between consecutive real runtime call start times on the
 same `pydanticai` reviewer instance.
+The same fields can also be used with `content-review llm-check`.
 
 ## Required Environment Variables
 
@@ -195,6 +225,7 @@ Quality Gate behavior does not read LLM findings or LLM sidecar failures.
 - a provider runtime failure does not become a deterministic quality-gate
   failure
 - command/config/secret errors can still fail the command with exit code `2`
+- `llm-check` does not produce a deterministic quality-gate result at all
 
 ## Config File
 
@@ -216,6 +247,7 @@ Constraints:
 - the loader reads YAML only; it does not read environment variables
 - the loader does not instantiate provider runtimes or make network calls
 - priority is `explicit CLI flags > --llm-config file > built-in defaults`
+- `llm-check` reuses the same config merge behavior as `review` and `batch`
 
 ## Timeout Configuration
 
@@ -280,21 +312,24 @@ Runtime and validation errors to check:
 
 Troubleshooting steps:
 
-1. Confirm `--llm-provider pydanticai` and `--llm-model` are both present.
+1. Confirm `--llm-provider pydanticai` and `--llm-model` are both present, or
+   confirm the same values are available through `--llm-config`.
 2. Confirm `--llm-api-key-env` points to a non-empty environment variable.
 3. If using `--llm-base-url`, confirm the endpoint is OpenAI-compatible.
-4. If you hit `LLMProviderTimeoutError`, retry manually with a larger
+4. Use `content-review llm-check` before `review` or `batch` if you only want
+   to isolate config, secret, or runtime setup problems.
+5. If you hit `LLMProviderTimeoutError`, retry manually with a larger
    `--llm-timeout-seconds` value or a small explicit retry budget.
-5. If you hit `LLMProviderRetryExhaustedError`, inspect whether the last
+6. If you hit `LLMProviderRetryExhaustedError`, inspect whether the last
    retryable failure was timeout, network, or rate-limit related before
    increasing retry settings.
-6. If you hit frequent rate limits in manual verification, increase
+7. If you hit frequent rate limits in manual verification, increase
    `--llm-min-request-interval-seconds` before increasing retry volume.
-7. If you hit `LLMProviderAuthError`, rotate or replace the secret outside the
+8. If you hit `LLMProviderAuthError`, rotate or replace the secret outside the
    repository.
-8. If you hit `LLMProviderModelError`, verify the model string against your
+9. If you hit `LLMProviderModelError`, verify the model string against your
    endpoint contract.
-9. If you hit `LLMResponseValidationError`, inspect the sidecar error and keep
+10. If you hit `LLMResponseValidationError`, inspect the sidecar error and keep
    the failing output for local debugging; do not change deterministic review
    expectations based on it.
 
@@ -328,6 +363,9 @@ Real `pydanticai` provider calls must not run in default `pytest` or CI.
 
 - CI should keep using deterministic review commands for gating.
 - CI can use `--llm-provider mock` for no-network sidecar coverage if needed.
+- CI can use `content-review llm-check --llm-config examples/llm/mock/llm-provider.yml`
+  for no-network provider-wiring checks if desired.
 - CI should not require a real API key.
+- CI should not run `content-review llm-check --runtime` for real providers.
 - This repository's automated tests only validate docs, fixtures, and no-network
   fake-runtime coverage for the provider path.

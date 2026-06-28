@@ -166,11 +166,15 @@ CI boundary for providers:
 - if CI needs LLM-sidecar wiring coverage, use `--llm-provider mock`
 - if CI needs reusable LLM-sidecar wiring coverage, it can also use
   `--llm-config examples/llm/mock/llm-provider.yml`
+- if CI needs non-review provider wiring checks, it can use
+  `content-review llm-check --llm-config examples/llm/mock/llm-provider.yml`
 - if you parse retry flags in CI, keep using `mock`; do not depend on real
   provider retries or real network failures
 - if you parse `--llm-min-request-interval-seconds` in CI, keep using `mock`;
   do not depend on real provider pacing or real clocks
 - do not store real API keys in `--llm-config` files; use only `api_key_env`
+- do not run `content-review llm-check --runtime` against real providers in
+  the default CI workflow
 - manual `pydanticai` verification belongs in a local developer workflow, not
   in the default workflow example
 

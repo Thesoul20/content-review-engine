@@ -54,6 +54,8 @@ def test_usage_docs_exist_and_cover_required_provider_flags_and_boundaries() -> 
 
     assert "--llm-provider pydanticai" in content
     assert "--llm-config" in content
+    assert "llm-check" in content
+    assert "--runtime" in content
     assert "--llm-model" in content
     assert "--llm-api-key-env" in content
     assert "--llm-base-url" in content

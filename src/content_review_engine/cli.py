@@ -47,6 +47,8 @@ from content_review_engine.llm import (
     load_llm_provider_config_file,
     load_llm_provider_config,
     merge_llm_provider_config,
+    render_llm_smoke_check_result,
+    run_llm_smoke_check,
 )
 from content_review_engine.parser import read_markdown
 from content_review_engine.reports import (
@@ -294,6 +296,66 @@ def build_parser() -> argparse.ArgumentParser:
         choices=["text", "json"],
         default="text",
         help="Output format for the template list.",
+    )
+
+    llm_check_parser = subparsers.add_parser(
+        "llm-check",
+        help="Validate LLM provider config, secret resolution, and optional runtime access.",
+    )
+    llm_check_parser.add_argument(
+        "--llm-config",
+        default=None,
+        help="Optional YAML file for LLM provider config.",
+    )
+    llm_check_parser.add_argument(
+        "--llm-provider",
+        type=_parse_llm_provider,
+        default=None,
+        help="LLM provider to check.",
+    )
+    llm_check_parser.add_argument(
+        "--llm-model",
+        default=None,
+        help="Optional model name stored in LLM provider config.",
+    )
+    llm_check_parser.add_argument(
+        "--llm-api-key-env",
+        default=None,
+        help="Optional environment variable name for LLM provider secret resolution.",
+    )
+    llm_check_parser.add_argument(
+        "--llm-base-url",
+        default=None,
+        help="Optional base URL stored in LLM provider config.",
+    )
+    llm_check_parser.add_argument(
+        "--llm-timeout-seconds",
+        type=_parse_llm_timeout_seconds,
+        default=None,
+        help="Optional LLM runtime timeout in seconds.",
+    )
+    llm_check_parser.add_argument(
+        "--llm-retry-attempts",
+        type=_parse_llm_retry_attempts,
+        default=None,
+        help="Optional extra retry attempts for retryable LLM runtime failures.",
+    )
+    llm_check_parser.add_argument(
+        "--llm-retry-backoff-seconds",
+        type=_parse_llm_retry_backoff_seconds,
+        default=None,
+        help="Optional fixed sleep before each retryable LLM runtime retry.",
+    )
+    llm_check_parser.add_argument(
+        "--llm-min-request-interval-seconds",
+        type=_parse_llm_min_request_interval_seconds,
+        default=None,
+        help="Optional minimum spacing between consecutive real LLM runtime calls.",
+    )
+    llm_check_parser.add_argument(
+        "--runtime",
+        action="store_true",
+        help="Execute an optional runtime smoke call after config and secret checks.",
     )
 
     batch_parser = subparsers.add_parser(
@@ -987,6 +1049,14 @@ def _run_profile_list_command(args: argparse.Namespace) -> int:
     return _write_or_print_output(rendered_output, None)
 
 
+def _run_llm_check_command(args: argparse.Namespace) -> int:
+    result = run_llm_smoke_check(
+        _build_llm_provider_config(args),
+        runtime=args.runtime,
+    )
+    return _write_or_print_output(render_llm_smoke_check_result(result), None)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
 
@@ -1004,6 +1074,8 @@ def main(argv: list[str] | None = None) -> int:
             return _run_profile_init_command(args)
         if args.command == "profile" and args.profile_command == "list":
             return _run_profile_list_command(args)
+        if args.command == "llm-check":
+            return _run_llm_check_command(args)
         if args.command == "batch":
             return _run_batch_command(args)
 

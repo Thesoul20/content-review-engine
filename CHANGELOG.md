@@ -8,6 +8,48 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0053
+
+### Added
+
+- Added `content-review llm-check` as a standalone provider smoke-check
+  command for config validation, secret resolution, and optional runtime
+  verification.
+- Added `src/content_review_engine/llm/smoke_check.py` with a synthetic
+  minimal `LLMReviewRequest`, stage-aware smoke-check execution, and stable
+  text rendering.
+- Added `tests/test_llm_smoke_check.py` for focused smoke-check coverage
+  without real API keys or real network access.
+
+### Changed
+
+- Updated `src/content_review_engine/cli.py` so `llm-check` reuses the
+  existing `--llm-config` loader and CLI override precedence from TASK-0052,
+  while keeping `review` and `batch` behavior unchanged.
+- Updated `tests/test_cli.py` and `tests/test_llm_provider_usage_docs.py` for
+  the new command, `--runtime`, config-file errors, override precedence,
+  output-safety checks, and docs coverage.
+- Updated `docs/LLM_PROVIDER_USAGE.md`, `docs/CLI.md`, `docs/CI.md`,
+  `docs/ARCHITECTURE.md`, and `PROJECT_STATE.md` to document the new command,
+  stage boundaries, CI limitations, and manual-runtime usage guidance.
+- Kept `ReviewProfile` schema unchanged.
+- Kept `LLMSidecarResult` JSON schema unchanged.
+- Kept LLM sidecar Markdown report structure unchanged.
+- Kept deterministic review and batch JSON schemas unchanged.
+- Kept deterministic Markdown report structure unchanged.
+- Kept deterministic quality-gate semantics unchanged.
+
+### Not Added
+
+- No new provider, no provider fallback, no multi-model fallback, no
+  streaming, no batch concurrency, no rate-limit queue, and no
+  `--fail-on-llm`.
+- No change to PydanticAI runtime call behavior, retry behavior, timeout
+  behavior, request pacing behavior, sidecar/report schemas, or deterministic
+  review behavior.
+- No real API-key dependency, no real-network default tests, and no CI real
+  provider runtime smoke checks.
+
 ## TASK-0052
 
 ### Added

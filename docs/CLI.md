@@ -19,6 +19,7 @@ suppression comments, counts, and quality gates, see
 ```bash
 uv run content-review review <markdown_file> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--fail-on info|warning|error|critical] [--enable-llm --llm-output <file> [--llm-markdown-output <file>] [--llm-config <path>] [--llm-provider mock|pydanticai] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>] [--llm-timeout-seconds <seconds>] [--llm-retry-attempts <count>] [--llm-retry-backoff-seconds <seconds>] [--llm-min-request-interval-seconds <seconds>] [--include-llm-report]]
 uv run content-review batch <input_dir> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--recursive] [--pattern "*.md"] [--fail-on info|warning|error|critical] [--enable-llm --llm-output-dir <dir> [--llm-markdown-output <file>] [--llm-config <path>] [--llm-provider mock|pydanticai] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>] [--llm-timeout-seconds <seconds>] [--llm-retry-attempts <count>] [--llm-retry-backoff-seconds <seconds>] [--llm-min-request-interval-seconds <seconds>]]
+uv run content-review llm-check [--llm-config <path>] [--llm-provider mock|pydanticai] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>] [--llm-timeout-seconds <seconds>] [--llm-retry-attempts <count>] [--llm-retry-backoff-seconds <seconds>] [--llm-min-request-interval-seconds <seconds>] [--runtime]
 uv run content-review profile validate <profile_file> [--format text|json]
 uv run content-review profile init --template <general-basic|general-publishing|health-content|marketing-copy|technical-blog|wechat-basic|wechat-article|wechat-strict> --output <profile_file> [--force]
 uv run content-review profile list [--format text|json]
@@ -30,6 +31,43 @@ The batch command reuses the same pipeline for each discovered Markdown file and
 The profile validation command reuses the existing profile loader and registry checks and returns a canonical `ProfileValidationResult`.
 The profile init command creates a new editable YAML profile from one built-in template and keeps validation on the existing loader path.
 The profile list command exposes the same built-in template registry used by `profile init` and returns either text output or a canonical `profile-template-list.v1` JSON payload.
+The `llm-check` command validates LLM provider config, secret resolution, and optional runtime reachability without reading article content, loading a review profile, or writing sidecars.
+
+## LLM Smoke Check
+
+Use `llm-check` for provider setup verification only.
+It is not a review command.
+
+Examples:
+
+```bash
+uv run content-review llm-check --llm-config examples/llm/mock/llm-provider.yml
+uv run content-review llm-check --llm-config examples/llm/pydanticai/llm-provider.yml
+uv run content-review llm-check --llm-config examples/llm/pydanticai/llm-provider.yml --runtime
+uv run content-review llm-check --llm-provider pydanticai --llm-model openai:gpt-4o-mini --llm-api-key-env OPENAI_API_KEY --runtime
+```
+
+Behavior:
+
+- `llm-check` does not require `--enable-llm`
+- `llm-check` does not require `--profile`
+- `llm-check` does not read Markdown input files
+- `llm-check` reuses the same `--llm-config` loader and CLI override rules as `review` and `batch`
+- default behavior is config check plus secret check only
+- `--runtime` adds a synthetic minimal runtime smoke call
+- `llm-check` does not write sidecars
+- `llm-check` does not produce deterministic `ReviewResult` or `BatchReviewResult`
+- `llm-check` does not affect deterministic quality-gate behavior
+- command, config, secret, or runtime failures return exit code `2`
+
+Current text output stages:
+
+- `Config: ok`
+- `Secret: ok` or `Secret: skipped`
+- `Runtime: ok` or `Runtime: skipped`
+
+For real-provider setup and manual verification guidance, see
+[docs/LLM_PROVIDER_USAGE.md](./LLM_PROVIDER_USAGE.md).
 
 ## Experimental LLM Sidecar Review
 
