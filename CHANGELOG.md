@@ -8,6 +8,58 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0050
+
+### Added
+
+- Added `retry_attempts` and `retry_backoff_seconds` to
+  `LLMProviderConfig`, with validation coverage in `tests/test_llm_config.py`.
+- Added `LLMProviderRetryExhaustedError` plus retry helpers in
+  `src/content_review_engine/llm/pydanticai_errors.py` for explicit
+  retryable/non-retryable classification.
+- Added `tests/test_llm_retry.py` for focused retry boundary coverage without
+  real network access or real API keys.
+
+### Changed
+
+- Updated `src/content_review_engine/cli.py` so `review` and `batch` accept
+  `--llm-retry-attempts` and `--llm-retry-backoff-seconds`, validate them,
+  and pass them into shared provider config without affecting deterministic
+  review when LLM sidecar review is disabled.
+- Updated `src/content_review_engine/llm/pydanticai.py` so the `pydanticai`
+  runtime keeps the underlying OpenAI-compatible SDK client at
+  `max_retries=0`, applies an explicit retry loop only for timeout, network,
+  and rate-limit failures, exposes injectable sleep for tests, and raises
+  stable `LLMProviderRetryExhaustedError` when retryable failures exceed the
+  configured retry budget.
+- Updated `src/content_review_engine/llm/errors.py` and
+  `src/content_review_engine/llm/__init__.py` to expose the new retry
+  exhausted error type and retry helpers.
+- Updated `tests/test_llm_pydanticai_provider.py`,
+  `tests/test_llm_pydanticai_errors.py`, `tests/test_llm_provider.py`, and
+  `tests/test_cli.py` for retry config propagation, timeout/network/rate-limit
+  retry success, retry exhaustion, non-retryable auth/model/validation/
+  secret/config failures, sidecar retry-exhausted recording, and continued
+  deterministic quality-gate isolation.
+- Updated `docs/LLM_PROVIDER_USAGE.md`, `docs/CLI.md`, `docs/CI.md`,
+  `docs/ARCHITECTURE.md`, and `docs/DATA_MODELS.md` to document explicit
+  retry config, retryable error boundaries, and the continued
+  non-impact on deterministic quality gates.
+- Updated `PROJECT_STATE.md` to record TASK-0050 completion.
+- Kept `LLMSidecarResult` JSON schema unchanged.
+- Kept LLM sidecar Markdown report structure unchanged.
+- Kept deterministic review and batch JSON schemas unchanged.
+- Kept deterministic Markdown report structure unchanged.
+- Kept deterministic quality-gate semantics unchanged.
+
+### Not Added
+
+- No rate-limit queue, batch concurrency, streaming, fallback
+  model/provider behavior, or `--fail-on-llm`.
+- No LLM merge into deterministic review outputs or quality-gate logic.
+- No real-network tests, real API-key test dependency, or CI real-provider
+  smoke tests.
+
 ## TASK-0049
 
 ### Added

@@ -32,12 +32,18 @@ Provider parameters covered by the current CLI:
 - `--llm-api-key-env OPENAI_API_KEY`
 - `--llm-base-url https://your-openai-compatible-endpoint.example/v1`
 - `--llm-timeout-seconds 30`
+- `--llm-retry-attempts 2`
+- `--llm-retry-backoff-seconds 1.0`
 
 `--llm-model` is required for `pydanticai`.
 `--llm-api-key-env` stores only the environment variable name, not the secret
 value itself.
 `--llm-base-url` is optional and is only for OpenAI-compatible endpoints.
 `--llm-timeout-seconds` is optional and affects only the provider runtime.
+`--llm-retry-attempts` is optional, defaults to `0`, and means extra retry
+attempts after the initial runtime call.
+`--llm-retry-backoff-seconds` is optional, defaults to `0.0`, and is the fixed
+sleep before each retryable retry.
 
 ## Required Environment Variables
 
@@ -92,6 +98,8 @@ uv run content-review review \
   --llm-api-key-env OPENAI_API_KEY \
   --llm-base-url "$OPENAI_BASE_URL" \
   --llm-timeout-seconds 30 \
+  --llm-retry-attempts 2 \
+  --llm-retry-backoff-seconds 1.0 \
   --llm-output /tmp/content-review-single.llm.json \
   --llm-markdown-output /tmp/content-review-single.llm.md \
   --include-llm-report
@@ -118,6 +126,8 @@ uv run content-review batch \
   --llm-api-key-env OPENAI_API_KEY \
   --llm-base-url "$OPENAI_BASE_URL" \
   --llm-timeout-seconds 30 \
+  --llm-retry-attempts 2 \
+  --llm-retry-backoff-seconds 1.0 \
   --llm-output-dir /tmp/content-review-batch-llm \
   --llm-markdown-output /tmp/content-review-batch-llm.md
 ```
@@ -184,6 +194,19 @@ Quality Gate behavior does not read LLM findings or LLM sidecar failures.
 - use a small explicit value during manual debugging if you want quicker
   timeout feedback
 
+## Retry Configuration
+
+`pydanticai` keeps the underlying SDK client at `max_retries=0`.
+If you want retries, configure the explicit project-level retry loop instead.
+
+- `--llm-retry-attempts 0` means no retry
+- `--llm-retry-attempts 1` means one initial call plus one retry
+- `--llm-retry-backoff-seconds 0.0` means no sleep between retries
+- only timeout, network, and rate-limit failures are retryable
+- auth, secret, config, model, and response-validation failures are not retryable
+- when retryable failures still exceed the configured limit, sidecars record
+  `LLMProviderRetryExhaustedError`
+
 ## OpenAI-compatible Base URL
 
 Use `--llm-base-url` only when the target endpoint is OpenAI-compatible.
@@ -209,6 +232,8 @@ Runtime and validation errors to check:
 - `LLMProviderNetworkError`: DNS, TCP, TLS, proxy, or connectivity failure.
 - `LLMProviderRateLimitError`: the provider rejected the request because of
   rate limiting or quota pressure.
+- `LLMProviderRetryExhaustedError`: retryable provider failures exceeded the
+  configured retry budget.
 - `LLMProviderModelError`: the configured model name or endpoint/model pairing
   is invalid.
 - `LLMProviderRuntimeError`: uncategorized provider runtime failure.
@@ -221,12 +246,15 @@ Troubleshooting steps:
 2. Confirm `--llm-api-key-env` points to a non-empty environment variable.
 3. If using `--llm-base-url`, confirm the endpoint is OpenAI-compatible.
 4. If you hit `LLMProviderTimeoutError`, retry manually with a larger
-   `--llm-timeout-seconds` value.
-5. If you hit `LLMProviderAuthError`, rotate or replace the secret outside the
+   `--llm-timeout-seconds` value or a small explicit retry budget.
+5. If you hit `LLMProviderRetryExhaustedError`, inspect whether the last
+   retryable failure was timeout, network, or rate-limit related before
+   increasing retry settings.
+6. If you hit `LLMProviderAuthError`, rotate or replace the secret outside the
    repository.
-6. If you hit `LLMProviderModelError`, verify the model string against your
+7. If you hit `LLMProviderModelError`, verify the model string against your
    endpoint contract.
-7. If you hit `LLMResponseValidationError`, inspect the sidecar error and keep
+8. If you hit `LLMResponseValidationError`, inspect the sidecar error and keep
    the failing output for local debugging; do not change deterministic review
    expectations based on it.
 

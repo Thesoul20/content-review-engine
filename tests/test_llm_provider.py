@@ -9,6 +9,7 @@ from content_review_engine.llm import (
     LLMProviderNotImplementedError,
     LLMProviderError,
     LLMProviderRateLimitError,
+    LLMProviderRetryExhaustedError,
     LLMProviderRuntimeError,
     LLMProviderSecretError,
     LLMProviderTimeoutError,
@@ -138,6 +139,7 @@ def test_llm_error_hierarchy_is_stable() -> None:
     network_error = LLMProviderNetworkError("network")
     rate_limit_error = LLMProviderRateLimitError("rate limit")
     model_error = LLMProviderModelError("model")
+    retry_exhausted_error = LLMProviderRetryExhaustedError("retry exhausted")
     secret_error = LLMProviderSecretError("secret missing")
     response_error = LLMResponseValidationError("response invalid")
 
@@ -150,6 +152,7 @@ def test_llm_error_hierarchy_is_stable() -> None:
     assert isinstance(network_error, LLMProviderRuntimeError)
     assert isinstance(rate_limit_error, LLMProviderRuntimeError)
     assert isinstance(model_error, LLMProviderRuntimeError)
+    assert isinstance(retry_exhausted_error, LLMProviderRuntimeError)
     assert isinstance(secret_error, LLMProviderConfigError)
     assert isinstance(response_error, LLMReviewError)
     assert not isinstance(provider_error, LLMResponseValidationError)

@@ -8,6 +8,7 @@ from content_review_engine.llm.errors import (
     LLMProviderModelError,
     LLMProviderNetworkError,
     LLMProviderRateLimitError,
+    LLMProviderRetryExhaustedError,
     LLMProviderRuntimeError,
     LLMProviderTimeoutError,
 )
@@ -40,4 +41,30 @@ def classify_pydanticai_runtime_error(exc: Exception) -> LLMProviderRuntimeError
     return LLMProviderRuntimeError("PydanticAI runtime call failed unexpectedly.")
 
 
-__all__ = ["classify_pydanticai_runtime_error"]
+def is_pydanticai_retryable_error(exc: Exception) -> bool:
+    return isinstance(
+        exc,
+        (
+            LLMProviderTimeoutError,
+            LLMProviderNetworkError,
+            LLMProviderRateLimitError,
+        ),
+    )
+
+
+def build_pydanticai_retry_exhausted_error(
+    *,
+    attempts: int,
+    last_error: LLMProviderRuntimeError,
+) -> LLMProviderRetryExhaustedError:
+    return LLMProviderRetryExhaustedError(
+        "PydanticAI runtime retry attempts exhausted after "
+        f"{attempts} attempts due to {type(last_error).__name__}."
+    )
+
+
+__all__ = [
+    "build_pydanticai_retry_exhausted_error",
+    "classify_pydanticai_runtime_error",
+    "is_pydanticai_retryable_error",
+]

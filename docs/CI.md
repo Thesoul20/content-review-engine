@@ -145,14 +145,16 @@ LLM sidecar failures still do not affect the deterministic quality-gate exit
 code. The same rule applies if you also write an independent LLM sidecar
 Markdown report through `--llm-markdown-output`. The same boundary applies to
 LLM provider config such as `--llm-provider`, `--llm-model`, or
-`--llm-api-key-env`, or `--llm-timeout-seconds`: they do not affect
+`--llm-api-key-env`, or `--llm-timeout-seconds`,
+`--llm-retry-attempts`, or `--llm-retry-backoff-seconds`: they do not affect
 deterministic quality-gate evaluation. `pydanticai` now performs secret
 preflight and a real runtime call, but its findings and provider failures
 still do not change deterministic gate semantics. A missing or empty
 `--llm-api-key-env` for `pydanticai` is still a command error with exit code
 `2`, not a deterministic quality-gate failure. Runtime-side `pydanticai`
-timeout, auth, network, rate-limit, model, and unknown failures are
-serialized into LLM sidecars without changing the deterministic exit code.
+timeout, auth, network, rate-limit, model, retry-exhausted, and unknown
+failures are serialized into LLM sidecars without changing the deterministic
+exit code.
 Only deterministic findings contribute to exit code `1`.
 
 CI boundary for providers:
@@ -161,6 +163,8 @@ CI boundary for providers:
 - default CI should not require a real API key
 - use deterministic review for gating
 - if CI needs LLM-sidecar wiring coverage, use `--llm-provider mock`
+- if you parse retry flags in CI, keep using `mock`; do not depend on real
+  provider retries or real network failures
 - manual `pydanticai` verification belongs in a local developer workflow, not
   in the default workflow example
 

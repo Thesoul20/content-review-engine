@@ -438,6 +438,8 @@ Current fields:
 | `api_key_env` | No | Optional environment variable name only; stores the variable name, not the secret |
 | `base_url` | No | Optional provider base URL; passed to the `pydanticai` OpenAI-compatible runtime when configured |
 | `timeout_seconds` | No | Optional LLM runtime timeout in seconds; if set, must be greater than `0` |
+| `retry_attempts` | Yes | Extra retry attempts after the initial provider call; default `0`; must be an integer greater than or equal to `0` |
+| `retry_backoff_seconds` | Yes | Fixed delay before each retryable retry; default `0.0`; must be greater than or equal to `0` |
 
 Notes:
 
@@ -446,7 +448,10 @@ Notes:
 - config loading validates provider names and rejects unknown providers with
   `LLMProviderConfigError`
 - `timeout_seconds = None` means the provider/runtime default timeout is used
-- `timeout_seconds` is validated independently from retry or rate-limit policy
+- `retry_attempts = 0` means no retry
+- `retry_backoff_seconds = 0.0` means no sleep before retry
+- timeout, retry count, and retry backoff are validated independently from
+  rate-limit or concurrency policy
 - `repr` and serialization do not contain any secret value because the model
   stores only the environment variable name
 
@@ -575,8 +580,10 @@ Current behavior:
 - `provider = "pydanticai"` returns `PydanticAIReviewer`, which still requires
   secret preflight, requires `model`, builds provider-local request payloads
   through `PydanticAIReviewMapper`, executes the PydanticAI runtime, passes
-  optional `timeout_seconds` into the runtime client, and maps
-  `PydanticAIReviewResponse` back into `LLMReviewResult`
+  optional `timeout_seconds` into the runtime client, applies explicit retry
+  policy from `retry_attempts` and `retry_backoff_seconds` while keeping the
+  SDK client at `max_retries=0`, and maps `PydanticAIReviewResponse` back into
+  `LLMReviewResult`
 - unknown providers raise `LLMProviderConfigError`
 - the factory does not read environment variables, perform network requests,
   or depend on the CLI layer
@@ -603,6 +610,7 @@ The future LLM adapter boundary now defines minimal error types in
 | `LLMProviderNetworkError` | Provider runtime connection or transport failure |
 | `LLMProviderRateLimitError` | Provider runtime rate-limit failure |
 | `LLMProviderModelError` | Provider runtime model-selection or request-rejection failure |
+| `LLMProviderRetryExhaustedError` | Retryable provider runtime failures exceeded the configured retry attempts |
 | `LLMResponseValidationError` | Provider output could not be validated as an `LLMReviewResult` or provider-local structured response contract |
 
 Notes:
@@ -612,6 +620,7 @@ Notes:
 - PydanticAI runtime timeout, auth, network, rate-limit, model, and unknown
   failures are mapped before sidecar serialization so `error_type` stays
   stable in sidecar JSON and sidecar Markdown output
+- only timeout, network, and rate-limit failures are retryable
 
 ---
 

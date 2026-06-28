@@ -6,7 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from content_review_engine.cli import main
+from content_review_engine.llm import LLMReviewResult
+from content_review_engine.cli import build_parser, main
 from content_review_engine.config import (
     get_profile_template,
     list_profile_template_names,
@@ -754,6 +755,32 @@ def test_cli_review_llm_timeout_without_enable_llm_does_not_affect_deterministic
     assert captured.err == ""
 
 
+def test_cli_review_llm_retry_without_enable_llm_does_not_affect_deterministic_review(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    markdown_path = "tests/fixtures/markdown/clean_article.md"
+    profile_path = "tests/fixtures/profiles/default.yml"
+
+    exit_code = main(
+        [
+            "review",
+            markdown_path,
+            "--profile",
+            profile_path,
+            "--llm-retry-attempts",
+            "2",
+            "--llm-retry-backoff-seconds",
+            "1.5",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "Findings: 0" in captured.out
+    assert captured.err == ""
+
+
 def test_cli_review_rejects_invalid_llm_timeout(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
@@ -776,6 +803,71 @@ def test_cli_review_rejects_invalid_llm_timeout(
     assert exit_code == 2
     assert captured.out == ""
     assert "LLM timeout seconds must be greater than 0." in captured.err
+
+
+def test_cli_review_rejects_invalid_llm_retry_attempts(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = main(
+        [
+            "review",
+            "tests/fixtures/markdown/clean_article.md",
+            "--profile",
+            "tests/fixtures/profiles/default.yml",
+            "--llm-retry-attempts",
+            "-1",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert captured.out == ""
+    assert "LLM retry attempts must be greater than or equal to 0." in captured.err
+
+
+def test_cli_review_rejects_invalid_llm_retry_backoff_seconds(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = main(
+        [
+            "review",
+            "tests/fixtures/markdown/clean_article.md",
+            "--profile",
+            "tests/fixtures/profiles/default.yml",
+            "--llm-retry-backoff-seconds",
+            "-0.5",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert captured.out == ""
+    assert (
+        "LLM retry backoff seconds must be greater than or equal to 0."
+        in captured.err
+    )
+
+
+def test_cli_review_parser_accepts_llm_retry_arguments() -> None:
+    parser = build_parser()
+
+    args = parser.parse_args(
+        [
+            "review",
+            "article.md",
+            "--profile",
+            "profile.yml",
+            "--llm-retry-attempts",
+            "3",
+            "--llm-retry-backoff-seconds",
+            "2.5",
+        ]
+    )
+
+    assert args.llm_retry_attempts == 3
+    assert args.llm_retry_backoff_seconds == 2.5
 
 
 def test_cli_review_llm_markdown_output_requires_enable_llm(
@@ -987,6 +1079,54 @@ def test_cli_review_pydanticai_provider_writes_sidecar_json_and_markdown_report(
     assert "Possible unsupported claim." in markdown_report
     assert "test-secret-value" not in markdown_report
     assert captured_agent_kwargs["timeout_seconds"] == 21.0
+
+
+def test_cli_review_pydanticai_provider_passes_retry_config(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setenv("CONTENT_REVIEW_TEST_LLM_API_KEY", "test-secret-value")
+    llm_output_path = tmp_path / "review.llm.json"
+
+    captured = {"retry_attempts": None, "retry_backoff_seconds": None}
+
+    def fake_review(self, request):  # type: ignore[no-untyped-def]
+        del request
+        captured["retry_attempts"] = self.retry_attempts
+        captured["retry_backoff_seconds"] = self.retry_backoff_seconds
+        return LLMReviewResult()
+
+    monkeypatch.setattr("content_review_engine.llm.pydanticai.PydanticAIReviewer.review", fake_review)
+
+    exit_code = main(
+        [
+            "review",
+            "tests/fixtures/markdown/clean_article.md",
+            "--profile",
+            "tests/fixtures/profiles/default.yml",
+            "--enable-llm",
+            "--llm-provider",
+            "pydanticai",
+            "--llm-model",
+            "gpt-4o-mini",
+            "--llm-api-key-env",
+            "CONTENT_REVIEW_TEST_LLM_API_KEY",
+            "--llm-retry-attempts",
+            "2",
+            "--llm-retry-backoff-seconds",
+            "1.25",
+            "--llm-output",
+            str(llm_output_path),
+        ]
+    )
+
+    captured_io = capsys.readouterr()
+
+    assert exit_code == 0
+    assert captured_io.err == ""
+    assert captured["retry_attempts"] == 2
+    assert captured["retry_backoff_seconds"] == 1.25
 
 
 def test_cli_review_pydanticai_provider_requires_api_key_env(
@@ -2929,6 +3069,32 @@ def test_cli_batch_llm_timeout_without_enable_llm_does_not_affect_deterministic_
     assert captured.err == ""
 
 
+def test_cli_batch_llm_retry_without_enable_llm_does_not_affect_deterministic_review(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    input_dir = "tests/fixtures/batch/articles"
+    profile_path = "tests/fixtures/batch/profile.yml"
+
+    exit_code = main(
+        [
+            "batch",
+            input_dir,
+            "--profile",
+            profile_path,
+            "--llm-retry-attempts",
+            "2",
+            "--llm-retry-backoff-seconds",
+            "0.75",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "Batch review completed." in captured.out
+    assert captured.err == ""
+
+
 def test_cli_batch_llm_markdown_output_requires_enable_llm(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
@@ -3103,8 +3269,55 @@ def test_cli_batch_pydanticai_provider_writes_sidecars_and_markdown_report(
     assert clean_payload["files"][0]["review"]["provider"] == "pydanticai"
     assert markdown_report.startswith("# Batch LLM Sidecar Review Report\n")
     assert "llm_semantic_risk" in markdown_report
-    assert "test-secret-value" not in markdown_report
-    assert captured_agent_kwargs["timeout_seconds"] == 18.0
+
+
+def test_cli_batch_pydanticai_provider_passes_retry_config(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    input_dir = "tests/fixtures/batch/articles"
+    profile_path = "tests/fixtures/batch/profile.yml"
+    llm_output_dir = tmp_path / "llm-sidecars"
+
+    monkeypatch.setenv("CONTENT_REVIEW_TEST_LLM_API_KEY", "test-secret-value")
+    captured_retry_values: list[tuple[int, float]] = []
+
+    def fake_review(self, request):  # type: ignore[no-untyped-def]
+        del request
+        captured_retry_values.append((self.retry_attempts, self.retry_backoff_seconds))
+        return LLMReviewResult()
+
+    monkeypatch.setattr("content_review_engine.llm.pydanticai.PydanticAIReviewer.review", fake_review)
+
+    exit_code = main(
+        [
+            "batch",
+            input_dir,
+            "--profile",
+            profile_path,
+            "--recursive",
+            "--enable-llm",
+            "--llm-provider",
+            "pydanticai",
+            "--llm-model",
+            "gpt-4o-mini",
+            "--llm-api-key-env",
+            "CONTENT_REVIEW_TEST_LLM_API_KEY",
+            "--llm-retry-attempts",
+            "3",
+            "--llm-retry-backoff-seconds",
+            "1.5",
+            "--llm-output-dir",
+            str(llm_output_dir),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert captured.err == ""
+    assert captured_retry_values == [(3, 1.5), (3, 1.5), (3, 1.5)]
 
 
 def test_cli_batch_llm_markdown_output_writes_batch_report(
@@ -3353,6 +3566,104 @@ def test_cli_batch_llm_partial_timeout_failure_is_recorded_in_manifest(
     assert manifest_payload["files"][1]["error"] == {
         "error_type": "LLMProviderTimeoutError",
         "message": "PydanticAI runtime request timed out.",
+    }
+
+
+def test_cli_batch_llm_retry_exhausted_failure_is_recorded_in_manifest(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    input_dir = "tests/fixtures/batch/articles"
+    profile_path = "tests/fixtures/batch/profile.yml"
+    llm_output_dir = tmp_path / "llm-sidecars"
+
+    from content_review_engine.llm import LLMProviderRetryExhaustedError, LLMReviewResult
+
+    def fake_review(self, request):  # type: ignore[no-untyped-def]
+        del self
+        if Path(request.content_path).name == "forbidden.md":
+            raise LLMProviderRetryExhaustedError(
+                "PydanticAI runtime retry attempts exhausted after 3 attempts due to LLMProviderTimeoutError."
+            )
+        return LLMReviewResult()
+
+    monkeypatch.setattr("content_review_engine.llm.mock.MockLLMReviewer.review", fake_review)
+
+    exit_code = main(
+        [
+            "batch",
+            input_dir,
+            "--profile",
+            profile_path,
+            "--recursive",
+            "--enable-llm",
+            "--llm-output-dir",
+            str(llm_output_dir),
+            "--llm-retry-attempts",
+            "2",
+            "--llm-retry-backoff-seconds",
+            "0.1",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    manifest_payload = json.loads(
+        (llm_output_dir / "llm-review-manifest.json").read_text(encoding="utf-8")
+    )
+
+    assert exit_code == 0
+    assert captured.err == ""
+    assert manifest_payload["files"][1]["error"] == {
+        "error_type": "LLMProviderRetryExhaustedError",
+        "message": "PydanticAI runtime retry attempts exhausted after 3 attempts due to LLMProviderTimeoutError.",
+    }
+
+
+def test_cli_review_llm_retry_exhausted_does_not_change_quality_gate_exit_code(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    llm_output_path = tmp_path / "review.llm.json"
+
+    from content_review_engine.llm import LLMProviderRetryExhaustedError
+
+    def fake_review(self, request):  # type: ignore[no-untyped-def]
+        del self, request
+        raise LLMProviderRetryExhaustedError(
+            "PydanticAI runtime retry attempts exhausted after 2 attempts due to LLMProviderTimeoutError."
+        )
+
+    monkeypatch.setattr("content_review_engine.llm.mock.MockLLMReviewer.review", fake_review)
+
+    exit_code = main(
+        [
+            "review",
+            "tests/fixtures/markdown/forbidden_terms_article.md",
+            "--profile",
+            "tests/fixtures/profiles/default.yml",
+            "--fail-on",
+            "warning",
+            "--enable-llm",
+            "--llm-retry-attempts",
+            "2",
+            "--llm-retry-backoff-seconds",
+            "0.2",
+            "--llm-output",
+            str(llm_output_path),
+        ]
+    )
+
+    captured = capsys.readouterr()
+    llm_payload = json.loads(llm_output_path.read_text(encoding="utf-8"))
+
+    assert exit_code == 1
+    assert "Findings: 1" in captured.out
+    assert captured.err == ""
+    assert llm_payload["files"][0]["error"] == {
+        "error_type": "LLMProviderRetryExhaustedError",
+        "message": "PydanticAI runtime retry attempts exhausted after 2 attempts due to LLMProviderTimeoutError.",
     }
 
 

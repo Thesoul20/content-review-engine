@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+import time
 from typing import Any
 
 from openai import AsyncOpenAI
@@ -22,7 +23,9 @@ from content_review_engine.llm.pydanticai_mapping import (
     PydanticAIReviewResponse,
 )
 from content_review_engine.llm.pydanticai_errors import (
+    build_pydanticai_retry_exhausted_error,
     classify_pydanticai_runtime_error,
+    is_pydanticai_retryable_error,
 )
 from content_review_engine.llm.secrets import ResolvedLLMSecret, resolve_llm_api_key
 
@@ -99,15 +102,19 @@ class PydanticAIReviewer:
         secret_resolver: Callable[[LLMProviderConfig], ResolvedLLMSecret] = resolve_llm_api_key,
         agent_builder: Callable[..., Agent] | None = None,
         runtime_runner: Callable[[Agent, PydanticAIReviewRequestPayload], Any] | None = None,
+        sleep_func: Callable[[float], None] | None = None,
     ) -> None:
         self.config = config
         self.model = config.model
         self.api_key_env = config.api_key_env
         self.base_url = config.base_url
         self.timeout_seconds = config.timeout_seconds
+        self.retry_attempts = config.retry_attempts
+        self.retry_backoff_seconds = config.retry_backoff_seconds
         self._secret_resolver = secret_resolver
         self._agent_builder = agent_builder or build_pydanticai_runtime_agent
         self._runtime_runner = runtime_runner or run_pydanticai_runtime_agent
+        self._sleep_func = sleep_func or time.sleep
         self._agent_type = Agent
         self.mapping = PydanticAIReviewMapper(
             provider=PYDANTICAI_PROVIDER_NAME,
@@ -123,6 +130,42 @@ class PydanticAIReviewer:
     ) -> PydanticAIReviewRequestPayload:
         return self.mapping.build_request(request)
 
+    def _run_with_retries(
+        self,
+        *,
+        agent: Agent,
+        payload: PydanticAIReviewRequestPayload,
+    ) -> Any:
+        max_attempts = self.retry_attempts + 1
+        last_error: LLMProviderRuntimeError | None = None
+
+        for attempt_number in range(1, max_attempts + 1):
+            try:
+                return self._runtime_runner(agent, payload)
+            except LLMResponseValidationError:
+                raise
+            except Exception as exc:
+                normalized_error = classify_pydanticai_runtime_error(exc)
+                if not is_pydanticai_retryable_error(normalized_error):
+                    raise normalized_error from exc
+                last_error = normalized_error
+                if attempt_number >= max_attempts:
+                    if self.retry_attempts == 0:
+                        raise normalized_error from exc
+                    raise build_pydanticai_retry_exhausted_error(
+                        attempts=attempt_number,
+                        last_error=normalized_error,
+                    ) from exc
+                if self.retry_backoff_seconds > 0:
+                    self._sleep_func(self.retry_backoff_seconds)
+
+        if last_error is not None:
+            raise build_pydanticai_retry_exhausted_error(
+                attempts=max_attempts,
+                last_error=last_error,
+            )
+        raise LLMProviderRuntimeError("PydanticAI runtime call failed unexpectedly.")
+
     def review(self, request: LLMReviewRequest) -> LLMReviewResult:
         payload = self.build_request_payload(request)
         secret = self.resolve_secret()
@@ -134,12 +177,7 @@ class PydanticAIReviewer:
             timeout_seconds=self.timeout_seconds,
             agent_type=self._agent_type,
         )
-        try:
-            response = self._runtime_runner(agent, payload)
-        except LLMResponseValidationError:
-            raise
-        except Exception as exc:
-            raise classify_pydanticai_runtime_error(exc) from exc
+        response = self._run_with_retries(agent=agent, payload=payload)
         return self.mapping.response_to_result(response, request)
 
 

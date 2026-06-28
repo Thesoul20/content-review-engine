@@ -89,6 +89,34 @@ def _parse_llm_timeout_seconds(value: str) -> float:
     return timeout_seconds
 
 
+def _parse_llm_retry_attempts(value: str) -> int:
+    try:
+        retry_attempts = int(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(
+            "LLM retry attempts must be an integer greater than or equal to 0."
+        ) from exc
+    if retry_attempts < 0:
+        raise argparse.ArgumentTypeError(
+            "LLM retry attempts must be greater than or equal to 0."
+        )
+    return retry_attempts
+
+
+def _parse_llm_retry_backoff_seconds(value: str) -> float:
+    try:
+        backoff_seconds = float(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(
+            "LLM retry backoff seconds must be a number greater than or equal to 0."
+        ) from exc
+    if backoff_seconds < 0:
+        raise argparse.ArgumentTypeError(
+            "LLM retry backoff seconds must be greater than or equal to 0."
+        )
+    return backoff_seconds
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="content-review",
@@ -160,6 +188,18 @@ def build_parser() -> argparse.ArgumentParser:
         type=_parse_llm_timeout_seconds,
         default=None,
         help="Optional LLM runtime timeout in seconds.",
+    )
+    review_parser.add_argument(
+        "--llm-retry-attempts",
+        type=_parse_llm_retry_attempts,
+        default=0,
+        help="Optional extra retry attempts for retryable LLM runtime failures.",
+    )
+    review_parser.add_argument(
+        "--llm-retry-backoff-seconds",
+        type=_parse_llm_retry_backoff_seconds,
+        default=0.0,
+        help="Optional fixed sleep before each retryable LLM runtime retry.",
     )
     review_parser.add_argument(
         "--llm-output",
@@ -314,6 +354,18 @@ def build_parser() -> argparse.ArgumentParser:
         type=_parse_llm_timeout_seconds,
         default=None,
         help="Optional LLM runtime timeout in seconds.",
+    )
+    batch_parser.add_argument(
+        "--llm-retry-attempts",
+        type=_parse_llm_retry_attempts,
+        default=0,
+        help="Optional extra retry attempts for retryable LLM runtime failures.",
+    )
+    batch_parser.add_argument(
+        "--llm-retry-backoff-seconds",
+        type=_parse_llm_retry_backoff_seconds,
+        default=0.0,
+        help="Optional fixed sleep before each retryable LLM runtime retry.",
     )
 
     return parser
@@ -590,6 +642,8 @@ def _build_llm_provider_config(args: argparse.Namespace) -> LLMProviderConfig:
         api_key_env=args.llm_api_key_env,
         base_url=args.llm_base_url,
         timeout_seconds=args.llm_timeout_seconds,
+        retry_attempts=args.llm_retry_attempts,
+        retry_backoff_seconds=args.llm_retry_backoff_seconds,
     )
 
 

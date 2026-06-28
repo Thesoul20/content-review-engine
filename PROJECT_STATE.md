@@ -85,6 +85,35 @@ use.
 
 ## Recent Completion
 
+- TASK-0050 is complete.
+- Added `retry_attempts` and `retry_backoff_seconds` to
+  `LLMProviderConfig` with validation that requires `retry_attempts >= 0`
+  and `retry_backoff_seconds >= 0`.
+- Updated the CLI to accept `--llm-retry-attempts` and
+  `--llm-retry-backoff-seconds` for single-file and batch LLM sidecar flows
+  while keeping deterministic review behavior unchanged when `--enable-llm`
+  is not used.
+- Updated `src/content_review_engine/llm/pydanticai.py` so the `pydanticai`
+  runtime keeps the underlying OpenAI-compatible client at `max_retries=0`
+  and applies an explicit project-level retry loop only for timeout,
+  network, and rate-limit failures.
+- Added `LLMProviderRetryExhaustedError` plus retry classification helpers in
+  `src/content_review_engine/llm/pydanticai_errors.py`.
+- Added and updated tests for retry config defaults and validation, CLI retry
+  parsing, fake-runtime timeout/network/rate-limit retry success cases,
+  retry exhaustion, non-retryable auth/model/validation/secret/config
+  failures, sidecar retry-exhausted recording, mock-provider stability, and
+  continued deterministic quality-gate isolation.
+- Updated architecture, data-model, CLI, CI, and provider-usage docs for
+  explicit retry config and retry classification boundaries.
+- Kept `LLMSidecarResult` JSON schema unchanged.
+- Kept LLM sidecar Markdown report structure unchanged.
+- Kept deterministic review and batch JSON schemas unchanged.
+- Kept deterministic Markdown report structure unchanged.
+- Kept deterministic quality-gate semantics unchanged.
+- Added no rate-limit queue, batch concurrency, streaming, fallback
+  model/provider behavior, API/MCP/GUI, or real-network test dependency.
+
 - TASK-0049 is complete.
 - Added `docs/LLM_PROVIDER_USAGE.md` with explicit `pydanticai` provider setup,
   single-file and batch manual verification commands, sidecar JSON/Markdown

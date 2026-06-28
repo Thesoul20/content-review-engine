@@ -29,6 +29,8 @@ class LLMProviderConfig(BaseModel):
     api_key_env: str | None = None
     base_url: str | None = None
     timeout_seconds: float | None = None
+    retry_attempts: int = 0
+    retry_backoff_seconds: float = 0.0
 
     @field_validator("provider")
     @classmethod
@@ -55,6 +57,20 @@ class LLMProviderConfig(BaseModel):
             raise ValueError("timeout_seconds must be greater than 0")
         return value
 
+    @field_validator("retry_attempts")
+    @classmethod
+    def validate_retry_attempts(cls, value: int) -> int:
+        if value < 0:
+            raise ValueError("retry_attempts must be greater than or equal to 0")
+        return value
+
+    @field_validator("retry_backoff_seconds")
+    @classmethod
+    def validate_retry_backoff_seconds(cls, value: float) -> float:
+        if value < 0:
+            raise ValueError("retry_backoff_seconds must be greater than or equal to 0")
+        return value
+
     @property
     def provider_type(self) -> LLMProviderType:
         if self.provider == "mock":
@@ -69,6 +85,8 @@ def load_llm_provider_config(
     api_key_env: str | None = None,
     base_url: str | None = None,
     timeout_seconds: float | None = None,
+    retry_attempts: int = 0,
+    retry_backoff_seconds: float = 0.0,
 ) -> LLMProviderConfig:
     try:
         return LLMProviderConfig(
@@ -77,6 +95,8 @@ def load_llm_provider_config(
             api_key_env=api_key_env,
             base_url=base_url,
             timeout_seconds=timeout_seconds,
+            retry_attempts=retry_attempts,
+            retry_backoff_seconds=retry_backoff_seconds,
         )
     except ValidationError as exc:
         message = exc.errors()[0]["msg"] if exc.errors() else "Invalid LLM provider config."

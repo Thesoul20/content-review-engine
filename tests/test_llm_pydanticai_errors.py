@@ -8,9 +8,12 @@ from content_review_engine.llm import (
     LLMProviderModelError,
     LLMProviderNetworkError,
     LLMProviderRateLimitError,
+    LLMProviderRetryExhaustedError,
     LLMProviderRuntimeError,
     LLMProviderTimeoutError,
+    build_pydanticai_retry_exhausted_error,
     classify_pydanticai_runtime_error,
+    is_pydanticai_retryable_error,
 )
 
 
@@ -86,3 +89,26 @@ def test_classify_pydanticai_runtime_unknown_error() -> None:
     assert isinstance(error, LLMProviderRuntimeError)
     assert type(error) is LLMProviderRuntimeError
     assert str(error) == "PydanticAI runtime call failed unexpectedly."
+
+
+def test_pydanticai_retryable_error_types_are_explicit() -> None:
+    assert is_pydanticai_retryable_error(LLMProviderTimeoutError("timeout")) is True
+    assert is_pydanticai_retryable_error(LLMProviderNetworkError("network")) is True
+    assert is_pydanticai_retryable_error(LLMProviderRateLimitError("rate")) is True
+    assert is_pydanticai_retryable_error(LLMProviderAuthError("auth")) is False
+    assert is_pydanticai_retryable_error(LLMProviderModelError("model")) is False
+    assert is_pydanticai_retryable_error(LLMProviderRuntimeError("runtime")) is False
+
+
+def test_build_pydanticai_retry_exhausted_error_is_stable() -> None:
+    error = build_pydanticai_retry_exhausted_error(
+        attempts=3,
+        last_error=LLMProviderTimeoutError("hidden"),
+    )
+
+    assert isinstance(error, LLMProviderRetryExhaustedError)
+    assert (
+        str(error)
+        == "PydanticAI runtime retry attempts exhausted after 3 attempts due to LLMProviderTimeoutError."
+    )
+    assert "hidden" not in str(error)

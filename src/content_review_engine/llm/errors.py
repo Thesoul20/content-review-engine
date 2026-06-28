@@ -33,6 +33,10 @@ class LLMProviderModelError(LLMProviderRuntimeError):
     """Raised when a provider runtime rejects the configured model or request."""
 
 
+class LLMProviderRetryExhaustedError(LLMProviderRuntimeError):
+    """Raised when retryable provider runtime failures exceed configured retries."""
+
+
 class LLMProviderConfigError(LLMReviewError):
     """Raised when provider configuration is invalid."""
 
@@ -57,6 +61,7 @@ __all__ = [
     "LLMProviderNotImplementedError",
     "LLMProviderError",
     "LLMProviderRateLimitError",
+    "LLMProviderRetryExhaustedError",
     "LLMProviderRuntimeError",
     "LLMProviderSecretError",
     "LLMProviderTimeoutError",

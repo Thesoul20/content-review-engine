@@ -354,7 +354,8 @@ Current LLM provider-boundary status:
   `LLMReviewer` protocol
 - `src/content_review_engine/llm/config.py` defines `LLMProviderConfig`,
   including provider name, optional model, optional `api_key_env`, optional
-  `base_url`, and optional runtime `timeout_seconds`
+  `base_url`, optional runtime `timeout_seconds`, optional `retry_attempts`,
+  and optional `retry_backoff_seconds`
 - `src/content_review_engine/llm/factory.py` defines the provider registry and
   `create_llm_reviewer(config)`
 - `src/content_review_engine/llm/secrets.py` defines the secret-resolution
@@ -366,12 +367,13 @@ Current LLM provider-boundary status:
   provider adapter boundary for `pydanticai`; it resolves secrets through the
   shared resolver, builds provider-local request payloads through the mapping
   layer, executes the PydanticAI runtime, passes optional timeout config to
-  the underlying OpenAI-compatible client, maps structured responses back into
-  `LLMReviewResult`, and normalizes runtime failures into stable provider
-  error subclasses
+  the underlying OpenAI-compatible client, keeps that client at
+  `max_retries=0`, applies explicit project-level retry logic around the
+  runtime call, maps structured responses back into `LLMReviewResult`, and
+  normalizes runtime failures into stable provider error subclasses
 - `src/content_review_engine/llm/pydanticai_errors.py` now defines the
   PydanticAI runtime classification boundary for timeout, auth, network,
-  rate-limit, model, and unknown runtime failures
+  rate-limit, model, retry-exhausted, and unknown runtime failures
 - `src/content_review_engine/llm/pydanticai_mapping.py` now defines the
   provider-local request builder, system/user prompt construction, structured
   response schema, response validation, and conversion back into
@@ -460,8 +462,11 @@ Mapping-layer notes:
 - runtime exceptions are normalized into stable provider runtime errors such
   as `LLMProviderTimeoutError`, `LLMProviderAuthError`,
   `LLMProviderNetworkError`, `LLMProviderRateLimitError`,
-  `LLMProviderModelError`, or fallback `LLMProviderRuntimeError`, without
-  leaking secrets, full prompts, full article content, or tracebacks
+  `LLMProviderModelError`, `LLMProviderRetryExhaustedError`, or fallback
+  `LLMProviderRuntimeError`, without leaking secrets, full prompts, full
+  article content, or tracebacks
+- only timeout, network, and rate-limit failures are retryable; auth, secret,
+  config, model, and response-validation failures fail immediately
 - the mapping layer is provider-local; it does not change `LLMReviewResult`,
   `LLMSidecarResult`, deterministic review JSON, deterministic Markdown
   reports, or quality-gate behavior
