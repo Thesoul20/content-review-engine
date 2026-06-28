@@ -303,6 +303,15 @@ def build_parser() -> argparse.ArgumentParser:
         help="Validate LLM provider config, secret resolution, and optional runtime access.",
     )
     llm_check_parser.add_argument(
+        "--provider",
+        type=_parse_llm_provider,
+        default=None,
+        help=(
+            "Optional reviewer provider for factory-based llm-check runtime. "
+            "Supported values: 'mock', 'pydantic-ai-testmodel'."
+        ),
+    )
+    llm_check_parser.add_argument(
         "--llm-config",
         default=None,
         help="Optional YAML file for LLM provider config.",
@@ -1050,10 +1059,22 @@ def _run_profile_list_command(args: argparse.Namespace) -> int:
 
 
 def _run_llm_check_command(args: argparse.Namespace) -> int:
-    result = run_llm_smoke_check(
-        _build_llm_provider_config(args),
-        runtime=args.runtime,
+    config = (
+        load_llm_provider_config()
+        if args.provider is not None
+        else _build_llm_provider_config(args)
     )
+    if args.provider is not None:
+        result = run_llm_smoke_check(
+            config,
+            runtime=args.runtime,
+            reviewer_provider=args.provider,
+        )
+    else:
+        result = run_llm_smoke_check(
+            config,
+            runtime=args.runtime,
+        )
     return _write_or_print_output(render_llm_smoke_check_result(result), None)
 
 

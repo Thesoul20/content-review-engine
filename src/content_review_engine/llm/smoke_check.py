@@ -36,8 +36,14 @@ def run_llm_smoke_check(
     config: LLMProviderConfig,
     *,
     runtime: bool = False,
+    reviewer_provider: str | None = None,
 ) -> LLMSmokeCheckResult:
-    reviewer = create_llm_reviewer(config)
+    provider_name = config.provider
+    if reviewer_provider is not None:
+        provider_name = reviewer_provider.strip().lower()
+        reviewer = create_llm_reviewer(reviewer_provider)
+    else:
+        reviewer = create_llm_reviewer(config)
     secret_status: LLMSmokeCheckStatus = "skipped"
 
     if isinstance(reviewer, PydanticAIReviewer):
@@ -50,7 +56,7 @@ def run_llm_smoke_check(
         runtime_status = "ok"
 
     return LLMSmokeCheckResult(
-        provider=config.provider,
+        provider=provider_name,
         config_status="ok",
         secret_status=secret_status,
         runtime_status=runtime_status,

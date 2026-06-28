@@ -19,7 +19,7 @@ suppression comments, counts, and quality gates, see
 ```bash
 uv run content-review review <markdown_file> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--fail-on info|warning|error|critical] [--enable-llm --llm-output <file> [--llm-markdown-output <file>] [--llm-config <path>] [--llm-provider mock|pydanticai] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>] [--llm-timeout-seconds <seconds>] [--llm-retry-attempts <count>] [--llm-retry-backoff-seconds <seconds>] [--llm-min-request-interval-seconds <seconds>] [--include-llm-report]]
 uv run content-review batch <input_dir> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--recursive] [--pattern "*.md"] [--fail-on info|warning|error|critical] [--enable-llm --llm-output-dir <dir> [--llm-markdown-output <file>] [--llm-config <path>] [--llm-provider mock|pydanticai] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>] [--llm-timeout-seconds <seconds>] [--llm-retry-attempts <count>] [--llm-retry-backoff-seconds <seconds>] [--llm-min-request-interval-seconds <seconds>]]
-uv run content-review llm-check [--llm-config <path>] [--llm-provider mock|pydanticai] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>] [--llm-timeout-seconds <seconds>] [--llm-retry-attempts <count>] [--llm-retry-backoff-seconds <seconds>] [--llm-min-request-interval-seconds <seconds>] [--runtime]
+uv run content-review llm-check [--provider mock|pydantic-ai-testmodel] [--llm-config <path>] [--llm-provider mock|pydanticai] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>] [--llm-timeout-seconds <seconds>] [--llm-retry-attempts <count>] [--llm-retry-backoff-seconds <seconds>] [--llm-min-request-interval-seconds <seconds>] [--runtime]
 uv run content-review profile validate <profile_file> [--format text|json]
 uv run content-review profile init --template <general-basic|general-publishing|health-content|marketing-copy|technical-blog|wechat-basic|wechat-article|wechat-strict> --output <profile_file> [--force]
 uv run content-review profile list [--format text|json]
@@ -41,6 +41,9 @@ It is not a review command.
 Examples:
 
 ```bash
+uv run content-review llm-check
+uv run content-review llm-check --provider mock --runtime
+uv run content-review llm-check --provider pydantic-ai-testmodel --runtime
 uv run content-review llm-check --llm-config examples/llm/mock/llm-provider.yml
 uv run content-review llm-check --llm-config examples/llm/pydanticai/llm-provider.yml
 uv run content-review llm-check --llm-config examples/llm/pydanticai/llm-provider.yml --runtime
@@ -53,11 +56,14 @@ Behavior:
 - `llm-check` does not require `--profile`
 - `llm-check` does not read Markdown input files
 - `llm-check` reuses the same `--llm-config` loader and CLI override rules as `review` and `batch`
+- `llm-check --provider` uses `create_llm_reviewer()` directly with `mock` or `pydantic-ai-testmodel`
+- `llm-check --provider` does not require an API key, does not read `.env`, and does not access the network for the supported factory providers
 - default behavior is config check plus secret check only
 - `--runtime` adds a synthetic minimal runtime smoke call
 - `llm-check` does not write sidecars
 - `llm-check` does not produce deterministic `ReviewResult` or `BatchReviewResult`
 - `llm-check` does not affect deterministic quality-gate behavior
+- unsupported `--provider` values fail explicitly and do not fall back
 - command, config, secret, or runtime failures return exit code `2`
 
 Current text output stages:

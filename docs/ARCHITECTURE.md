@@ -222,6 +222,9 @@ Current status:
   config-driven runtime provider selection for the existing CLI sidecar path,
   and name-driven reviewer construction for package-local reviewer providers
   such as `mock` and `pydantic-ai-testmodel`
+- `content-review llm-check --provider` now uses that name-driven factory path
+  for safe local smoke checks, while the existing config-driven `llm-check`
+  path remains available for `mock` and `pydanticai`
 - the CLI can optionally route single-file and batch sidecar review through
   that config/config-loader/factory boundary
 - the CLI can optionally write a separate LLM sidecar Markdown report for
@@ -317,6 +320,18 @@ Current LLM smoke-check boundary:
 ```text
 content-review llm-check
   ↓
+optional --provider mock|pydantic-ai-testmodel
+  ↓
+create_llm_reviewer("<provider-name>")
+  ↓
+Synthetic minimal LLMReviewRequest
+  ↓
+Provider runtime smoke call
+
+or
+
+content-review llm-check
+  ↓
 LLMProviderConfig load + CLI override merge
   ↓
 Provider Factory
@@ -335,6 +350,8 @@ The smoke-check command is intentionally separate from `review` and `batch`:
 - it does not generate sidecars
 - it does not generate deterministic review output
 - it does not affect quality-gate semantics
+- `--provider` supports only `mock` and `pydantic-ai-testmodel`, fails
+  explicitly for unsupported values, and does not fall back
 
 Deterministic Markdown report + optional appended LLM section
 ```

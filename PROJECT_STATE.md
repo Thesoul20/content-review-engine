@@ -85,6 +85,24 @@ use.
 
 ## Recent Completion
 
+- TASK-0056 is complete.
+- Added `--provider` to `content-review llm-check` for factory-based reviewer
+  selection with `mock` and `pydantic-ai-testmodel`.
+- Updated `src/content_review_engine/cli.py` and
+  `src/content_review_engine/llm/smoke_check.py` so `llm-check --provider`
+  creates reviewers through `create_llm_reviewer()` while keeping the default
+  `llm-check` config-driven behavior unchanged.
+- Added and updated `tests/test_llm_smoke_check.py` and `tests/test_cli.py`
+  for default `llm-check` behavior, `--provider mock`,
+  `--provider pydantic-ai-testmodel`, unsupported-provider failures, no
+  fallback behavior, and no-network/no-API-key boundaries.
+- Updated `docs/CLI.md`, `docs/LLM_PROVIDER_USAGE.md`, and
+  `docs/ARCHITECTURE.md` to document `llm-check --provider`, its supported
+  provider names, and the factory boundary.
+- Kept `review` and `batch` default behavior unchanged.
+- Kept real API keys, `.env` loading, and external-network access out of the
+  new `llm-check --provider` path.
+
 - TASK-0055 is complete.
 - Added provider-name-based LLM reviewer construction in
   `src/content_review_engine/llm/factory.py` for `mock` and

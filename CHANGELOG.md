@@ -8,6 +8,35 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0056
+
+### Added
+
+- Added `--provider` to `content-review llm-check` for factory-based reviewer
+  selection with `mock` and `pydantic-ai-testmodel`.
+- Added `tests/test_llm_smoke_check.py` coverage for `llm-check` reviewer-name
+  selection through `create_llm_reviewer()` without API keys or network
+  access.
+
+### Changed
+
+- Updated `src/content_review_engine/cli.py` and
+  `src/content_review_engine/llm/smoke_check.py` so `llm-check --provider`
+  uses `create_llm_reviewer()` directly, keeps default `llm-check` behavior
+  unchanged, and fails explicitly for unsupported providers without fallback.
+- Updated `tests/test_cli.py` for default `llm-check` behavior,
+  `--provider mock`, `--provider pydantic-ai-testmodel`, unsupported-provider
+  failures, and no-config-fallback assertions.
+- Updated `docs/CLI.md`, `docs/LLM_PROVIDER_USAGE.md`, `docs/ARCHITECTURE.md`,
+  and `PROJECT_STATE.md` to document the new `llm-check --provider` boundary.
+
+### Not Added
+
+- No real provider integration, no API-key requirement, no `.env` loading, no
+  secret resolver changes, and no external-network test dependency.
+- No change to `review` or `batch` provider selection, deterministic review
+  output, sidecar schema, Markdown report merging, or quality-gate behavior.
+
 ## TASK-0055
 
 ### Added

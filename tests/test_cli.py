@@ -999,6 +999,23 @@ def test_cli_llm_check_parser_accepts_runtime_and_llm_config_arguments() -> None
     assert args.llm_min_request_interval_seconds is None
 
 
+def test_cli_llm_check_parser_accepts_provider_argument() -> None:
+    parser = build_parser()
+
+    args = parser.parse_args(
+        [
+            "llm-check",
+            "--provider",
+            "pydantic-ai-testmodel",
+            "--runtime",
+        ]
+    )
+
+    assert args.command == "llm-check"
+    assert args.provider == "pydantic-ai-testmodel"
+    assert args.runtime is True
+
+
 def test_cli_review_llm_markdown_output_requires_enable_llm(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
@@ -4512,6 +4529,22 @@ def test_cli_llm_check_mock_config_succeeds(
     assert captured.err == ""
 
 
+def test_cli_llm_check_default_behavior_stays_unchanged(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = main(["llm-check"])
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "LLM provider check passed." in captured.out
+    assert "Provider: mock" in captured.out
+    assert "Config: ok" in captured.out
+    assert "Secret: skipped" in captured.out
+    assert "Runtime: skipped" in captured.out
+    assert captured.err == ""
+
+
 def test_cli_llm_check_mock_runtime_succeeds_without_network(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
@@ -4537,6 +4570,106 @@ def test_cli_llm_check_mock_runtime_succeeds_without_network(
     assert exit_code == 0
     assert "Runtime: ok" in captured.out
     assert captured.err == ""
+
+
+def test_cli_llm_check_provider_mock_runtime_succeeds_without_network(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    import socket
+
+    def fail_create_connection(*args, **kwargs):  # type: ignore[no-untyped-def]
+        raise AssertionError(f"Unexpected network call: {args!r} {kwargs!r}")
+
+    monkeypatch.setattr(socket, "create_connection", fail_create_connection)
+
+    exit_code = main(
+        [
+            "llm-check",
+            "--provider",
+            "mock",
+            "--runtime",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "Provider: mock" in captured.out
+    assert "Secret: skipped" in captured.out
+    assert "Runtime: ok" in captured.out
+    assert captured.err == ""
+
+
+def test_cli_llm_check_provider_testmodel_runtime_succeeds_without_api_key_or_network(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    import socket
+
+    def fail_create_connection(*args, **kwargs):  # type: ignore[no-untyped-def]
+        raise AssertionError(f"Unexpected network call: {args!r} {kwargs!r}")
+
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.setattr(socket, "create_connection", fail_create_connection)
+
+    exit_code = main(
+        [
+            "llm-check",
+            "--provider",
+            "pydantic-ai-testmodel",
+            "--runtime",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "Provider: pydantic-ai-testmodel" in captured.out
+    assert "Secret: skipped" in captured.out
+    assert "Runtime: ok" in captured.out
+    assert captured.err == ""
+
+
+def test_cli_llm_check_provider_rejects_unsupported_provider_without_fallback(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = main(
+        [
+            "llm-check",
+            "--provider",
+            "openai",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert captured.out == ""
+    assert "Error: Unknown LLM provider 'openai'." in captured.err
+    assert "Supported providers: 'mock', 'pydantic-ai-testmodel'." in captured.err
+
+
+def test_cli_llm_check_provider_rejects_unsupported_provider_without_config_fallback(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = main(
+        [
+            "llm-check",
+            "--provider",
+            "openai",
+            "--llm-config",
+            "examples/llm/mock/llm-provider.yml",
+            "--runtime",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert captured.out == ""
+    assert "Error: Unknown LLM provider 'openai'." in captured.err
+    assert "Supported providers: 'mock', 'pydantic-ai-testmodel'." in captured.err
 
 
 def test_cli_llm_check_pydanticai_secret_missing_returns_error(

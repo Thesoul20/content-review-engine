@@ -9,6 +9,7 @@ from content_review_engine.llm import (
     LLMProviderRuntimeError,
     LLMReviewResult,
     PydanticAIReviewer,
+    PydanticAITestModelReviewer,
     ResolvedLLMSecret,
     build_llm_smoke_check_request,
     render_llm_smoke_check_result,
@@ -54,6 +55,35 @@ def test_run_llm_smoke_check_mock_runtime_succeeds_without_network(
     result = run_llm_smoke_check(LLMProviderConfig(provider="mock"), runtime=True)
 
     assert result.provider == "mock"
+    assert result.secret_status == "skipped"
+    assert result.runtime_status == "ok"
+
+
+def test_run_llm_smoke_check_provider_mode_uses_factory_name_and_testmodel_without_network(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from content_review_engine.llm import smoke_check as module
+
+    captured_provider: dict[str, str] = {}
+
+    def fail_create_connection(*args, **kwargs):  # type: ignore[no-untyped-def]
+        raise AssertionError(f"Unexpected network call: {args!r} {kwargs!r}")
+
+    def fake_create_llm_reviewer(provider):  # type: ignore[no-untyped-def]
+        captured_provider["value"] = provider
+        return PydanticAITestModelReviewer()
+
+    monkeypatch.setattr(socket, "create_connection", fail_create_connection)
+    monkeypatch.setattr(module, "create_llm_reviewer", fake_create_llm_reviewer)
+
+    result = run_llm_smoke_check(
+        LLMProviderConfig(provider="mock"),
+        runtime=True,
+        reviewer_provider="pydantic-ai-testmodel",
+    )
+
+    assert captured_provider == {"value": "pydantic-ai-testmodel"}
+    assert result.provider == "pydantic-ai-testmodel"
     assert result.secret_status == "skipped"
     assert result.runtime_status == "ok"
 

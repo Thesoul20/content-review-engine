@@ -18,7 +18,8 @@ the deterministic review pipeline.
   network calls.
 - `pydantic-ai-testmodel`: package-level testing provider built on
   `pydantic_ai.models.test.TestModel`, requires no API key, performs no
-  network calls, and is not wired into the CLI provider factory.
+  network calls, and is available to `llm-check --provider` through the
+  package reviewer factory.
 - `pydanticai`: real runtime provider, requires an API key through an
   environment variable, can call an external OpenAI-compatible endpoint, and
   should be used only for explicit manual verification.
@@ -52,9 +53,9 @@ Factory behavior:
 - this factory path does not read `.env`, does not require an API key, and
   does not access the network for the supported reviewer providers above
 
-This is a package boundary for future adapters. It does not add a new CLI
-provider-selection flag and does not change the default behavior of `review`,
-`batch`, or `llm-check`.
+This is a package boundary for future adapters. `llm-check --provider` now
+reuses it for the safe local reviewer providers above. It still does not
+change the default behavior of `review`, `batch`, or `llm-check`.
 
 ## PydanticAI TestModel Provider
 
@@ -85,6 +86,9 @@ verification into `review` or `batch`.
 Examples:
 
 ```bash
+uv run content-review llm-check
+uv run content-review llm-check --provider mock --runtime
+uv run content-review llm-check --provider pydantic-ai-testmodel --runtime
 uv run content-review llm-check --llm-config examples/llm/mock/llm-provider.yml
 uv run content-review llm-check --llm-config examples/llm/pydanticai/llm-provider.yml
 uv run content-review llm-check --llm-config examples/llm/pydanticai/llm-provider.yml --runtime
@@ -95,6 +99,15 @@ Default behavior:
 - config check
 - secret check when the provider requires one
 - no runtime call
+
+`--provider` behavior:
+
+- supports only `mock` and `pydantic-ai-testmodel`
+- uses `create_llm_reviewer()` directly instead of config-driven provider construction
+- does not require an API key
+- does not read `.env`
+- does not access the network for the supported factory providers
+- fails explicitly for unsupported values and does not fall back to config or `mock`
 
 `--runtime` behavior:
 
