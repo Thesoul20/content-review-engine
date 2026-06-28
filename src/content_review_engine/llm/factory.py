@@ -7,7 +7,7 @@ from content_review_engine.llm.errors import (
     LLMProviderConfigError,
 )
 from content_review_engine.llm.mock import MockLLMReviewer
-from content_review_engine.llm.pydanticai import raise_pydanticai_not_implemented
+from content_review_engine.llm.pydanticai import PydanticAIReviewer
 from content_review_engine.llm.provider import LLMReviewer
 
 ProviderFactory = Callable[[LLMProviderConfig], LLMReviewer]
@@ -19,8 +19,7 @@ def _create_mock_reviewer(config: LLMProviderConfig) -> LLMReviewer:
 
 
 def _create_pydanticai_reviewer(config: LLMProviderConfig) -> LLMReviewer:
-    del config
-    raise_pydanticai_not_implemented()
+    return PydanticAIReviewer(config)
 
 
 LLM_PROVIDER_REGISTRY: dict[str, ProviderFactory] = {

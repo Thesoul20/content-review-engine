@@ -5,6 +5,7 @@ from content_review_engine.llm import (
     LLMProviderConfigError,
     LLMProviderNotImplementedError,
     LLMProviderError,
+    LLMProviderSecretError,
     LLMResponseValidationError,
     LLMReviewError,
     LLMReviewFinding,
@@ -125,10 +126,12 @@ def test_llm_error_hierarchy_is_stable() -> None:
     config_error = LLMProviderConfigError("config invalid")
     not_implemented_error = LLMProviderNotImplementedError("not implemented")
     provider_error = LLMProviderError("provider failed")
+    secret_error = LLMProviderSecretError("secret missing")
     response_error = LLMResponseValidationError("response invalid")
 
     assert isinstance(config_error, LLMReviewError)
     assert isinstance(not_implemented_error, LLMProviderConfigError)
     assert isinstance(provider_error, LLMReviewError)
+    assert isinstance(secret_error, LLMProviderConfigError)
     assert isinstance(response_error, LLMReviewError)
     assert not isinstance(provider_error, LLMResponseValidationError)

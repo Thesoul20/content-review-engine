@@ -449,6 +449,28 @@ Notes:
 
 ---
 
+## ResolvedLLMSecret
+
+`ResolvedLLMSecret` stores the result of secret resolution from
+`LLMProviderConfig.api_key_env`.
+
+Current fields:
+
+| Field | Required | Description |
+|---|---|---|
+| `api_key_env` | Yes | Environment variable name used for resolution |
+| `api_key` | Yes | Resolved secret value stored as a redacted secret field |
+
+Notes:
+
+- the resolved secret model is internal to the LLM adapter boundary
+- `repr` redacts `api_key`
+- `model_dump()` excludes `api_key`
+- sidecar JSON, Markdown reports, deterministic review output, and CLI errors
+  must not serialize the secret value
+
+---
+
 ## LLM Provider Factory
 
 `src/content_review_engine/llm/factory.py` owns reviewer construction from
@@ -457,12 +479,14 @@ Notes:
 Current behavior:
 
 - `provider = "mock"` returns `MockLLMReviewer`
-- `provider = "pydanticai"` raises `LLMProviderNotImplementedError`
+- `provider = "pydanticai"` returns `PydanticAIReviewer`, a future skeleton
+  that still requires secret preflight and still raises
+  `LLMProviderNotImplementedError` before any real review call
 - unknown providers raise `LLMProviderConfigError`
 - the factory does not read environment variables, perform network requests,
   or depend on the CLI layer
 - `src/content_review_engine/llm/pydanticai.py` is only a future skeleton and
-  does not import a real PydanticAI SDK or implement provider review logic
+  does not implement provider review logic
 
 ---
 
@@ -475,6 +499,7 @@ The future LLM adapter boundary now defines minimal error types in
 |---|---|
 | `LLMReviewError` | Base exception for future LLM review failures |
 | `LLMProviderConfigError` | Invalid or unsupported provider configuration |
+| `LLMProviderSecretError` | Missing, unset, or empty provider secret configuration |
 | `LLMProviderNotImplementedError` | Recognized provider name that is not implemented yet |
 | `LLMProviderError` | Provider adapter failure, such as transport or upstream execution failure |
 | `LLMResponseValidationError` | Provider output could not be validated as an `LLMReviewResult` |

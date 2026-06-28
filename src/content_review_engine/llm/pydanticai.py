@@ -1,11 +1,20 @@
 from __future__ import annotations
 
-from content_review_engine.llm.errors import LLMProviderNotImplementedError
+from collections.abc import Callable
+
+from pydantic_ai import Agent
+
+from content_review_engine.llm.config import LLMProviderConfig
+from content_review_engine.llm.errors import (
+    LLMProviderNotImplementedError,
+)
 from content_review_engine.llm.models import LLMReviewRequest, LLMReviewResult
+from content_review_engine.llm.secrets import ResolvedLLMSecret, resolve_llm_api_key
 
 PYDANTICAI_PROVIDER_NAME = "pydanticai"
 PYDANTICAI_NOT_IMPLEMENTED_MESSAGE = (
-    "Provider 'pydanticai' is recognized but not implemented yet."
+    "Provider 'pydanticai' dependency and secret boundary is available, "
+    "but review is not implemented yet."
 )
 
 
@@ -18,17 +27,23 @@ class PydanticAIReviewer:
 
     def __init__(
         self,
+        config: LLMProviderConfig,
         *,
-        model: str | None = None,
-        api_key_env: str | None = None,
-        base_url: str | None = None,
+        secret_resolver: Callable[[LLMProviderConfig], ResolvedLLMSecret] = resolve_llm_api_key,
     ) -> None:
-        self.model = model
-        self.api_key_env = api_key_env
-        self.base_url = base_url
+        self.config = config
+        self.model = config.model
+        self.api_key_env = config.api_key_env
+        self.base_url = config.base_url
+        self._secret_resolver = secret_resolver
+        self._agent_type = Agent
+
+    def resolve_secret(self) -> ResolvedLLMSecret:
+        return self._secret_resolver(self.config)
 
     def review(self, request: LLMReviewRequest) -> LLMReviewResult:
         del request
+        self.resolve_secret()
         raise_pydanticai_not_implemented()
 
 

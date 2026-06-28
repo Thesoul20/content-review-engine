@@ -10,6 +10,7 @@ from content_review_engine.llm.errors import (
     LLMProviderConfigError,
     LLMProviderNotImplementedError,
     LLMProviderError,
+    LLMProviderSecretError,
     LLMResponseValidationError,
     LLMReviewError,
 )
@@ -41,6 +42,7 @@ from content_review_engine.llm.pydanticai import (
 )
 from content_review_engine.llm.provider import LLMReviewer
 from content_review_engine.llm.runner import LLMReviewRunner
+from content_review_engine.llm.secrets import ResolvedLLMSecret, resolve_llm_api_key
 from content_review_engine.llm.sidecar import (
     build_llm_sidecar_error,
     build_llm_sidecar_file_failed,
@@ -71,6 +73,7 @@ __all__ = [
     "LLMProviderNotImplementedError",
     "LLMProviderType",
     "LLMProviderError",
+    "LLMProviderSecretError",
     "LLM_REVIEW_RESULT_SCHEMA_VERSION",
     "LLM_SIDECAR_RESULT_SCHEMA_VERSION",
     "LLM_SIDECAR_STATUS_VALUES",
@@ -90,6 +93,7 @@ __all__ = [
     "PYDANTICAI_NOT_IMPLEMENTED_MESSAGE",
     "PYDANTICAI_PROVIDER_NAME",
     "PydanticAIReviewer",
+    "ResolvedLLMSecret",
     "build_llm_sidecar_error",
     "build_llm_sidecar_file_failed",
     "build_llm_sidecar_file_success",
@@ -107,5 +111,6 @@ __all__ = [
     "llm_sidecar_result_to_json",
     "llm_sidecar_summary_to_dict",
     "load_llm_provider_config",
+    "resolve_llm_api_key",
     "raise_pydanticai_not_implemented",
 ]

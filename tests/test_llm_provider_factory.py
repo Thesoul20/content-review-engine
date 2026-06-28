@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import builtins
 import importlib
 import socket
 import sys
@@ -10,8 +9,8 @@ import pytest
 from content_review_engine.llm import (
     LLMProviderConfig,
     LLMProviderConfigError,
-    LLMProviderNotImplementedError,
     MockLLMReviewer,
+    PydanticAIReviewer,
     create_llm_reviewer,
     load_llm_provider_config,
 )
@@ -23,13 +22,12 @@ def test_provider_factory_creates_mock_reviewer() -> None:
     assert isinstance(reviewer, MockLLMReviewer)
 
 
-def test_provider_factory_rejects_reserved_pydanticai_provider() -> None:
+def test_provider_factory_creates_pydanticai_skeleton() -> None:
     config = load_llm_provider_config(provider="pydanticai")
+    reviewer = create_llm_reviewer(config)
 
-    with pytest.raises(LLMProviderNotImplementedError) as exc_info:
-        create_llm_reviewer(config)
-
-    assert str(exc_info.value) == "Provider 'pydanticai' is recognized but not implemented yet."
+    assert isinstance(reviewer, PydanticAIReviewer)
+    assert reviewer.config is config
 
 
 def test_provider_factory_rejects_unknown_provider_defensively() -> None:
@@ -43,24 +41,14 @@ def test_provider_factory_rejects_unknown_provider_defensively() -> None:
 
 def test_provider_factory_does_not_fallback_pydanticai_to_mock() -> None:
     config = load_llm_provider_config(provider="pydanticai")
+    reviewer = create_llm_reviewer(config)
 
-    with pytest.raises(LLMProviderNotImplementedError):
-        reviewer = create_llm_reviewer(config)
-
-    assert "reviewer" not in locals()
+    assert isinstance(reviewer, PydanticAIReviewer)
+    assert not isinstance(reviewer, MockLLMReviewer)
 
 
 def test_provider_factory_does_not_import_pydanticai_sdk(
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    original_import = builtins.__import__
-
-    def guarded_import(name, globals=None, locals=None, fromlist=(), level=0):  # type: ignore[no-untyped-def]
-        if name.startswith("pydantic_ai"):
-            raise AssertionError("Unexpected import of pydantic_ai SDK")
-        return original_import(name, globals, locals, fromlist, level)
-
-    monkeypatch.setattr(builtins, "__import__", guarded_import)
     sys.modules.pop("content_review_engine.llm", None)
     sys.modules.pop("content_review_engine.llm.factory", None)
     sys.modules.pop("content_review_engine.llm.pydanticai", None)
@@ -70,6 +58,7 @@ def test_provider_factory_does_not_import_pydanticai_sdk(
     reviewer = module.create_llm_reviewer(module.LLMProviderConfig())
 
     assert isinstance(reviewer, MockLLMReviewer)
+    assert module.PydanticAIReviewer.__name__ == "PydanticAIReviewer"
 
 
 def test_provider_factory_does_not_make_network_calls(
@@ -84,5 +73,8 @@ def test_provider_factory_does_not_make_network_calls(
 
     assert isinstance(mock_reviewer, MockLLMReviewer)
 
-    with pytest.raises(LLMProviderNotImplementedError):
-        create_llm_reviewer(load_llm_provider_config(provider="pydanticai"))
+    pydanticai_reviewer = create_llm_reviewer(
+        load_llm_provider_config(provider="pydanticai")
+    )
+
+    assert isinstance(pydanticai_reviewer, PydanticAIReviewer)

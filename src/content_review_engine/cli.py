@@ -39,12 +39,14 @@ from content_review_engine.llm import (
     LLMReviewError,
     LLMReviewResult,
     LLMReviewRunner,
+    PydanticAIReviewer,
     build_llm_sidecar_file_failed,
     build_llm_sidecar_file_success,
     build_llm_sidecar_result,
     create_llm_reviewer,
     llm_sidecar_result_to_json,
     load_llm_provider_config,
+    raise_pydanticai_not_implemented,
 )
 from content_review_engine.parser import read_markdown
 from content_review_engine.reports import (
@@ -131,8 +133,8 @@ def build_parser() -> argparse.ArgumentParser:
         "--llm-api-key-env",
         default=None,
         help=(
-            "Optional environment variable name stored in LLM provider config. "
-            "The CLI does not read the secret value."
+            "Optional environment variable name for future provider secret "
+            "resolution. The secret value is never printed."
         ),
     )
     review_parser.add_argument(
@@ -279,8 +281,8 @@ def build_parser() -> argparse.ArgumentParser:
         "--llm-api-key-env",
         default=None,
         help=(
-            "Optional environment variable name stored in LLM provider config. "
-            "The CLI does not read the secret value."
+            "Optional environment variable name for future provider secret "
+            "resolution. The secret value is never printed."
         ),
     )
     batch_parser.add_argument(
@@ -566,7 +568,11 @@ def _build_llm_provider_config(args: argparse.Namespace) -> LLMProviderConfig:
 
 
 def _build_llm_reviewer(args: argparse.Namespace):
-    return create_llm_reviewer(_build_llm_provider_config(args))
+    reviewer = create_llm_reviewer(_build_llm_provider_config(args))
+    if isinstance(reviewer, PydanticAIReviewer):
+        reviewer.resolve_secret()
+        raise_pydanticai_not_implemented()
+    return reviewer
 
 
 def _build_llm_review_request(

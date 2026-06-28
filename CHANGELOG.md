@@ -8,6 +8,53 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0045
+
+### Added
+
+- Reintroduced the minimal `pydantic-ai-slim[openai]` dependency in
+  `pyproject.toml` and refreshed `uv.lock` for the future `pydanticai`
+  provider boundary.
+- Added `src/content_review_engine/llm/secrets.py` with
+  `ResolvedLLMSecret` and safe `resolve_llm_api_key(config)` handling.
+- Added `LLMProviderSecretError` plus dedicated
+  `tests/test_llm_secrets.py` coverage for successful resolution, missing
+  `api_key_env`, unset env vars, empty env vars, and secret redaction.
+
+### Changed
+
+- Updated `src/content_review_engine/llm/pydanticai.py` so the future skeleton
+  now stores `LLMProviderConfig`, imports the minimal PydanticAI dependency,
+  resolves secret availability safely, and still raises
+  `LLMProviderNotImplementedError` before any real review call.
+- Updated `src/content_review_engine/llm/factory.py` so
+  `provider=\"pydanticai\"` now constructs the explicit future skeleton
+  instead of failing inside the factory boundary.
+- Updated `src/content_review_engine/cli.py` so enabling `pydanticai`
+  performs secret preflight, returns structured secret errors for missing or
+  invalid env configuration, and returns a clear not-implemented error when
+  the secret exists.
+- Updated `tests/test_llm_config.py`, `tests/test_llm_provider.py`,
+  `tests/test_llm_provider_factory.py`, `tests/test_llm_pydanticai_provider.py`,
+  and `tests/test_cli.py` for the new dependency + secret boundary.
+- Updated `docs/ARCHITECTURE.md`, `docs/DATA_MODELS.md`, `docs/CLI.md`, and
+  `docs/CI.md` to document the secret-resolution boundary and continued
+  non-runnable `pydanticai` state.
+- Updated `PROJECT_STATE.md` to record TASK-0045 completion.
+- Kept `LLMSidecarResult` JSON schema unchanged.
+- Kept LLM sidecar Markdown report structure unchanged.
+- Kept deterministic review and batch JSON schemas unchanged.
+- Kept deterministic Markdown report structure unchanged.
+- Kept deterministic quality-gate semantics unchanged.
+
+### Not Added
+
+- No real PydanticAI review execution, prompt templates, response parsing, or
+  network requests.
+- No fallback from `pydanticai` to `mock`.
+- No secret serialization into config dumps, sidecars, reports, logs, or
+  error messages.
+
 ## TASK-0044
 
 ### Changed

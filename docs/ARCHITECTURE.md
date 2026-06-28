@@ -357,14 +357,19 @@ Current LLM provider-boundary status:
   optional `base_url`
 - `src/content_review_engine/llm/factory.py` defines the provider registry and
   `create_llm_reviewer(config)`
+- `src/content_review_engine/llm/secrets.py` defines the secret-resolution
+  boundary that reads `LLMProviderConfig.api_key_env` and returns a redacted
+  `ResolvedLLMSecret`
 - `src/content_review_engine/llm/mock.py` defines `MockLLMReviewer`, a
   deterministic adapter for tests and future wiring work
 - `src/content_review_engine/llm/pydanticai.py` is now only an explicit future
-  provider skeleton; it does not import a PydanticAI SDK, read environment
-  variables, or perform network calls
+  provider skeleton; it can import the minimal PydanticAI dependency, validate
+  secret availability through the shared resolver, and still stops before any
+  real review call or network request
 - the current runnable provider is only `mock`
-- the reserved provider name `pydanticai` is recognized by config loading but
-  currently returns a not-implemented provider error
+- the reserved provider name `pydanticai` is recognized by config loading, can
+  be instantiated as a future skeleton through the factory, and still returns
+  a secret or not-implemented error before any real provider execution
 
 TASK-0036 adds the runner boundary:
 
@@ -414,8 +419,9 @@ Important current boundaries:
 - batch review does not participate in this LLM path
 - provider config parsing and reviewer construction are confined to the
   sidecar adapter path
-- the reserved `pydanticai` adapter path is intentionally a non-runnable
-  skeleton until a later task implements the real provider boundary
+- the reserved `pydanticai` adapter path now has an explicit dependency +
+  secret-preflight boundary, but it is still intentionally non-runnable until
+  a later task implements the real provider boundary
 - the runner does not read environment variables
 - the deterministic review pipeline, canonical JSON schema, Markdown report,
   and batch flow do not depend on provider-specific secret resolution

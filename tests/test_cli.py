@@ -850,11 +850,15 @@ def test_cli_review_mock_provider_accepts_llm_model_and_api_key_env_config(
 
 
 def test_cli_review_pydanticai_provider_returns_not_implemented_error(
+    monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     markdown_path = "tests/fixtures/markdown/clean_article.md"
     profile_path = "tests/fixtures/profiles/default.yml"
+    llm_output_path = tmp_path / "review.llm.json"
+
+    monkeypatch.setenv("CONTENT_REVIEW_TEST_LLM_API_KEY", "test-secret-value")
 
     exit_code = main(
         [
@@ -868,9 +872,9 @@ def test_cli_review_pydanticai_provider_returns_not_implemented_error(
             "--llm-model",
             "gpt-4o-mini",
             "--llm-api-key-env",
-            "OPENAI_API_KEY",
+            "CONTENT_REVIEW_TEST_LLM_API_KEY",
             "--llm-output",
-            str(tmp_path / "review.llm.json"),
+            str(llm_output_path),
         ]
     )
 
@@ -878,7 +882,79 @@ def test_cli_review_pydanticai_provider_returns_not_implemented_error(
 
     assert exit_code == 2
     assert captured.out == ""
-    assert "Error: Provider 'pydanticai' is recognized but not implemented yet." in captured.err
+    assert (
+        "Error: Provider 'pydanticai' dependency and secret boundary is available, but review is not implemented yet."
+        in captured.err
+    )
+    assert "test-secret-value" not in captured.err
+    assert not llm_output_path.exists()
+
+
+def test_cli_review_pydanticai_provider_requires_api_key_env(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    llm_output_path = tmp_path / "review.llm.json"
+
+    exit_code = main(
+        [
+            "review",
+            "tests/fixtures/markdown/clean_article.md",
+            "--profile",
+            "tests/fixtures/profiles/default.yml",
+            "--enable-llm",
+            "--llm-provider",
+            "pydanticai",
+            "--llm-model",
+            "gpt-4o-mini",
+            "--llm-output",
+            str(llm_output_path),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert captured.out == ""
+    assert "Error: LLM provider 'pydanticai' requires api_key_env to be configured." in captured.err
+    assert not llm_output_path.exists()
+
+
+def test_cli_review_pydanticai_provider_rejects_missing_environment_variable(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    llm_output_path = tmp_path / "review.llm.json"
+    monkeypatch.delenv("CONTENT_REVIEW_TEST_LLM_API_KEY", raising=False)
+
+    exit_code = main(
+        [
+            "review",
+            "tests/fixtures/markdown/clean_article.md",
+            "--profile",
+            "tests/fixtures/profiles/default.yml",
+            "--enable-llm",
+            "--llm-provider",
+            "pydanticai",
+            "--llm-model",
+            "gpt-4o-mini",
+            "--llm-api-key-env",
+            "CONTENT_REVIEW_TEST_LLM_API_KEY",
+            "--llm-output",
+            str(llm_output_path),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert captured.out == ""
+    assert (
+        "Error: LLM API key environment variable 'CONTENT_REVIEW_TEST_LLM_API_KEY' is not set."
+        in captured.err
+    )
+    assert not llm_output_path.exists()
 
 
 def test_cli_review_llm_markdown_output_writes_single_file_report(
@@ -2826,11 +2902,15 @@ def test_cli_batch_mock_provider_accepts_llm_model_and_api_key_env_config(
 
 
 def test_cli_batch_pydanticai_provider_returns_not_implemented_error(
+    monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     input_dir = "tests/fixtures/batch/articles"
     profile_path = "tests/fixtures/batch/profile.yml"
+    llm_output_dir = tmp_path / "llm-sidecars"
+
+    monkeypatch.setenv("CONTENT_REVIEW_TEST_LLM_API_KEY", "test-secret-value")
 
     exit_code = main(
         [
@@ -2845,9 +2925,9 @@ def test_cli_batch_pydanticai_provider_returns_not_implemented_error(
             "--llm-model",
             "gpt-4o-mini",
             "--llm-api-key-env",
-            "OPENAI_API_KEY",
+            "CONTENT_REVIEW_TEST_LLM_API_KEY",
             "--llm-output-dir",
-            str(tmp_path / "llm-sidecars"),
+            str(llm_output_dir),
         ]
     )
 
@@ -2855,7 +2935,12 @@ def test_cli_batch_pydanticai_provider_returns_not_implemented_error(
 
     assert exit_code == 2
     assert captured.out == ""
-    assert "Error: Provider 'pydanticai' is recognized but not implemented yet." in captured.err
+    assert (
+        "Error: Provider 'pydanticai' dependency and secret boundary is available, but review is not implemented yet."
+        in captured.err
+    )
+    assert "test-secret-value" not in captured.err
+    assert not llm_output_dir.exists()
 
 
 def test_cli_batch_llm_markdown_output_writes_batch_report(

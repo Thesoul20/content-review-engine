@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from content_review_engine.llm import (
     LLMProviderConfig,
     LLMProviderConfigError,
@@ -51,3 +53,10 @@ def test_load_llm_provider_config_rejects_unknown_provider() -> None:
         assert str(exc) == "Unknown LLM provider 'openai'. Supported providers: 'mock', 'pydanticai'."
     else:
         raise AssertionError("Expected LLMProviderConfigError")
+
+
+def test_load_llm_provider_config_rejects_empty_api_key_env() -> None:
+    with pytest.raises(LLMProviderConfigError) as exc_info:
+        load_llm_provider_config(provider="pydanticai", api_key_env="   ")
+
+    assert str(exc_info.value) == "api_key_env must not be empty"

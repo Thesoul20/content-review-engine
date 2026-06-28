@@ -13,6 +13,10 @@ class LLMProviderConfigError(LLMReviewError):
     """Raised when provider configuration is invalid."""
 
 
+class LLMProviderSecretError(LLMProviderConfigError):
+    """Raised when provider secret resolution fails safely."""
+
+
 class LLMProviderNotImplementedError(LLMProviderConfigError):
     """Raised when a recognized provider is not implemented yet."""
 
@@ -25,6 +29,7 @@ __all__ = [
     "LLMProviderConfigError",
     "LLMProviderNotImplementedError",
     "LLMProviderError",
+    "LLMProviderSecretError",
     "LLMResponseValidationError",
     "LLMReviewError",
 ]
