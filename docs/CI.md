@@ -142,13 +142,14 @@ LLM sidecar failures still do not affect the deterministic quality-gate exit
 code. The same rule applies if you also write an independent LLM sidecar
 Markdown report through `--llm-markdown-output`. The same boundary applies to
 LLM provider config such as `--llm-provider`, `--llm-model`, or
-`--llm-api-key-env`: they do not affect deterministic quality-gate evaluation.
-`pydanticai` now performs secret preflight and a real runtime call, but its
-findings and provider failures still do not change deterministic gate
-semantics. A missing or empty `--llm-api-key-env` for `pydanticai` is still a
-command error with exit code `2`, not a deterministic quality-gate failure.
-Runtime-side `pydanticai` failures are serialized into LLM sidecars without
-changing the deterministic exit code.
+`--llm-api-key-env`, or `--llm-timeout-seconds`: they do not affect
+deterministic quality-gate evaluation. `pydanticai` now performs secret
+preflight and a real runtime call, but its findings and provider failures
+still do not change deterministic gate semantics. A missing or empty
+`--llm-api-key-env` for `pydanticai` is still a command error with exit code
+`2`, not a deterministic quality-gate failure. Runtime-side `pydanticai`
+timeout, auth, network, rate-limit, model, and unknown failures are
+serialized into LLM sidecars without changing the deterministic exit code.
 Only deterministic findings contribute to exit code `1`.
 
 In GitHub Actions, exit code `0` passes the step. Exit code `1` or `2` fails

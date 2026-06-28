@@ -8,6 +8,54 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0048
+
+### Added
+
+- Added `timeout_seconds` to `LLMProviderConfig` plus validation coverage in
+  `tests/test_llm_config.py`.
+- Added `src/content_review_engine/llm/pydanticai_errors.py` with stable
+  PydanticAI runtime error classification for timeout, auth, network,
+  rate-limit, model, and unknown runtime failures.
+- Added `tests/test_llm_pydanticai_errors.py` for stable error-classification
+  coverage without real network or real API keys.
+
+### Changed
+
+- Updated `src/content_review_engine/cli.py` so `review` and `batch` accept
+  `--llm-timeout-seconds`, validate that it is greater than `0`, and pass it
+  into shared provider config without affecting deterministic review when LLM
+  sidecar review is disabled.
+- Updated `src/content_review_engine/llm/pydanticai.py` so the `pydanticai`
+  runtime passes optional timeout config into the underlying OpenAI-compatible
+  client and maps runtime failures into stable provider runtime error
+  subclasses while preserving `LLMResponseValidationError` for structured
+  response validation only.
+- Updated `src/content_review_engine/llm/errors.py` and
+  `src/content_review_engine/llm/__init__.py` to expose stable provider
+  runtime error subclasses for timeout, auth, network, rate-limit, model, and
+  unknown runtime failures.
+- Updated `tests/test_llm_pydanticai_provider.py`, `tests/test_llm_provider.py`,
+  and `tests/test_cli.py` for timeout propagation, runtime classification,
+  partial batch timeout failure recording, and continued deterministic quality
+  gate isolation.
+- Updated `docs/ARCHITECTURE.md`, `docs/DATA_MODELS.md`, `docs/CLI.md`, and
+  `docs/CI.md` to document timeout config and runtime error classification.
+- Updated `PROJECT_STATE.md` to record TASK-0048 completion.
+- Kept `LLMSidecarResult` JSON schema unchanged.
+- Kept LLM sidecar Markdown report structure unchanged.
+- Kept deterministic review and batch JSON schemas unchanged.
+- Kept deterministic Markdown report structure unchanged.
+- Kept deterministic quality-gate semantics unchanged.
+
+### Not Added
+
+- No retry, rate-limit queue, streaming, batch concurrency, multi-model
+  fallback, provider fallback, or `--fail-on-llm`.
+- No LLM merge into deterministic review results, report structure changes, or
+  quality-gate changes.
+- No real-network tests or real API-key test dependency.
+
 ## TASK-0047
 
 ### Added

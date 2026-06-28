@@ -10,10 +10,16 @@ from content_review_engine.llm.config import (
     load_llm_provider_config,
 )
 from content_review_engine.llm.errors import (
+    LLMProviderAuthError,
     LLMProviderConfigError,
+    LLMProviderModelError,
+    LLMProviderNetworkError,
     LLMProviderNotImplementedError,
     LLMProviderError,
+    LLMProviderRateLimitError,
+    LLMProviderRuntimeError,
     LLMProviderSecretError,
+    LLMProviderTimeoutError,
     LLMResponseValidationError,
     LLMReviewError,
 )
@@ -42,6 +48,9 @@ from content_review_engine.llm.pydanticai import (
     PYDANTICAI_PROVIDER_NAME,
     PydanticAIReviewer,
     raise_pydanticai_not_implemented,
+)
+from content_review_engine.llm.pydanticai_errors import (
+    classify_pydanticai_runtime_error,
 )
 from content_review_engine.llm.pydanticai_mapping import (
     PYDANTICAI_ALLOWED_SEVERITIES,
@@ -85,12 +94,18 @@ __all__ = [
     "LLM_PROVIDER_NAMES",
     "LLM_PROVIDER_REGISTRY",
     "LLMProviderConfig",
+    "LLMProviderAuthError",
     "LLMProviderConfigError",
+    "LLMProviderModelError",
     "LLMProviderName",
+    "LLMProviderNetworkError",
     "LLMProviderNotImplementedError",
     "LLMProviderType",
     "LLMProviderError",
+    "LLMProviderRateLimitError",
+    "LLMProviderRuntimeError",
     "LLMProviderSecretError",
+    "LLMProviderTimeoutError",
     "LLM_REVIEW_RESULT_SCHEMA_VERSION",
     "LLM_SIDECAR_RESULT_SCHEMA_VERSION",
     "LLM_SIDECAR_STATUS_VALUES",
@@ -140,6 +155,7 @@ __all__ = [
     "load_llm_provider_config",
     "mock",
     "pydanticai",
+    "classify_pydanticai_runtime_error",
     "pydanticai_response_to_llm_review_result",
     "resolve_llm_api_key",
     "raise_pydanticai_not_implemented",

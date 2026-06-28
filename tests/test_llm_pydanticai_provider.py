@@ -8,9 +8,12 @@ from typing import Any
 import pytest
 
 from content_review_engine.llm import (
+    LLMProviderAuthError,
     LLMProviderConfig,
     LLMProviderConfigError,
     LLMProviderError,
+    LLMProviderRuntimeError,
+    LLMProviderTimeoutError,
     LLMProviderSecretError,
     LLMResponseValidationError,
     LLMReviewRequest,
@@ -95,7 +98,32 @@ def test_pydanticai_review_returns_empty_findings_with_fake_runtime() -> None:
     assert result.findings == ()
     assert captured["model"] == "gpt-4o-mini"
     assert captured["base_url"] == "https://example.com/v1"
+    assert captured["timeout_seconds"] is None
     assert "test-secret-value" not in repr(captured["secret"])
+
+
+def test_pydanticai_review_passes_timeout_to_runtime_agent() -> None:
+    captured: dict[str, Any] = {}
+
+    def fake_agent_builder(**kwargs):  # type: ignore[no-untyped-def]
+        captured.update(kwargs)
+        return object()
+
+    reviewer = PydanticAIReviewer(
+        LLMProviderConfig(
+            provider="pydanticai",
+            model="gpt-4o-mini",
+            api_key_env="CONTENT_REVIEW_TEST_LLM_API_KEY",
+            timeout_seconds=12.5,
+        ),
+        secret_resolver=lambda config: reviewer_secret(config.api_key_env or "missing"),
+        agent_builder=fake_agent_builder,
+        runtime_runner=lambda _agent, _payload: {"findings": []},
+    )
+
+    reviewer.review(_build_request())
+
+    assert captured["timeout_seconds"] == 12.5
 
 
 def test_pydanticai_review_maps_single_finding_with_fake_runtime() -> None:
@@ -189,7 +217,26 @@ def test_pydanticai_review_raises_response_validation_error_for_invalid_response
     assert _build_request().content not in message
 
 
-def test_pydanticai_review_converts_runtime_exception_to_provider_error() -> None:
+def test_pydanticai_review_converts_timeout_exception_to_provider_timeout_error() -> None:
+    reviewer = PydanticAIReviewer(
+        LLMProviderConfig(
+            provider="pydanticai",
+            model="gpt-4o-mini",
+            api_key_env="CONTENT_REVIEW_TEST_LLM_API_KEY",
+        ),
+        secret_resolver=lambda config: reviewer_secret(config.api_key_env or "missing"),
+        agent_builder=lambda **kwargs: object(),
+        runtime_runner=lambda _agent, _payload: (_ for _ in ()).throw(TimeoutError("hidden")),
+    )
+
+    with pytest.raises(LLMProviderTimeoutError) as exc_info:
+        reviewer.review(_build_request())
+
+    assert str(exc_info.value) == "PydanticAI runtime request timed out."
+    assert _build_request().content not in str(exc_info.value)
+
+
+def test_pydanticai_review_converts_unknown_runtime_exception_to_provider_runtime_error() -> None:
     reviewer = PydanticAIReviewer(
         LLMProviderConfig(
             provider="pydanticai",
@@ -203,12 +250,42 @@ def test_pydanticai_review_converts_runtime_exception_to_provider_error() -> Non
         ),
     )
 
-    with pytest.raises(LLMProviderError) as exc_info:
+    with pytest.raises(LLMProviderRuntimeError) as exc_info:
         reviewer.review(_build_request())
 
-    assert str(exc_info.value) == "PydanticAI runtime call failed: RuntimeError."
+    assert str(exc_info.value) == "PydanticAI runtime call failed unexpectedly."
     assert "test-secret-value" not in str(exc_info.value)
     assert _build_request().content not in str(exc_info.value)
+
+
+def test_pydanticai_review_converts_auth_runtime_exception_to_provider_auth_error() -> None:
+    import httpx
+    import openai
+
+    request = httpx.Request("POST", "https://example.com/v1/chat/completions")
+    response = httpx.Response(401, request=request, json={"error": {"message": "hidden"}})
+
+    reviewer = PydanticAIReviewer(
+        LLMProviderConfig(
+            provider="pydanticai",
+            model="gpt-4o-mini",
+            api_key_env="CONTENT_REVIEW_TEST_LLM_API_KEY",
+        ),
+        secret_resolver=lambda config: reviewer_secret(config.api_key_env or "missing"),
+        agent_builder=lambda **kwargs: object(),
+        runtime_runner=lambda _agent, _payload: (_ for _ in ()).throw(
+            openai.AuthenticationError(
+                "hidden",
+                response=response,
+                body={"error": {"message": "hidden"}},
+            )
+        ),
+    )
+
+    with pytest.raises(LLMProviderAuthError) as exc_info:
+        reviewer.review(_build_request())
+
+    assert str(exc_info.value) == "PydanticAI runtime authentication failed."
 
 
 def test_pydanticai_reviewer_only_stores_config_names() -> None:
@@ -224,6 +301,7 @@ def test_pydanticai_reviewer_only_stores_config_names() -> None:
     assert reviewer.model == "gpt-4o-mini"
     assert reviewer.api_key_env == "OPENAI_API_KEY"
     assert reviewer.base_url == "https://example.com/v1"
+    assert reviewer.timeout_seconds is None
     assert isinstance(reviewer.mapping, PydanticAIReviewMapper)
 
 

@@ -75,6 +75,20 @@ def _parse_llm_provider(value: str) -> str:
     return normalized
 
 
+def _parse_llm_timeout_seconds(value: str) -> float:
+    try:
+        timeout_seconds = float(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(
+            "LLM timeout seconds must be a number greater than 0."
+        ) from exc
+    if timeout_seconds <= 0:
+        raise argparse.ArgumentTypeError(
+            "LLM timeout seconds must be greater than 0."
+        )
+    return timeout_seconds
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="content-review",
@@ -140,6 +154,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--llm-base-url",
         default=None,
         help="Optional base URL stored in LLM provider config.",
+    )
+    review_parser.add_argument(
+        "--llm-timeout-seconds",
+        type=_parse_llm_timeout_seconds,
+        default=None,
+        help="Optional LLM runtime timeout in seconds.",
     )
     review_parser.add_argument(
         "--llm-output",
@@ -288,6 +308,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--llm-base-url",
         default=None,
         help="Optional base URL stored in LLM provider config.",
+    )
+    batch_parser.add_argument(
+        "--llm-timeout-seconds",
+        type=_parse_llm_timeout_seconds,
+        default=None,
+        help="Optional LLM runtime timeout in seconds.",
     )
 
     return parser
@@ -563,6 +589,7 @@ def _build_llm_provider_config(args: argparse.Namespace) -> LLMProviderConfig:
         model=args.llm_model,
         api_key_env=args.llm_api_key_env,
         base_url=args.llm_base_url,
+        timeout_seconds=args.llm_timeout_seconds,
     )
 
 

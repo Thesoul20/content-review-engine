@@ -16,6 +16,7 @@ def test_llm_provider_config_defaults_to_mock() -> None:
     assert config.provider_type == "mock"
     assert config.model is None
     assert config.api_key_env is None
+    assert config.timeout_seconds is None
 
 
 def test_llm_provider_config_can_store_model() -> None:
@@ -28,6 +29,12 @@ def test_llm_provider_config_can_store_api_key_env_name() -> None:
     config = load_llm_provider_config(api_key_env="OPENAI_API_KEY")
 
     assert config.api_key_env == "OPENAI_API_KEY"
+
+
+def test_llm_provider_config_can_store_timeout_seconds() -> None:
+    config = load_llm_provider_config(timeout_seconds=30.5)
+
+    assert config.timeout_seconds == 30.5
 
 
 def test_llm_provider_config_repr_and_serialization_do_not_leak_secret_value() -> None:
@@ -60,3 +67,10 @@ def test_load_llm_provider_config_rejects_empty_api_key_env() -> None:
         load_llm_provider_config(provider="pydanticai", api_key_env="   ")
 
     assert str(exc_info.value) == "api_key_env must not be empty"
+
+
+def test_load_llm_provider_config_rejects_non_positive_timeout() -> None:
+    with pytest.raises(LLMProviderConfigError) as exc_info:
+        load_llm_provider_config(timeout_seconds=0)
+
+    assert str(exc_info.value) == "timeout_seconds must be greater than 0"

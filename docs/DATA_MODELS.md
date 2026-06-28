@@ -437,6 +437,7 @@ Current fields:
 | `model` | No | Optional model identifier; required at runtime for `pydanticai` review execution |
 | `api_key_env` | No | Optional environment variable name only; stores the variable name, not the secret |
 | `base_url` | No | Optional provider base URL; passed to the `pydanticai` OpenAI-compatible runtime when configured |
+| `timeout_seconds` | No | Optional LLM runtime timeout in seconds; if set, must be greater than `0` |
 
 Notes:
 
@@ -444,6 +445,8 @@ Notes:
 - `provider_type` is derived as `mock` or `real`
 - config loading validates provider names and rejects unknown providers with
   `LLMProviderConfigError`
+- `timeout_seconds = None` means the provider/runtime default timeout is used
+- `timeout_seconds` is validated independently from retry or rate-limit policy
 - `repr` and serialization do not contain any secret value because the model
   stores only the environment variable name
 
@@ -571,13 +574,15 @@ Current behavior:
 - `provider = "mock"` returns `MockLLMReviewer`
 - `provider = "pydanticai"` returns `PydanticAIReviewer`, which still requires
   secret preflight, requires `model`, builds provider-local request payloads
-  through `PydanticAIReviewMapper`, executes the PydanticAI runtime, and maps
+  through `PydanticAIReviewMapper`, executes the PydanticAI runtime, passes
+  optional `timeout_seconds` into the runtime client, and maps
   `PydanticAIReviewResponse` back into `LLMReviewResult`
 - unknown providers raise `LLMProviderConfigError`
 - the factory does not read environment variables, perform network requests,
   or depend on the CLI layer
 - response validation failures use `LLMResponseValidationError`
-- runtime execution failures are normalized into `LLMProviderError`
+- runtime execution failures are normalized into stable provider runtime error
+  subclasses
 
 ---
 
@@ -592,7 +597,21 @@ The future LLM adapter boundary now defines minimal error types in
 | `LLMProviderConfigError` | Invalid or unsupported provider configuration |
 | `LLMProviderSecretError` | Missing, unset, or empty provider secret configuration |
 | `LLMProviderError` | Provider adapter failure, such as transport or upstream execution failure |
+| `LLMProviderRuntimeError` | Stable fallback for unknown provider runtime failures |
+| `LLMProviderTimeoutError` | Provider runtime timeout failure |
+| `LLMProviderAuthError` | Provider runtime authentication or permission failure |
+| `LLMProviderNetworkError` | Provider runtime connection or transport failure |
+| `LLMProviderRateLimitError` | Provider runtime rate-limit failure |
+| `LLMProviderModelError` | Provider runtime model-selection or request-rejection failure |
 | `LLMResponseValidationError` | Provider output could not be validated as an `LLMReviewResult` or provider-local structured response contract |
+
+Notes:
+
+- `LLMResponseValidationError` remains reserved for structured response schema
+  validation failures only
+- PydanticAI runtime timeout, auth, network, rate-limit, model, and unknown
+  failures are mapped before sidecar serialization so `error_type` stays
+  stable in sidecar JSON and sidecar Markdown output
 
 ---
 

@@ -730,6 +730,54 @@ def test_cli_review_llm_base_url_without_enable_llm_does_not_affect_deterministi
     assert captured.err == ""
 
 
+def test_cli_review_llm_timeout_without_enable_llm_does_not_affect_deterministic_review(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    markdown_path = "tests/fixtures/markdown/clean_article.md"
+    profile_path = "tests/fixtures/profiles/default.yml"
+
+    exit_code = main(
+        [
+            "review",
+            markdown_path,
+            "--profile",
+            profile_path,
+            "--llm-timeout-seconds",
+            "15",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "Findings: 0" in captured.out
+    assert captured.err == ""
+
+
+def test_cli_review_rejects_invalid_llm_timeout(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    markdown_path = "tests/fixtures/markdown/clean_article.md"
+    profile_path = "tests/fixtures/profiles/default.yml"
+
+    exit_code = main(
+        [
+            "review",
+            markdown_path,
+            "--profile",
+            profile_path,
+            "--llm-timeout-seconds",
+            "0",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert captured.out == ""
+    assert "LLM timeout seconds must be greater than 0." in captured.err
+
+
 def test_cli_review_llm_markdown_output_requires_enable_llm(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
@@ -861,9 +909,10 @@ def test_cli_review_pydanticai_provider_writes_sidecar_json_and_markdown_report(
     llm_markdown_output_path = tmp_path / "review.llm.md"
 
     monkeypatch.setenv("CONTENT_REVIEW_TEST_LLM_API_KEY", "test-secret-value")
+    captured_agent_kwargs: dict[str, object] = {}
     monkeypatch.setattr(
         "content_review_engine.llm.pydanticai.build_pydanticai_runtime_agent",
-        lambda **kwargs: object(),
+        lambda **kwargs: captured_agent_kwargs.update(kwargs) or object(),
     )
     monkeypatch.setattr(
         "content_review_engine.llm.pydanticai.run_pydanticai_runtime_agent",
@@ -903,6 +952,8 @@ def test_cli_review_pydanticai_provider_writes_sidecar_json_and_markdown_report(
             "gpt-4o-mini",
             "--llm-api-key-env",
             "CONTENT_REVIEW_TEST_LLM_API_KEY",
+            "--llm-timeout-seconds",
+            "21",
             "--llm-output",
             str(llm_output_path),
             "--llm-markdown-output",
@@ -935,6 +986,7 @@ def test_cli_review_pydanticai_provider_writes_sidecar_json_and_markdown_report(
     assert "llm_semantic_risk" in markdown_report
     assert "Possible unsupported claim." in markdown_report
     assert "test-secret-value" not in markdown_report
+    assert captured_agent_kwargs["timeout_seconds"] == 21.0
 
 
 def test_cli_review_pydanticai_provider_requires_api_key_env(
@@ -2853,6 +2905,30 @@ def test_cli_batch_llm_base_url_without_enable_llm_does_not_affect_deterministic
     assert captured.err == ""
 
 
+def test_cli_batch_llm_timeout_without_enable_llm_does_not_affect_deterministic_review(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    input_dir = "tests/fixtures/batch/articles"
+    profile_path = "tests/fixtures/batch/profile.yml"
+
+    exit_code = main(
+        [
+            "batch",
+            input_dir,
+            "--profile",
+            profile_path,
+            "--llm-timeout-seconds",
+            "9",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "Batch review completed." in captured.out
+    assert captured.err == ""
+
+
 def test_cli_batch_llm_markdown_output_requires_enable_llm(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
@@ -2960,9 +3036,10 @@ def test_cli_batch_pydanticai_provider_writes_sidecars_and_markdown_report(
     llm_markdown_output_path = tmp_path / "batch.llm.md"
 
     monkeypatch.setenv("CONTENT_REVIEW_TEST_LLM_API_KEY", "test-secret-value")
+    captured_agent_kwargs: dict[str, object] = {}
     monkeypatch.setattr(
         "content_review_engine.llm.pydanticai.build_pydanticai_runtime_agent",
-        lambda **kwargs: object(),
+        lambda **kwargs: captured_agent_kwargs.update(kwargs) or object(),
     )
     monkeypatch.setattr(
         "content_review_engine.llm.pydanticai.run_pydanticai_runtime_agent",
@@ -2997,6 +3074,8 @@ def test_cli_batch_pydanticai_provider_writes_sidecars_and_markdown_report(
             "gpt-4o-mini",
             "--llm-api-key-env",
             "CONTENT_REVIEW_TEST_LLM_API_KEY",
+            "--llm-timeout-seconds",
+            "18",
             "--llm-output-dir",
             str(llm_output_dir),
             "--llm-markdown-output",
@@ -3025,6 +3104,7 @@ def test_cli_batch_pydanticai_provider_writes_sidecars_and_markdown_report(
     assert markdown_report.startswith("# Batch LLM Sidecar Review Report\n")
     assert "llm_semantic_risk" in markdown_report
     assert "test-secret-value" not in markdown_report
+    assert captured_agent_kwargs["timeout_seconds"] == 18.0
 
 
 def test_cli_batch_llm_markdown_output_writes_batch_report(
@@ -3226,6 +3306,54 @@ def test_cli_batch_llm_partial_failure_writes_manifest_and_keeps_deterministic_o
             },
         }
     ]
+
+
+def test_cli_batch_llm_partial_timeout_failure_is_recorded_in_manifest(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    input_dir = "tests/fixtures/batch/articles"
+    profile_path = "tests/fixtures/batch/profile.yml"
+    llm_output_dir = tmp_path / "llm-sidecars"
+
+    from content_review_engine.llm import LLMProviderTimeoutError, LLMReviewResult
+
+    def fake_review(self, request):  # type: ignore[no-untyped-def]
+        del self
+        if Path(request.content_path).name == "forbidden.md":
+            raise LLMProviderTimeoutError("PydanticAI runtime request timed out.")
+        return LLMReviewResult()
+
+    monkeypatch.setattr("content_review_engine.llm.mock.MockLLMReviewer.review", fake_review)
+
+    exit_code = main(
+        [
+            "batch",
+            input_dir,
+            "--profile",
+            profile_path,
+            "--recursive",
+            "--enable-llm",
+            "--llm-output-dir",
+            str(llm_output_dir),
+            "--llm-timeout-seconds",
+            "7",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    manifest_payload = json.loads(
+        (llm_output_dir / "llm-review-manifest.json").read_text(encoding="utf-8")
+    )
+
+    assert exit_code == 0
+    assert "Batch review completed." in captured.out
+    assert captured.err == ""
+    assert manifest_payload["files"][1]["error"] == {
+        "error_type": "LLMProviderTimeoutError",
+        "message": "PydanticAI runtime request timed out.",
+    }
 
 
 def test_cli_batch_llm_markdown_output_does_not_change_deterministic_markdown_output(

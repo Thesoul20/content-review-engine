@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
+from openai import AsyncOpenAI
 from pydantic_ai import Agent
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
@@ -19,6 +20,9 @@ from content_review_engine.llm.pydanticai_mapping import (
     PydanticAIReviewMapper,
     PydanticAIReviewRequestPayload,
     PydanticAIReviewResponse,
+)
+from content_review_engine.llm.pydanticai_errors import (
+    classify_pydanticai_runtime_error,
 )
 from content_review_engine.llm.secrets import ResolvedLLMSecret, resolve_llm_api_key
 
@@ -54,11 +58,17 @@ def build_pydanticai_runtime_agent(
     system_prompt: str,
     secret: ResolvedLLMSecret,
     base_url: str | None,
+    timeout_seconds: float | None,
     agent_type: type[Agent] = Agent,
 ) -> Agent:
-    provider = OpenAIProvider(
+    openai_client = AsyncOpenAI(
         base_url=base_url,
         api_key=secret.api_key.get_secret_value(),
+        timeout=timeout_seconds,
+        max_retries=0,
+    )
+    provider = OpenAIProvider(
+        openai_client=openai_client,
     )
     runtime_model = OpenAIChatModel(
         _normalize_model_name(model),
@@ -79,12 +89,6 @@ def run_pydanticai_runtime_agent(
     return agent.run_sync(payload.user_prompt).output
 
 
-def _normalize_runtime_error(exc: Exception) -> LLMProviderError:
-    return LLMProviderError(
-        f"PydanticAI runtime call failed: {exc.__class__.__name__}."
-    )
-
-
 class PydanticAIReviewer:
     """PydanticAI-backed reviewer using the project's stable mapping boundary."""
 
@@ -100,6 +104,7 @@ class PydanticAIReviewer:
         self.model = config.model
         self.api_key_env = config.api_key_env
         self.base_url = config.base_url
+        self.timeout_seconds = config.timeout_seconds
         self._secret_resolver = secret_resolver
         self._agent_builder = agent_builder or build_pydanticai_runtime_agent
         self._runtime_runner = runtime_runner or run_pydanticai_runtime_agent
@@ -126,6 +131,7 @@ class PydanticAIReviewer:
             system_prompt=payload.system_prompt,
             secret=secret,
             base_url=self.base_url,
+            timeout_seconds=self.timeout_seconds,
             agent_type=self._agent_type,
         )
         try:
@@ -133,7 +139,7 @@ class PydanticAIReviewer:
         except LLMResponseValidationError:
             raise
         except Exception as exc:
-            raise _normalize_runtime_error(exc) from exc
+            raise classify_pydanticai_runtime_error(exc) from exc
         return self.mapping.response_to_result(response, request)
 
 

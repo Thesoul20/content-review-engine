@@ -85,6 +85,33 @@ use.
 
 ## Recent Completion
 
+- TASK-0048 is complete.
+- Added `timeout_seconds` to `LLMProviderConfig` with validation that accepts
+  `None` or any value greater than `0`.
+- Updated the CLI to accept `--llm-timeout-seconds` for single-file and batch
+  LLM sidecar flows while keeping deterministic review behavior unchanged when
+  `--enable-llm` is not used.
+- Updated `src/content_review_engine/llm/pydanticai.py` so the `pydanticai`
+  runtime passes optional timeout configuration into the underlying
+  OpenAI-compatible client with no secret leakage.
+- Added `src/content_review_engine/llm/pydanticai_errors.py` plus stable
+  runtime error subclasses for timeout, auth, network, rate limit, model, and
+  unknown runtime failures.
+- Added and updated tests for timeout config defaults and validation, CLI
+  timeout parsing, fake runtime timeout propagation, runtime error
+  classification, partial batch timeout failures, response-validation
+  boundaries, deterministic quality-gate isolation, and no-network behavior.
+- Updated architecture, data-model, CLI, and CI docs for timeout config and
+  runtime error classification.
+- Kept `LLMSidecarResult` JSON schema unchanged.
+- Kept LLM sidecar Markdown report structure unchanged.
+- Kept deterministic review and batch JSON schemas unchanged.
+- Kept deterministic Markdown report structure unchanged.
+- Kept deterministic quality-gate semantics unchanged.
+- Added no retry, rate-limit queue, batch concurrency, streaming, multi-model
+  fallback, provider fallback, API/MCP/GUI, or LLM merge into deterministic
+  review results.
+
 - TASK-0047 is complete.
 - Updated `src/content_review_engine/llm/pydanticai.py` so
   `PydanticAIReviewer.review()` now resolves secrets, builds the stable

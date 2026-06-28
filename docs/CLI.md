@@ -14,8 +14,8 @@ suppression comments, counts, and quality gates, see
 ## Current Command
 
 ```bash
-uv run content-review review <markdown_file> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--fail-on info|warning|error|critical] [--enable-llm --llm-output <file> [--llm-markdown-output <file>] [--llm-provider mock|pydanticai] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>] [--include-llm-report]]
-uv run content-review batch <input_dir> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--recursive] [--pattern "*.md"] [--fail-on info|warning|error|critical] [--enable-llm --llm-output-dir <dir> [--llm-markdown-output <file>] [--llm-provider mock|pydanticai] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>]]
+uv run content-review review <markdown_file> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--fail-on info|warning|error|critical] [--enable-llm --llm-output <file> [--llm-markdown-output <file>] [--llm-provider mock|pydanticai] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>] [--llm-timeout-seconds <seconds>] [--include-llm-report]]
+uv run content-review batch <input_dir> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--recursive] [--pattern "*.md"] [--fail-on info|warning|error|critical] [--enable-llm --llm-output-dir <dir> [--llm-markdown-output <file>] [--llm-provider mock|pydanticai] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>] [--llm-timeout-seconds <seconds>]]
 uv run content-review profile validate <profile_file> [--format text|json]
 uv run content-review profile init --template <general-basic|general-publishing|health-content|marketing-copy|technical-blog|wechat-basic|wechat-article|wechat-strict> --output <profile_file> [--force]
 uv run content-review profile list [--format text|json]
@@ -37,7 +37,7 @@ uv run content-review review article.md --profile profile.yaml --enable-llm --ll
 uv run content-review review article.md --profile profile.yaml --enable-llm --llm-provider mock --llm-output article.llm.json
 uv run content-review review article.md --profile profile.yaml --enable-llm --llm-output article.llm.json --llm-markdown-output article.llm.md
 uv run content-review review article.md --profile profile.yaml --format markdown --enable-llm --llm-output article.llm.json --include-llm-report
-uv run content-review review article.md --profile profile.yaml --enable-llm --llm-provider pydanticai --llm-model gpt-4o-mini --llm-api-key-env OPENAI_API_KEY --llm-output article.llm.json
+uv run content-review review article.md --profile profile.yaml --enable-llm --llm-provider pydanticai --llm-model gpt-4o-mini --llm-api-key-env OPENAI_API_KEY --llm-timeout-seconds 30 --llm-output article.llm.json
 ```
 
 Single-file `review` constraints:
@@ -52,15 +52,15 @@ Single-file `review` constraints:
 - `--include-llm-report` requires `--format markdown`
 - `--include-llm-report` fails for `--format json`
 - `--include-llm-report` fails for `--format text`
-- `--llm-provider`, `--llm-model`, `--llm-api-key-env`, and `--llm-base-url`
-  can still be parsed without `--enable-llm`, but they do not affect the
-  deterministic review path
+- `--llm-provider`, `--llm-model`, `--llm-api-key-env`, `--llm-base-url`, and
+  `--llm-timeout-seconds` can still be parsed without `--enable-llm`, but they
+  do not affect the deterministic review path
 - `--llm-provider mock` is the default provider
 - `--llm-provider pydanticai` performs secret preflight and then executes a
   real PydanticAI runtime call through the provider interface
 - `--llm-model` is required for `--llm-provider pydanticai`
-- `--llm-model`, `--llm-api-key-env`, and `--llm-base-url` are stored in
-  `LLMProviderConfig`
+- `--llm-model`, `--llm-api-key-env`, `--llm-base-url`, and
+  `--llm-timeout-seconds` are stored in `LLMProviderConfig`
 - the `pydanticai` path reuses the tested request/prompt/response mapping
   layer from the provider adapter
 - `--llm-api-key-env` stores the environment variable name in config; when
@@ -71,6 +71,9 @@ Single-file `review` constraints:
   structured secret error
 - `--llm-base-url` is optional and, when provided, is passed to the
   OpenAI-compatible runtime provider used by `pydanticai`
+- `--llm-timeout-seconds` is optional, must be greater than `0`, is ignored by
+  deterministic review when LLM is not enabled, and is passed only to the LLM
+  provider runtime boundary
 - the CLI does not support a plaintext `--llm-api-key` argument
 - the LLM result is written as a separate UTF-8 JSON sidecar file in
   `LLMSidecarResult` format
@@ -114,8 +117,9 @@ Provider notes:
 - `pydanticai` now performs a real runtime call after secret preflight
 - `pydanticai` uses the shared structured prompt builder, structured response
   schema, and response mapper
-- `pydanticai` normalizes runtime failures into stable provider errors and
-  response-shape failures into `LLMResponseValidationError`
+- `pydanticai` normalizes timeout, auth, network, rate-limit, model, and
+  unknown runtime failures into stable provider runtime errors and keeps
+  response-shape failures in `LLMResponseValidationError`
 - `pydanticai` does not fallback to `mock`
 - the CLI stores only the `api_key_env` name in config and never prints secret
   values
@@ -129,7 +133,7 @@ flow:
 uv run content-review batch articles --profile profile.yaml --recursive --enable-llm --llm-output-dir llm-sidecars
 uv run content-review batch articles --profile profile.yaml --recursive --enable-llm --llm-provider mock --llm-output-dir llm-sidecars
 uv run content-review batch articles --profile profile.yaml --recursive --enable-llm --llm-output-dir llm-sidecars --llm-markdown-output llm-sidecars.md
-uv run content-review batch articles --profile profile.yaml --recursive --enable-llm --llm-provider pydanticai --llm-model gpt-4o-mini --llm-api-key-env OPENAI_API_KEY --llm-output-dir llm-sidecars
+uv run content-review batch articles --profile profile.yaml --recursive --enable-llm --llm-provider pydanticai --llm-model gpt-4o-mini --llm-api-key-env OPENAI_API_KEY --llm-timeout-seconds 30 --llm-output-dir llm-sidecars
 ```
 
 Batch constraints:
@@ -146,6 +150,8 @@ Batch constraints:
 - `--llm-model` is required for `--llm-provider pydanticai`
 - `--llm-base-url` is optional and is passed through for OpenAI-compatible
   endpoints when configured
+- `--llm-timeout-seconds` is optional, must be greater than `0`, and is passed
+  through to the PydanticAI runtime when configured
 - the `pydanticai` path reuses the same internal request/prompt/response
   mapping contract used in single-file review
 - the CLI does not support a plaintext `--llm-api-key` argument

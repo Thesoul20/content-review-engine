@@ -2,10 +2,16 @@ import pytest
 from pydantic import ValidationError
 
 from content_review_engine.llm import (
+    LLMProviderAuthError,
     LLMProviderConfigError,
+    LLMProviderModelError,
+    LLMProviderNetworkError,
     LLMProviderNotImplementedError,
     LLMProviderError,
+    LLMProviderRateLimitError,
+    LLMProviderRuntimeError,
     LLMProviderSecretError,
+    LLMProviderTimeoutError,
     LLMResponseValidationError,
     LLMReviewError,
     LLMReviewFinding,
@@ -126,12 +132,24 @@ def test_llm_error_hierarchy_is_stable() -> None:
     config_error = LLMProviderConfigError("config invalid")
     not_implemented_error = LLMProviderNotImplementedError("not implemented")
     provider_error = LLMProviderError("provider failed")
+    runtime_error = LLMProviderRuntimeError("runtime failed")
+    timeout_error = LLMProviderTimeoutError("timeout")
+    auth_error = LLMProviderAuthError("auth")
+    network_error = LLMProviderNetworkError("network")
+    rate_limit_error = LLMProviderRateLimitError("rate limit")
+    model_error = LLMProviderModelError("model")
     secret_error = LLMProviderSecretError("secret missing")
     response_error = LLMResponseValidationError("response invalid")
 
     assert isinstance(config_error, LLMReviewError)
     assert isinstance(not_implemented_error, LLMProviderConfigError)
     assert isinstance(provider_error, LLMReviewError)
+    assert isinstance(runtime_error, LLMProviderError)
+    assert isinstance(timeout_error, LLMProviderRuntimeError)
+    assert isinstance(auth_error, LLMProviderRuntimeError)
+    assert isinstance(network_error, LLMProviderRuntimeError)
+    assert isinstance(rate_limit_error, LLMProviderRuntimeError)
+    assert isinstance(model_error, LLMProviderRuntimeError)
     assert isinstance(secret_error, LLMProviderConfigError)
     assert isinstance(response_error, LLMReviewError)
     assert not isinstance(provider_error, LLMResponseValidationError)
