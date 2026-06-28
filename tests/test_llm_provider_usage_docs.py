@@ -9,6 +9,8 @@ from content_review_engine.parser import read_markdown
 
 USAGE_DOC_PATH = Path("docs/LLM_PROVIDER_USAGE.md")
 ENV_EXAMPLE_PATH = Path("examples/llm/pydanticai/.env.example")
+PYDANTICAI_CONFIG_PATH = Path("examples/llm/pydanticai/llm-provider.yml")
+MOCK_CONFIG_PATH = Path("examples/llm/mock/llm-provider.yml")
 MANUAL_PROFILE_PATH = Path("examples/llm/pydanticai/manual-profile.yml")
 MANUAL_MARKDOWN_PATH = Path("examples/llm/pydanticai/manual-review.md")
 BATCH_DIR = Path("examples/llm/pydanticai/batch")
@@ -30,6 +32,8 @@ def test_manual_verification_fixtures_exist_and_are_non_empty() -> None:
         BATCH_DIR / "article-a.md",
         BATCH_DIR / "article-b.md",
         ENV_EXAMPLE_PATH,
+        PYDANTICAI_CONFIG_PATH,
+        MOCK_CONFIG_PATH,
     )
 
     for path in paths:
@@ -49,6 +53,7 @@ def test_usage_docs_exist_and_cover_required_provider_flags_and_boundaries() -> 
     content = USAGE_DOC_PATH.read_text(encoding="utf-8")
 
     assert "--llm-provider pydanticai" in content
+    assert "--llm-config" in content
     assert "--llm-model" in content
     assert "--llm-api-key-env" in content
     assert "--llm-base-url" in content
@@ -64,6 +69,17 @@ def test_usage_docs_exist_and_cover_required_provider_flags_and_boundaries() -> 
     assert "LLMResponseValidationError" in content
     assert "LLMProviderSecretError" in content
     assert not _looks_like_real_api_key(content)
+
+
+def test_example_llm_config_files_are_placeholder_safe() -> None:
+    pydanticai_config = PYDANTICAI_CONFIG_PATH.read_text(encoding="utf-8")
+    mock_config = MOCK_CONFIG_PATH.read_text(encoding="utf-8")
+
+    assert "OPENAI_API_KEY" in pydanticai_config
+    assert "api_key:" not in pydanticai_config
+    assert "secret:" not in pydanticai_config
+    assert not _looks_like_real_api_key(pydanticai_config)
+    assert "provider: mock" in mock_config
 
 
 def test_manual_profile_fixture_loads_with_current_profile_loader() -> None:

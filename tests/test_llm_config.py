@@ -6,6 +6,7 @@ from content_review_engine.llm import (
     LLMProviderConfig,
     LLMProviderConfigError,
     load_llm_provider_config,
+    merge_llm_provider_config,
 )
 
 
@@ -117,3 +118,45 @@ def test_load_llm_provider_config_rejects_negative_min_request_interval_seconds(
         str(exc_info.value)
         == "min_request_interval_seconds must be greater than or equal to 0"
     )
+
+
+def test_merge_llm_provider_config_prefers_explicit_cli_values() -> None:
+    base_config = load_llm_provider_config(
+        provider="pydanticai",
+        model="openai:gpt-4o-mini",
+        api_key_env="OPENAI_API_KEY",
+        timeout_seconds=30.0,
+        retry_attempts=2,
+        retry_backoff_seconds=1.0,
+        min_request_interval_seconds=2.0,
+    )
+
+    merged = merge_llm_provider_config(
+        base_config,
+        model="openai:gpt-4.1-mini",
+        retry_attempts=3,
+    )
+
+    assert merged.provider == "pydanticai"
+    assert merged.model == "openai:gpt-4.1-mini"
+    assert merged.api_key_env == "OPENAI_API_KEY"
+    assert merged.timeout_seconds == 30.0
+    assert merged.retry_attempts == 3
+    assert merged.retry_backoff_seconds == 1.0
+    assert merged.min_request_interval_seconds == 2.0
+
+
+def test_merge_llm_provider_config_keeps_file_values_when_cli_values_missing() -> None:
+    base_config = load_llm_provider_config(
+        provider="pydanticai",
+        model="openai:gpt-4o-mini",
+        api_key_env="OPENAI_API_KEY",
+        timeout_seconds=30.0,
+        retry_attempts=2,
+        retry_backoff_seconds=1.0,
+        min_request_interval_seconds=2.0,
+    )
+
+    merged = merge_llm_provider_config(base_config)
+
+    assert merged == base_config

@@ -17,8 +17,8 @@ suppression comments, counts, and quality gates, see
 ## Current Command
 
 ```bash
-uv run content-review review <markdown_file> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--fail-on info|warning|error|critical] [--enable-llm --llm-output <file> [--llm-markdown-output <file>] [--llm-provider mock|pydanticai] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>] [--llm-timeout-seconds <seconds>] [--llm-retry-attempts <count>] [--llm-retry-backoff-seconds <seconds>] [--llm-min-request-interval-seconds <seconds>] [--include-llm-report]]
-uv run content-review batch <input_dir> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--recursive] [--pattern "*.md"] [--fail-on info|warning|error|critical] [--enable-llm --llm-output-dir <dir> [--llm-markdown-output <file>] [--llm-provider mock|pydanticai] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>] [--llm-timeout-seconds <seconds>] [--llm-retry-attempts <count>] [--llm-retry-backoff-seconds <seconds>] [--llm-min-request-interval-seconds <seconds>]]
+uv run content-review review <markdown_file> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--fail-on info|warning|error|critical] [--enable-llm --llm-output <file> [--llm-markdown-output <file>] [--llm-config <path>] [--llm-provider mock|pydanticai] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>] [--llm-timeout-seconds <seconds>] [--llm-retry-attempts <count>] [--llm-retry-backoff-seconds <seconds>] [--llm-min-request-interval-seconds <seconds>] [--include-llm-report]]
+uv run content-review batch <input_dir> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--recursive] [--pattern "*.md"] [--fail-on info|warning|error|critical] [--enable-llm --llm-output-dir <dir> [--llm-markdown-output <file>] [--llm-config <path>] [--llm-provider mock|pydanticai] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>] [--llm-timeout-seconds <seconds>] [--llm-retry-attempts <count>] [--llm-retry-backoff-seconds <seconds>] [--llm-min-request-interval-seconds <seconds>]]
 uv run content-review profile validate <profile_file> [--format text|json]
 uv run content-review profile init --template <general-basic|general-publishing|health-content|marketing-copy|technical-blog|wechat-basic|wechat-article|wechat-strict> --output <profile_file> [--force]
 uv run content-review profile list [--format text|json]
@@ -38,9 +38,10 @@ Single-file `review` now supports an explicit experimental LLM sidecar flow:
 ```bash
 uv run content-review review article.md --profile profile.yaml --enable-llm --llm-output article.llm.json
 uv run content-review review article.md --profile profile.yaml --enable-llm --llm-provider mock --llm-output article.llm.json
+uv run content-review review article.md --profile profile.yaml --enable-llm --llm-config examples/llm/mock/llm-provider.yml --llm-output article.llm.json
 uv run content-review review article.md --profile profile.yaml --enable-llm --llm-output article.llm.json --llm-markdown-output article.llm.md
 uv run content-review review article.md --profile profile.yaml --format markdown --enable-llm --llm-output article.llm.json --include-llm-report
-uv run content-review review article.md --profile profile.yaml --enable-llm --llm-provider pydanticai --llm-model gpt-4o-mini --llm-api-key-env OPENAI_API_KEY --llm-timeout-seconds 30 --llm-retry-attempts 2 --llm-retry-backoff-seconds 1.0 --llm-min-request-interval-seconds 2.0 --llm-output article.llm.json
+uv run content-review review article.md --profile profile.yaml --enable-llm --llm-config examples/llm/pydanticai/llm-provider.yml --llm-output article.llm.json
 ```
 
 Single-file `review` constraints:
@@ -56,8 +57,13 @@ Single-file `review` constraints:
 - `--include-llm-report` fails for `--format json`
 - `--include-llm-report` fails for `--format text`
 - `--llm-provider`, `--llm-model`, `--llm-api-key-env`, `--llm-base-url`, and
-  `--llm-timeout-seconds` can still be parsed without `--enable-llm`, but they
-  do not affect the deterministic review path
+  `--llm-timeout-seconds`, `--llm-retry-attempts`,
+  `--llm-retry-backoff-seconds`, `--llm-min-request-interval-seconds`, and
+  `--llm-config` can still be parsed without `--enable-llm`, but they do not
+  affect the deterministic review path
+- `--llm-config` loads a YAML `LLMProviderConfig` file
+- explicit CLI flags override the same field from `--llm-config`
+- parser defaults do not override config-file values
 - `--llm-provider mock` is the default provider
 - `--llm-provider pydanticai` performs secret preflight and then executes a
   real PydanticAI runtime call through the provider interface
@@ -66,6 +72,11 @@ Single-file `review` constraints:
   `--llm-timeout-seconds`, `--llm-retry-attempts`, and
   `--llm-retry-backoff-seconds`, and
   `--llm-min-request-interval-seconds` are stored in `LLMProviderConfig`
+- `--llm-config` supports only `provider`, `model`, `api_key_env`,
+  `base_url`, `timeout_seconds`, `retry_attempts`,
+  `retry_backoff_seconds`, and `min_request_interval_seconds`
+- config files reject unknown fields and secret-like fields such as
+  `api_key`, `secret`, `token`, or `password`
 - the `pydanticai` path reuses the tested request/prompt/response mapping
   layer from the provider adapter
 - `--llm-api-key-env` stores the environment variable name in config; when
@@ -158,8 +169,9 @@ flow:
 ```bash
 uv run content-review batch articles --profile profile.yaml --recursive --enable-llm --llm-output-dir llm-sidecars
 uv run content-review batch articles --profile profile.yaml --recursive --enable-llm --llm-provider mock --llm-output-dir llm-sidecars
+uv run content-review batch articles --profile profile.yaml --recursive --enable-llm --llm-config examples/llm/mock/llm-provider.yml --llm-output-dir llm-sidecars
 uv run content-review batch articles --profile profile.yaml --recursive --enable-llm --llm-output-dir llm-sidecars --llm-markdown-output llm-sidecars.md
-uv run content-review batch articles --profile profile.yaml --recursive --enable-llm --llm-provider pydanticai --llm-model gpt-4o-mini --llm-api-key-env OPENAI_API_KEY --llm-timeout-seconds 30 --llm-retry-attempts 2 --llm-retry-backoff-seconds 1.0 --llm-min-request-interval-seconds 2.0 --llm-output-dir llm-sidecars
+uv run content-review batch articles --profile profile.yaml --recursive --enable-llm --llm-config examples/llm/pydanticai/llm-provider.yml --llm-output-dir llm-sidecars
 ```
 
 Batch constraints:
@@ -169,6 +181,7 @@ Batch constraints:
 - `--llm-output-dir` without `--enable-llm` fails
 - `--llm-markdown-output` without `--enable-llm` fails
 - `--llm-provider` supports `mock` and `pydanticai`
+- `--llm-config` loads a YAML `LLMProviderConfig` file for batch review too
 - `--llm-provider mock` does not require `--llm-model`
 - `--llm-provider mock` does not read any API key
 - `--llm-provider pydanticai` resolves `--llm-api-key-env` as a secret
@@ -185,6 +198,7 @@ Batch constraints:
 - `--llm-min-request-interval-seconds` is optional, must be greater than or
   equal to `0`, and is passed through only to the PydanticAI runtime pacing
   boundary
+- explicit CLI flags override the same fields from `--llm-config`
 - the `pydanticai` path reuses the same internal request/prompt/response
   mapping contract used in single-file review
 - the CLI does not support a plaintext `--llm-api-key` argument

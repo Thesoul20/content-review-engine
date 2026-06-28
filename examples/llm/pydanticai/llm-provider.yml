@@ -1,0 +1,8 @@
+provider: pydanticai
+model: openai:gpt-4o-mini
+api_key_env: OPENAI_API_KEY
+base_url: null
+timeout_seconds: 30
+retry_attempts: 2
+retry_backoff_seconds: 1.0
+min_request_interval_seconds: 2.0

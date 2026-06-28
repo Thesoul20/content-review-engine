@@ -8,6 +8,59 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0052
+
+### Added
+
+- Added `src/content_review_engine/llm/config_loader.py` with YAML-only
+  `load_llm_provider_config_file()` validation for file existence, YAML
+  parsing, top-level mapping shape, unknown fields, secret-like fields, and
+  existing `LLMProviderConfig` numeric constraints.
+- Added `merge_llm_provider_config()` so explicit CLI values can override
+  loaded config-file values without mutating provider runtime behavior.
+- Added committed example config files at
+  `examples/llm/pydanticai/llm-provider.yml` and
+  `examples/llm/mock/llm-provider.yml`.
+- Added `tests/test_llm_config_loader.py` for focused config-loader coverage.
+
+### Changed
+
+- Updated `src/content_review_engine/cli.py` so `review` and `batch` accept
+  `--llm-config`, load `LLMProviderConfig` from YAML only when LLM sidecar
+  review is enabled, and keep deterministic review unchanged when LLM is
+  disabled.
+- Updated CLI argument defaults for retry, retry backoff, and minimum request
+  interval so parser defaults no longer overwrite config-file values.
+- Updated `tests/test_cli.py`, `tests/test_llm_config.py`, and
+  `tests/test_llm_provider_usage_docs.py` for config loading, CLI override
+  precedence, deterministic-review isolation, fake-runtime wiring, example
+  config fixtures, and secret-safety checks.
+- Updated `src/content_review_engine/llm/config.py` and
+  `src/content_review_engine/llm/__init__.py` to expose the config merge and
+  file-loading helpers while keeping the provider set unchanged.
+- Updated `docs/LLM_PROVIDER_USAGE.md`, `docs/CLI.md`, `docs/CI.md`,
+  `docs/ARCHITECTURE.md`, `docs/DATA_MODELS.md`, and `PROJECT_STATE.md` to
+  document config-file support, allowed fields, forbidden fields, override
+  priority, and the continued separation from deterministic review and
+  quality-gate behavior.
+- Kept `ReviewProfile` schema unchanged.
+- Kept `LLMSidecarResult` JSON schema unchanged.
+- Kept LLM sidecar Markdown report structure unchanged.
+- Kept deterministic review and batch JSON schemas unchanged.
+- Kept deterministic Markdown report structure unchanged.
+- Kept deterministic quality-gate semantics unchanged.
+
+### Not Added
+
+- No new provider, no provider fallback, no multi-model fallback, no
+  streaming, no batch concurrency, no rate-limit queue, and no
+  `--fail-on-llm`.
+- No change to PydanticAI runtime call behavior, retry behavior, timeout
+  behavior, request pacing behavior, sidecar/report schemas, or deterministic
+  quality-gate logic.
+- No real API-key test dependency, no real-network tests, and no CI real
+  provider calls.
+
 ## TASK-0051
 
 ### Added

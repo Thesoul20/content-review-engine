@@ -232,6 +232,35 @@ LLMSidecarResult JSON
   -> success entries can include nested LLMReviewResult
 ```
 
+## LLMProviderConfig
+
+`LLMProviderConfig` is the adapter-local provider configuration model used by
+the optional LLM sidecar path.
+
+It is not part of the deterministic `ReviewResult`, `BatchReviewResult`, or
+`ReviewProfile` schemas.
+It can now be created directly from CLI flags or loaded from a dedicated YAML
+config file through `load_llm_provider_config_file()`.
+
+| Field | Required | Description |
+|---|---|---|
+| `provider` | No | Provider name. Current values: `mock`, `pydanticai`. Default: `mock`. |
+| `model` | No | Optional provider model string. |
+| `api_key_env` | No | Optional environment variable name used later for secret resolution. |
+| `base_url` | No | Optional OpenAI-compatible base URL. |
+| `timeout_seconds` | No | Optional runtime timeout. Must be greater than `0` when set. |
+| `retry_attempts` | No | Extra retry attempts after the initial call. Must be greater than or equal to `0`. |
+| `retry_backoff_seconds` | No | Fixed delay before retryable retries. Must be greater than or equal to `0`. |
+| `min_request_interval_seconds` | No | Minimum spacing between consecutive runtime call start times on one reviewer instance. Must be greater than or equal to `0`. |
+
+Config-file notes:
+
+- the YAML loader accepts only the fields above
+- unknown fields are rejected
+- secret-like fields such as `api_key`, `secret`, `token`, or `password` are rejected
+- the config file stores only `api_key_env`, never a secret value
+- explicit CLI flags override the same field from a loaded config file
+
 Current batch CLI sidecar boundary:
 
 ```text

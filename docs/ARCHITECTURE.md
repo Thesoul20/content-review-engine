@@ -212,10 +212,12 @@ Current status:
 - the review engine remains deterministic for the main review pipeline
 - `src/content_review_engine/llm/config.py` now defines a structured
   `LLMProviderConfig`
+- `src/content_review_engine/llm/config_loader.py` now loads YAML LLM provider
+  config files into `LLMProviderConfig`
 - `src/content_review_engine/llm/factory.py` now owns provider selection and
   reviewer construction
 - the CLI can optionally route single-file and batch sidecar review through
-  that config/factory boundary
+  that config/config-loader/factory boundary
 - the CLI can optionally write a separate LLM sidecar Markdown report for
   single-file or batch sidecar output through `--llm-markdown-output`
 - the single-file Markdown report can now optionally append a separate
@@ -258,6 +260,31 @@ LLMSidecarResult sidecar
   ↓ optional explicit CLI opt-in
   -> success entries can include nested LLMReviewResult
 LLM Markdown section
+
+Current LLM config boundary:
+
+```text
+--llm-config YAML file
+  ↓
+load_llm_provider_config_file()
+  ↓
+LLMProviderConfig
+  ↓ overridden by explicit CLI flags only
+merge_llm_provider_config()
+  ↓
+Provider Factory / Reviewer
+```
+
+The LLM config loader is intentionally narrow:
+
+- it validates only the LLM provider adapter fields
+- it rejects unknown fields
+- it rejects secret-like fields such as `api_key`, `secret`, `token`, or
+  `password`
+- it stores only `api_key_env`, not secret values
+- it does not read environment variables
+- it does not instantiate provider runtimes
+- it does not make network calls
 
 Deterministic Markdown report + optional appended LLM section
 ```

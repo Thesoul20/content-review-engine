@@ -805,6 +805,30 @@ def test_cli_review_llm_min_request_interval_without_enable_llm_does_not_affect_
     assert captured.err == ""
 
 
+def test_cli_review_llm_config_without_enable_llm_does_not_affect_deterministic_review(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    markdown_path = "tests/fixtures/markdown/clean_article.md"
+    profile_path = "tests/fixtures/profiles/default.yml"
+
+    exit_code = main(
+        [
+            "review",
+            markdown_path,
+            "--profile",
+            profile_path,
+            "--llm-config",
+            "examples/llm/pydanticai/llm-provider.yml",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "Findings: 0" in captured.out
+    assert captured.err == ""
+
+
 def test_cli_review_rejects_invalid_llm_timeout(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
@@ -933,6 +957,26 @@ def test_cli_review_parser_accepts_llm_min_request_interval_arguments() -> None:
     )
 
     assert args.llm_min_request_interval_seconds == 2.5
+
+
+def test_cli_review_parser_accepts_llm_config_argument() -> None:
+    parser = build_parser()
+
+    args = parser.parse_args(
+        [
+            "review",
+            "article.md",
+            "--profile",
+            "profile.yml",
+            "--llm-config",
+            "examples/llm/pydanticai/llm-provider.yml",
+        ]
+    )
+
+    assert args.llm_config == "examples/llm/pydanticai/llm-provider.yml"
+    assert args.llm_retry_attempts is None
+    assert args.llm_retry_backoff_seconds is None
+    assert args.llm_min_request_interval_seconds is None
 
 
 def test_cli_review_llm_markdown_output_requires_enable_llm(
@@ -1265,7 +1309,238 @@ def test_cli_review_pydanticai_provider_requires_api_key_env(
     assert exit_code == 2
     assert captured.out == ""
     assert "Error: LLM provider 'pydanticai' requires api_key_env to be configured." in captured.err
-    assert not llm_output_path.exists()
+
+
+def test_cli_review_llm_config_file_not_found_returns_error(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = main(
+        [
+            "review",
+            "tests/fixtures/markdown/clean_article.md",
+            "--profile",
+            "tests/fixtures/profiles/default.yml",
+            "--enable-llm",
+            "--llm-config",
+            str(tmp_path / "missing.yml"),
+            "--llm-output",
+            str(tmp_path / "review.llm.json"),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert captured.out == ""
+    assert "Error: LLM provider config file not found:" in captured.err
+
+
+def test_cli_review_llm_config_file_can_drive_mock_sidecar(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    llm_output_path = tmp_path / "review.llm.json"
+
+    exit_code = main(
+        [
+            "review",
+            "tests/fixtures/markdown/clean_article.md",
+            "--profile",
+            "tests/fixtures/profiles/default.yml",
+            "--enable-llm",
+            "--llm-config",
+            "examples/llm/mock/llm-provider.yml",
+            "--llm-output",
+            str(llm_output_path),
+        ]
+    )
+
+    captured = capsys.readouterr()
+    payload = json.loads(llm_output_path.read_text(encoding="utf-8"))
+
+    assert exit_code == 0
+    assert captured.err == ""
+    assert payload["files"][0]["status"] == "success"
+    assert "error" not in payload["files"][0]
+
+
+def test_cli_review_llm_config_file_can_drive_pydanticai_fake_runtime(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    llm_output_path = tmp_path / "review.llm.json"
+    captured_values: dict[str, object] = {}
+
+    class DummyReviewer:
+        def __init__(self, config) -> None:  # type: ignore[no-untyped-def]
+            captured_values["provider"] = config.provider
+            captured_values["model"] = config.model
+            captured_values["api_key_env"] = config.api_key_env
+            captured_values["timeout_seconds"] = config.timeout_seconds
+            captured_values["retry_attempts"] = config.retry_attempts
+            captured_values["retry_backoff_seconds"] = config.retry_backoff_seconds
+            captured_values["min_request_interval_seconds"] = (
+                config.min_request_interval_seconds
+            )
+
+        def review(self, request):  # type: ignore[no-untyped-def]
+            del request
+            return LLMReviewResult(provider="pydanticai", model="openai:gpt-4o-mini")
+
+    monkeypatch.setattr(
+        "content_review_engine.cli.create_llm_reviewer",
+        lambda config: DummyReviewer(config),
+    )
+
+    exit_code = main(
+        [
+            "review",
+            "tests/fixtures/markdown/clean_article.md",
+            "--profile",
+            "tests/fixtures/profiles/default.yml",
+            "--enable-llm",
+            "--llm-config",
+            "examples/llm/pydanticai/llm-provider.yml",
+            "--llm-output",
+            str(llm_output_path),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert captured.err == ""
+    assert captured_values == {
+        "provider": "pydanticai",
+        "model": "openai:gpt-4o-mini",
+        "api_key_env": "OPENAI_API_KEY",
+        "timeout_seconds": 30.0,
+        "retry_attempts": 2,
+        "retry_backoff_seconds": 1.0,
+        "min_request_interval_seconds": 2.0,
+    }
+
+
+def test_cli_review_explicit_arguments_override_llm_config_file(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    llm_output_path = tmp_path / "review.llm.json"
+    captured_values: dict[str, object] = {}
+
+    class DummyReviewer:
+        def __init__(self, config) -> None:  # type: ignore[no-untyped-def]
+            captured_values["provider"] = config.provider
+            captured_values["model"] = config.model
+            captured_values["api_key_env"] = config.api_key_env
+            captured_values["timeout_seconds"] = config.timeout_seconds
+            captured_values["retry_attempts"] = config.retry_attempts
+            captured_values["retry_backoff_seconds"] = config.retry_backoff_seconds
+            captured_values["min_request_interval_seconds"] = (
+                config.min_request_interval_seconds
+            )
+
+        def review(self, request):  # type: ignore[no-untyped-def]
+            del request
+            return LLMReviewResult(provider="pydanticai", model="openai:gpt-4.1-mini")
+
+    monkeypatch.setattr(
+        "content_review_engine.cli.create_llm_reviewer",
+        lambda config: DummyReviewer(config),
+    )
+
+    exit_code = main(
+        [
+            "review",
+            "tests/fixtures/markdown/clean_article.md",
+            "--profile",
+            "tests/fixtures/profiles/default.yml",
+            "--enable-llm",
+            "--llm-config",
+            "examples/llm/pydanticai/llm-provider.yml",
+            "--llm-model",
+            "openai:gpt-4.1-mini",
+            "--llm-api-key-env",
+            "OVERRIDE_OPENAI_API_KEY",
+            "--llm-timeout-seconds",
+            "9",
+            "--llm-retry-attempts",
+            "5",
+            "--llm-retry-backoff-seconds",
+            "0.25",
+            "--llm-min-request-interval-seconds",
+            "4.5",
+            "--llm-output",
+            str(llm_output_path),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert captured.err == ""
+    assert captured_values == {
+        "provider": "pydanticai",
+        "model": "openai:gpt-4.1-mini",
+        "api_key_env": "OVERRIDE_OPENAI_API_KEY",
+        "timeout_seconds": 9.0,
+        "retry_attempts": 5,
+        "retry_backoff_seconds": 0.25,
+        "min_request_interval_seconds": 4.5,
+    }
+
+
+def test_cli_review_parser_defaults_do_not_override_llm_config_file(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    llm_output_path = tmp_path / "review.llm.json"
+    captured_values: dict[str, object] = {}
+
+    class DummyReviewer:
+        def __init__(self, config) -> None:  # type: ignore[no-untyped-def]
+            captured_values["retry_attempts"] = config.retry_attempts
+            captured_values["retry_backoff_seconds"] = config.retry_backoff_seconds
+            captured_values["min_request_interval_seconds"] = (
+                config.min_request_interval_seconds
+            )
+
+        def review(self, request):  # type: ignore[no-untyped-def]
+            del request
+            return LLMReviewResult(provider="pydanticai", model="openai:gpt-4o-mini")
+
+    monkeypatch.setattr(
+        "content_review_engine.cli.create_llm_reviewer",
+        lambda config: DummyReviewer(config),
+    )
+
+    exit_code = main(
+        [
+            "review",
+            "tests/fixtures/markdown/clean_article.md",
+            "--profile",
+            "tests/fixtures/profiles/default.yml",
+            "--enable-llm",
+            "--llm-config",
+            "examples/llm/pydanticai/llm-provider.yml",
+            "--llm-output",
+            str(llm_output_path),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert captured.err == ""
+    assert captured_values == {
+        "retry_attempts": 2,
+        "retry_backoff_seconds": 1.0,
+        "min_request_interval_seconds": 2.0,
+    }
 
 
 def test_cli_review_pydanticai_provider_rejects_missing_environment_variable(
@@ -3228,6 +3503,30 @@ def test_cli_batch_llm_min_request_interval_without_enable_llm_does_not_affect_d
     assert captured.err == ""
 
 
+def test_cli_batch_llm_config_without_enable_llm_does_not_affect_deterministic_review(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    input_dir = "tests/fixtures/batch/articles"
+    profile_path = "tests/fixtures/batch/profile.yml"
+
+    exit_code = main(
+        [
+            "batch",
+            input_dir,
+            "--profile",
+            profile_path,
+            "--llm-config",
+            "examples/llm/pydanticai/llm-provider.yml",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "Batch review completed." in captured.out
+    assert captured.err == ""
+
+
 def test_cli_batch_llm_markdown_output_requires_enable_llm(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
@@ -3498,6 +3797,90 @@ def test_cli_batch_pydanticai_provider_passes_min_request_interval_config(
     assert exit_code == 0
     assert captured.err == ""
     assert captured_interval_values == [2.5, 2.5, 2.5]
+
+
+def test_cli_batch_llm_config_file_can_drive_mock_sidecars(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    input_dir = "tests/fixtures/batch/articles"
+    profile_path = "tests/fixtures/batch/profile.yml"
+    llm_output_dir = tmp_path / "llm-sidecars"
+
+    exit_code = main(
+        [
+            "batch",
+            input_dir,
+            "--profile",
+            profile_path,
+            "--recursive",
+            "--enable-llm",
+            "--llm-config",
+            "examples/llm/mock/llm-provider.yml",
+            "--llm-output-dir",
+            str(llm_output_dir),
+        ]
+    )
+
+    captured = capsys.readouterr()
+    manifest_payload = json.loads(
+        (llm_output_dir / "llm-review-manifest.json").read_text(encoding="utf-8")
+    )
+
+    assert exit_code == 0
+    assert captured.err == ""
+    assert manifest_payload["summary"]["succeeded_count"] == 3
+    assert all(file["status"] == "success" for file in manifest_payload["files"])
+
+
+def test_cli_batch_llm_config_file_can_drive_pydanticai_fake_runtime(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    input_dir = "tests/fixtures/batch/articles"
+    profile_path = "tests/fixtures/batch/profile.yml"
+    llm_output_dir = tmp_path / "llm-sidecars"
+    captured_models: list[str | None] = []
+
+    class DummyReviewer:
+        def __init__(self, config) -> None:  # type: ignore[no-untyped-def]
+            self._model = config.model
+
+        def review(self, request):  # type: ignore[no-untyped-def]
+            del request
+            captured_models.append(self._model)
+            return LLMReviewResult(provider="pydanticai", model=self._model)
+
+    monkeypatch.setattr(
+        "content_review_engine.cli.create_llm_reviewer",
+        lambda config: DummyReviewer(config),
+    )
+
+    exit_code = main(
+        [
+            "batch",
+            input_dir,
+            "--profile",
+            profile_path,
+            "--recursive",
+            "--enable-llm",
+            "--llm-config",
+            "examples/llm/pydanticai/llm-provider.yml",
+            "--llm-output-dir",
+            str(llm_output_dir),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert captured.err == ""
+    assert captured_models == [
+        "openai:gpt-4o-mini",
+        "openai:gpt-4o-mini",
+        "openai:gpt-4o-mini",
+    ]
 
 
 def test_cli_batch_llm_markdown_output_writes_batch_report(

@@ -1,0 +1,8 @@
+provider: mock
+model: mock-model
+api_key_env: null
+base_url: null
+timeout_seconds: null
+retry_attempts: 0
+retry_backoff_seconds: 0.0
+min_request_interval_seconds: 0.0

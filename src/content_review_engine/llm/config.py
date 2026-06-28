@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Literal
 
 from pydantic import BaseModel
+from pydantic import ConfigDict
 from pydantic import ValidationError
 from pydantic import field_validator
 
@@ -24,6 +25,8 @@ def _validate_optional_non_empty(value: str | None, *, field_name: str) -> str |
 
 
 class LLMProviderConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     provider: str = LLM_DEFAULT_PROVIDER_NAME
     model: str | None = None
     api_key_env: str | None = None
@@ -117,11 +120,50 @@ def load_llm_provider_config(
         raise LLMProviderConfigError(message) from exc
 
 
+def merge_llm_provider_config(
+    base_config: LLMProviderConfig | None,
+    *,
+    provider: str | None = None,
+    model: str | None = None,
+    api_key_env: str | None = None,
+    base_url: str | None = None,
+    timeout_seconds: float | None = None,
+    retry_attempts: int | None = None,
+    retry_backoff_seconds: float | None = None,
+    min_request_interval_seconds: float | None = None,
+) -> LLMProviderConfig:
+    data = (
+        base_config.model_dump()
+        if base_config is not None
+        else load_llm_provider_config().model_dump()
+    )
+
+    if provider is not None:
+        data["provider"] = provider
+    if model is not None:
+        data["model"] = model
+    if api_key_env is not None:
+        data["api_key_env"] = api_key_env
+    if base_url is not None:
+        data["base_url"] = base_url
+    if timeout_seconds is not None:
+        data["timeout_seconds"] = timeout_seconds
+    if retry_attempts is not None:
+        data["retry_attempts"] = retry_attempts
+    if retry_backoff_seconds is not None:
+        data["retry_backoff_seconds"] = retry_backoff_seconds
+    if min_request_interval_seconds is not None:
+        data["min_request_interval_seconds"] = min_request_interval_seconds
+
+    return load_llm_provider_config(**data)
+
+
 __all__ = [
     "LLM_DEFAULT_PROVIDER_NAME",
     "LLM_PROVIDER_NAMES",
     "LLMProviderConfig",
     "LLMProviderName",
     "LLMProviderType",
+    "merge_llm_provider_config",
     "load_llm_provider_config",
 ]

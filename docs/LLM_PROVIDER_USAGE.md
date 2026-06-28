@@ -27,6 +27,7 @@ sidecar review.
 
 Provider parameters covered by the current CLI:
 
+- `--llm-config examples/llm/pydanticai/llm-provider.yml`
 - `--llm-provider pydanticai`
 - `--llm-model openai:gpt-4o-mini`
 - `--llm-api-key-env OPENAI_API_KEY`
@@ -39,6 +40,8 @@ Provider parameters covered by the current CLI:
 `--llm-model` is required for `pydanticai`.
 `--llm-api-key-env` stores only the environment variable name, not the secret
 value itself.
+`--llm-config` can load the same provider fields from a YAML file, and any
+explicit CLI flag overrides the same field from that file.
 `--llm-base-url` is optional and is only for OpenAI-compatible endpoints.
 `--llm-timeout-seconds` is optional and affects only the provider runtime.
 `--llm-retry-attempts` is optional, defaults to `0`, and means extra retry
@@ -70,6 +73,8 @@ This repository includes safe local fixtures for manual verification:
 
 - `examples/llm/pydanticai/manual-review.md`
 - `examples/llm/pydanticai/manual-profile.yml`
+- `examples/llm/pydanticai/llm-provider.yml`
+- `examples/llm/mock/llm-provider.yml`
 - `examples/llm/pydanticai/batch/article-a.md`
 - `examples/llm/pydanticai/batch/article-b.md`
 
@@ -97,17 +102,23 @@ uv run content-review review \
   --profile examples/llm/pydanticai/manual-profile.yml \
   --format markdown \
   --enable-llm \
-  --llm-provider pydanticai \
-  --llm-model openai:gpt-4o-mini \
-  --llm-api-key-env OPENAI_API_KEY \
+  --llm-config examples/llm/pydanticai/llm-provider.yml \
   --llm-base-url "$OPENAI_BASE_URL" \
-  --llm-timeout-seconds 30 \
-  --llm-retry-attempts 2 \
-  --llm-retry-backoff-seconds 1.0 \
-  --llm-min-request-interval-seconds 2.0 \
   --llm-output /tmp/content-review-single.llm.json \
   --llm-markdown-output /tmp/content-review-single.llm.md \
   --include-llm-report
+```
+
+CLI override example:
+
+```bash
+uv run content-review review \
+  examples/llm/pydanticai/manual-review.md \
+  --profile examples/llm/pydanticai/manual-profile.yml \
+  --enable-llm \
+  --llm-config examples/llm/pydanticai/llm-provider.yml \
+  --llm-model openai:gpt-4.1-mini \
+  --llm-output /tmp/content-review-single.llm.json
 ```
 
 What to verify:
@@ -126,14 +137,8 @@ uv run content-review batch \
   --profile examples/llm/pydanticai/manual-profile.yml \
   --recursive \
   --enable-llm \
-  --llm-provider pydanticai \
-  --llm-model openai:gpt-4o-mini \
-  --llm-api-key-env OPENAI_API_KEY \
+  --llm-config examples/llm/pydanticai/llm-provider.yml \
   --llm-base-url "$OPENAI_BASE_URL" \
-  --llm-timeout-seconds 30 \
-  --llm-retry-attempts 2 \
-  --llm-retry-backoff-seconds 1.0 \
-  --llm-min-request-interval-seconds 2.0 \
   --llm-output-dir /tmp/content-review-batch-llm \
   --llm-markdown-output /tmp/content-review-batch-llm.md
 ```
@@ -190,6 +195,27 @@ Quality Gate behavior does not read LLM findings or LLM sidecar failures.
 - a provider runtime failure does not become a deterministic quality-gate
   failure
 - command/config/secret errors can still fail the command with exit code `2`
+
+## Config File
+
+`--llm-config` accepts a YAML mapping with these fields only:
+
+- `provider`
+- `model`
+- `api_key_env`
+- `base_url`
+- `timeout_seconds`
+- `retry_attempts`
+- `retry_backoff_seconds`
+- `min_request_interval_seconds`
+
+Constraints:
+
+- unknown fields are rejected
+- secret-like fields such as `api_key`, `secret`, `token`, or `password` are rejected
+- the loader reads YAML only; it does not read environment variables
+- the loader does not instantiate provider runtimes or make network calls
+- priority is `explicit CLI flags > --llm-config file > built-in defaults`
 
 ## Timeout Configuration
 

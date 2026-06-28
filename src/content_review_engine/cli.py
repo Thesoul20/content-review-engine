@@ -31,7 +31,6 @@ from content_review_engine.core.serialization import (
     review_result_to_json,
 )
 from content_review_engine.llm import (
-    LLM_DEFAULT_PROVIDER_NAME,
     LLMSidecarFile,
     LLMSidecarResult,
     LLMProviderConfig,
@@ -45,7 +44,9 @@ from content_review_engine.llm import (
     build_llm_sidecar_result,
     create_llm_reviewer,
     llm_sidecar_result_to_json,
+    load_llm_provider_config_file,
     load_llm_provider_config,
+    merge_llm_provider_config,
 )
 from content_review_engine.parser import read_markdown
 from content_review_engine.reports import (
@@ -171,6 +172,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Enable experimental LLM review sidecar output.",
     )
     review_parser.add_argument(
+        "--llm-config",
+        default=None,
+        help="Optional YAML file for LLM provider config.",
+    )
+    review_parser.add_argument(
         "--llm-provider",
         type=_parse_llm_provider,
         default=None,
@@ -206,19 +212,19 @@ def build_parser() -> argparse.ArgumentParser:
     review_parser.add_argument(
         "--llm-retry-attempts",
         type=_parse_llm_retry_attempts,
-        default=0,
+        default=None,
         help="Optional extra retry attempts for retryable LLM runtime failures.",
     )
     review_parser.add_argument(
         "--llm-retry-backoff-seconds",
         type=_parse_llm_retry_backoff_seconds,
-        default=0.0,
+        default=None,
         help="Optional fixed sleep before each retryable LLM runtime retry.",
     )
     review_parser.add_argument(
         "--llm-min-request-interval-seconds",
         type=_parse_llm_min_request_interval_seconds,
-        default=0.0,
+        default=None,
         help="Optional minimum spacing between consecutive real LLM runtime calls.",
     )
     review_parser.add_argument(
@@ -333,6 +339,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Enable experimental per-file LLM review sidecar output.",
     )
     batch_parser.add_argument(
+        "--llm-config",
+        default=None,
+        help="Optional YAML file for LLM provider config.",
+    )
+    batch_parser.add_argument(
         "--llm-provider",
         type=_parse_llm_provider,
         default=None,
@@ -378,19 +389,19 @@ def build_parser() -> argparse.ArgumentParser:
     batch_parser.add_argument(
         "--llm-retry-attempts",
         type=_parse_llm_retry_attempts,
-        default=0,
+        default=None,
         help="Optional extra retry attempts for retryable LLM runtime failures.",
     )
     batch_parser.add_argument(
         "--llm-retry-backoff-seconds",
         type=_parse_llm_retry_backoff_seconds,
-        default=0.0,
+        default=None,
         help="Optional fixed sleep before each retryable LLM runtime retry.",
     )
     batch_parser.add_argument(
         "--llm-min-request-interval-seconds",
         type=_parse_llm_min_request_interval_seconds,
-        default=0.0,
+        default=None,
         help="Optional minimum spacing between consecutive real LLM runtime calls.",
     )
 
@@ -662,8 +673,14 @@ def _validate_batch_llm_args(args: argparse.Namespace) -> None:
 
 
 def _build_llm_provider_config(args: argparse.Namespace) -> LLMProviderConfig:
-    return load_llm_provider_config(
-        provider=args.llm_provider or LLM_DEFAULT_PROVIDER_NAME,
+    file_config = (
+        load_llm_provider_config_file(args.llm_config)
+        if args.llm_config is not None
+        else None
+    )
+    return merge_llm_provider_config(
+        file_config,
+        provider=args.llm_provider,
         model=args.llm_model,
         api_key_env=args.llm_api_key_env,
         base_url=args.llm_base_url,

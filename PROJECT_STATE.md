@@ -85,6 +85,33 @@ use.
 
 ## Recent Completion
 
+- TASK-0052 is complete.
+- Added `src/content_review_engine/llm/config_loader.py` plus example
+  YAML config files under `examples/llm/pydanticai/` and
+  `examples/llm/mock/`.
+- Added `--llm-config` support for `content-review review` and
+  `content-review batch`.
+- Added config-file validation for missing files, invalid YAML, top-level
+  non-mapping input, unknown fields, secret-like fields, and invalid LLM
+  provider values.
+- Updated CLI/provider wiring so explicit CLI flags override the same
+  `LLMProviderConfig` fields from `--llm-config`, while parser defaults no
+  longer overwrite config-file values.
+- Added and updated tests for config-file loading, override precedence,
+  mock and fake-runtime CLI wiring, deterministic review isolation when LLM
+  is disabled, Quality Gate isolation, and secret-safety boundaries.
+- Updated architecture, data-model, CLI, CI, and provider-usage docs for the
+  new LLM config-file path and override rules.
+- Kept `ReviewProfile` schema unchanged.
+- Kept `LLMSidecarResult` JSON schema unchanged.
+- Kept LLM sidecar Markdown report structure unchanged.
+- Kept deterministic review and batch JSON schemas unchanged.
+- Kept deterministic Markdown report structure unchanged.
+- Kept deterministic quality-gate semantics unchanged.
+- Added no provider fallback, multi-model fallback, streaming, batch
+  concurrency, rate-limit queue, API/MCP/GUI, or real-network test
+  dependency.
+
 - TASK-0051 is complete.
 - Added `min_request_interval_seconds` to `LLMProviderConfig` with validation
   that requires values greater than or equal to `0`.

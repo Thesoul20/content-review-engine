@@ -7,8 +7,10 @@ from content_review_engine.llm.config import (
     LLMProviderConfig,
     LLMProviderName,
     LLMProviderType,
+    merge_llm_provider_config,
     load_llm_provider_config,
 )
+from content_review_engine.llm.config_loader import load_llm_provider_config_file
 from content_review_engine.llm.errors import (
     LLMProviderAuthError,
     LLMProviderConfigError,
@@ -150,6 +152,7 @@ __all__ = [
     "build_pydanticai_retry_exhausted_error",
     "create_llm_reviewer",
     "get_registered_llm_provider_names",
+    "load_llm_provider_config_file",
     "llm_review_finding_to_dict",
     "llm_review_result_to_dict",
     "llm_review_result_to_json",
@@ -159,6 +162,7 @@ __all__ = [
     "llm_sidecar_result_to_dict",
     "llm_sidecar_result_to_json",
     "llm_sidecar_summary_to_dict",
+    "merge_llm_provider_config",
     "load_llm_provider_config",
     "mock",
     "pydanticai",
