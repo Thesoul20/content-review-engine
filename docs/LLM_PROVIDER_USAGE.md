@@ -34,6 +34,7 @@ Provider parameters covered by the current CLI:
 - `--llm-timeout-seconds 30`
 - `--llm-retry-attempts 2`
 - `--llm-retry-backoff-seconds 1.0`
+- `--llm-min-request-interval-seconds 2.0`
 
 `--llm-model` is required for `pydanticai`.
 `--llm-api-key-env` stores only the environment variable name, not the secret
@@ -44,6 +45,9 @@ value itself.
 attempts after the initial runtime call.
 `--llm-retry-backoff-seconds` is optional, defaults to `0.0`, and is the fixed
 sleep before each retryable retry.
+`--llm-min-request-interval-seconds` is optional, defaults to `0.0`, and is
+the minimum spacing between consecutive real runtime call start times on the
+same `pydanticai` reviewer instance.
 
 ## Required Environment Variables
 
@@ -100,6 +104,7 @@ uv run content-review review \
   --llm-timeout-seconds 30 \
   --llm-retry-attempts 2 \
   --llm-retry-backoff-seconds 1.0 \
+  --llm-min-request-interval-seconds 2.0 \
   --llm-output /tmp/content-review-single.llm.json \
   --llm-markdown-output /tmp/content-review-single.llm.md \
   --include-llm-report
@@ -128,6 +133,7 @@ uv run content-review batch \
   --llm-timeout-seconds 30 \
   --llm-retry-attempts 2 \
   --llm-retry-backoff-seconds 1.0 \
+  --llm-min-request-interval-seconds 2.0 \
   --llm-output-dir /tmp/content-review-batch-llm \
   --llm-markdown-output /tmp/content-review-batch-llm.md
 ```
@@ -202,10 +208,16 @@ If you want retries, configure the explicit project-level retry loop instead.
 - `--llm-retry-attempts 0` means no retry
 - `--llm-retry-attempts 1` means one initial call plus one retry
 - `--llm-retry-backoff-seconds 0.0` means no sleep between retries
+- `--llm-min-request-interval-seconds 0.0` means no local pacing
 - only timeout, network, and rate-limit failures are retryable
 - auth, secret, config, model, and response-validation failures are not retryable
 - when retryable failures still exceed the configured limit, sidecars record
   `LLMProviderRetryExhaustedError`
+- retry backoff sleeps first after a retryable failure; the following pacing
+  check then sleeps only any remaining time needed before the next runtime
+  call starts
+- in batch review, the same reviewer instance is reused across files, so this
+  pacing also applies naturally between consecutive files
 
 ## OpenAI-compatible Base URL
 
@@ -250,13 +262,17 @@ Troubleshooting steps:
 5. If you hit `LLMProviderRetryExhaustedError`, inspect whether the last
    retryable failure was timeout, network, or rate-limit related before
    increasing retry settings.
-6. If you hit `LLMProviderAuthError`, rotate or replace the secret outside the
+6. If you hit frequent rate limits in manual verification, increase
+   `--llm-min-request-interval-seconds` before increasing retry volume.
+7. If you hit `LLMProviderAuthError`, rotate or replace the secret outside the
    repository.
-7. If you hit `LLMProviderModelError`, verify the model string against your
+8. If you hit `LLMProviderModelError`, verify the model string against your
    endpoint contract.
-8. If you hit `LLMResponseValidationError`, inspect the sidecar error and keep
+9. If you hit `LLMResponseValidationError`, inspect the sidecar error and keep
    the failing output for local debugging; do not change deterministic review
    expectations based on it.
+
+Real `pydanticai` provider calls must not run in default `pytest` or CI.
 
 ## Manual Verification Checklist
 

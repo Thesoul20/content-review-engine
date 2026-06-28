@@ -85,6 +85,33 @@ use.
 
 ## Recent Completion
 
+- TASK-0051 is complete.
+- Added `min_request_interval_seconds` to `LLMProviderConfig` with validation
+  that requires values greater than or equal to `0`.
+- Updated the CLI to accept `--llm-min-request-interval-seconds` for
+  single-file and batch LLM sidecar flows while keeping deterministic review
+  behavior unchanged when `--enable-llm` is not used.
+- Updated `src/content_review_engine/llm/pydanticai.py` so the `pydanticai`
+  runtime applies instance-local request pacing before each real runtime call,
+  including retry calls, with injectable monotonic clock and sleep functions
+  for stable tests.
+- Added and updated tests for min-interval config defaults and validation,
+  CLI parsing and propagation, first-call/no-call-sleep boundaries,
+  remaining-interval sleeps, retry-backoff-plus-pacing ordering, batch
+  reviewer reuse pacing, continued mock-provider stability, sidecar schema
+  stability, no fallback to mock, no-network behavior, and deterministic
+  quality-gate isolation.
+- Updated architecture, data-model, CLI, CI, and provider-usage docs for
+  local request pacing and its relationship to retry backoff.
+- Kept `LLMSidecarResult` JSON schema unchanged.
+- Kept LLM sidecar Markdown report structure unchanged.
+- Kept deterministic review and batch JSON schemas unchanged.
+- Kept deterministic Markdown report structure unchanged.
+- Kept deterministic quality-gate semantics unchanged.
+- Added no rate-limit queue, token bucket, leaky bucket, cross-process rate
+  limiter, batch concurrency, streaming, fallback model/provider behavior,
+  API/MCP/GUI, or real-network test dependency.
+
 - TASK-0050 is complete.
 - Added `retry_attempts` and `retry_backoff_seconds` to
   `LLMProviderConfig` with validation that requires `retry_attempts >= 0`

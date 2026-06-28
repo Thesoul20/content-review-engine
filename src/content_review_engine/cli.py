@@ -117,6 +117,20 @@ def _parse_llm_retry_backoff_seconds(value: str) -> float:
     return backoff_seconds
 
 
+def _parse_llm_min_request_interval_seconds(value: str) -> float:
+    try:
+        interval_seconds = float(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(
+            "LLM minimum request interval seconds must be a number greater than or equal to 0."
+        ) from exc
+    if interval_seconds < 0:
+        raise argparse.ArgumentTypeError(
+            "LLM minimum request interval seconds must be greater than or equal to 0."
+        )
+    return interval_seconds
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="content-review",
@@ -200,6 +214,12 @@ def build_parser() -> argparse.ArgumentParser:
         type=_parse_llm_retry_backoff_seconds,
         default=0.0,
         help="Optional fixed sleep before each retryable LLM runtime retry.",
+    )
+    review_parser.add_argument(
+        "--llm-min-request-interval-seconds",
+        type=_parse_llm_min_request_interval_seconds,
+        default=0.0,
+        help="Optional minimum spacing between consecutive real LLM runtime calls.",
     )
     review_parser.add_argument(
         "--llm-output",
@@ -366,6 +386,12 @@ def build_parser() -> argparse.ArgumentParser:
         type=_parse_llm_retry_backoff_seconds,
         default=0.0,
         help="Optional fixed sleep before each retryable LLM runtime retry.",
+    )
+    batch_parser.add_argument(
+        "--llm-min-request-interval-seconds",
+        type=_parse_llm_min_request_interval_seconds,
+        default=0.0,
+        help="Optional minimum spacing between consecutive real LLM runtime calls.",
     )
 
     return parser
@@ -644,6 +670,7 @@ def _build_llm_provider_config(args: argparse.Namespace) -> LLMProviderConfig:
         timeout_seconds=args.llm_timeout_seconds,
         retry_attempts=args.llm_retry_attempts,
         retry_backoff_seconds=args.llm_retry_backoff_seconds,
+        min_request_interval_seconds=args.llm_min_request_interval_seconds,
     )
 
 

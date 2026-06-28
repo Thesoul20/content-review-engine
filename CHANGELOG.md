@@ -8,6 +8,50 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0051
+
+### Added
+
+- Added `min_request_interval_seconds` to `LLMProviderConfig`, with
+  validation coverage in `tests/test_llm_config.py`.
+- Added `tests/test_llm_rate_limit.py` for focused request-pacing coverage
+  using fake monotonic clocks and fake sleep without real network access or
+  real API keys.
+
+### Changed
+
+- Updated `src/content_review_engine/cli.py` so `review` and `batch` accept
+  `--llm-min-request-interval-seconds`, validate it, and pass it into shared
+  provider config without affecting deterministic review when LLM sidecar
+  review is disabled.
+- Updated `src/content_review_engine/llm/pydanticai.py` so the `pydanticai`
+  runtime applies instance-local request pacing before every real runtime
+  call, including retry attempts, tracks the last runtime call start time,
+  and exposes injectable monotonic clock and sleep functions for tests.
+- Updated `tests/test_llm_pydanticai_provider.py`, `tests/test_llm_retry.py`,
+  and `tests/test_cli.py` for min-interval config propagation, mock-provider
+  stability, batch reviewer reuse pacing, and continued deterministic
+  quality-gate isolation.
+- Updated `docs/LLM_PROVIDER_USAGE.md`, `docs/CLI.md`, `docs/CI.md`,
+  `docs/ARCHITECTURE.md`, and `docs/DATA_MODELS.md` to document local request
+  pacing, batch reviewer reuse, and the relationship between retry backoff
+  and pacing.
+- Updated `PROJECT_STATE.md` to record TASK-0051 completion.
+- Kept `LLMSidecarResult` JSON schema unchanged.
+- Kept LLM sidecar Markdown report structure unchanged.
+- Kept deterministic review and batch JSON schemas unchanged.
+- Kept deterministic Markdown report structure unchanged.
+- Kept deterministic quality-gate semantics unchanged.
+
+### Not Added
+
+- No rate-limit queue, token bucket, leaky bucket, cross-process rate
+  limiter, batch concurrency, streaming, fallback model/provider behavior, or
+  `--fail-on-llm`.
+- No LLM merge into deterministic review outputs or quality-gate logic.
+- No real-network tests, real API-key test dependency, or CI real-provider
+  smoke tests.
+
 ## TASK-0050
 
 ### Added

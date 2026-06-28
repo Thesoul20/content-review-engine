@@ -199,6 +199,24 @@ def test_pydanticai_review_passes_retry_config_to_reviewer_state() -> None:
     assert reviewer.retry_backoff_seconds == 1.25
 
 
+def test_pydanticai_review_passes_min_request_interval_to_reviewer_state() -> None:
+    reviewer = PydanticAIReviewer(
+        LLMProviderConfig(
+            provider="pydanticai",
+            model="gpt-4o-mini",
+            api_key_env="CONTENT_REVIEW_TEST_LLM_API_KEY",
+            min_request_interval_seconds=2.5,
+        ),
+        secret_resolver=lambda config: reviewer_secret(config.api_key_env or "missing"),
+        agent_builder=lambda **kwargs: object(),
+        runtime_runner=lambda _agent, _payload: {"findings": []},
+    )
+
+    reviewer.review(_build_request())
+
+    assert reviewer.min_request_interval_seconds == 2.5
+
+
 def test_pydanticai_review_maps_single_finding_with_fake_runtime() -> None:
     reviewer = PydanticAIReviewer(
         LLMProviderConfig(
@@ -659,6 +677,7 @@ def test_pydanticai_reviewer_only_stores_config_names() -> None:
     assert reviewer.timeout_seconds is None
     assert reviewer.retry_attempts == 0
     assert reviewer.retry_backoff_seconds == 0.0
+    assert reviewer.min_request_interval_seconds == 0.0
     assert isinstance(reviewer.mapping, PydanticAIReviewMapper)
 
 

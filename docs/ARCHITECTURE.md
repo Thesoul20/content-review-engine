@@ -355,7 +355,8 @@ Current LLM provider-boundary status:
 - `src/content_review_engine/llm/config.py` defines `LLMProviderConfig`,
   including provider name, optional model, optional `api_key_env`, optional
   `base_url`, optional runtime `timeout_seconds`, optional `retry_attempts`,
-  and optional `retry_backoff_seconds`
+  optional `retry_backoff_seconds`, and optional
+  `min_request_interval_seconds`
 - `src/content_review_engine/llm/factory.py` defines the provider registry and
   `create_llm_reviewer(config)`
 - `src/content_review_engine/llm/secrets.py` defines the secret-resolution
@@ -369,8 +370,9 @@ Current LLM provider-boundary status:
   layer, executes the PydanticAI runtime, passes optional timeout config to
   the underlying OpenAI-compatible client, keeps that client at
   `max_retries=0`, applies explicit project-level retry logic around the
-  runtime call, maps structured responses back into `LLMReviewResult`, and
-  normalizes runtime failures into stable provider error subclasses
+  runtime call, applies optional instance-local request pacing before each
+  real runtime call, maps structured responses back into `LLMReviewResult`,
+  and normalizes runtime failures into stable provider error subclasses
 - `src/content_review_engine/llm/pydanticai_errors.py` now defines the
   PydanticAI runtime classification boundary for timeout, auth, network,
   rate-limit, model, retry-exhausted, and unknown runtime failures
@@ -467,6 +469,13 @@ Mapping-layer notes:
   article content, or tracebacks
 - only timeout, network, and rate-limit failures are retryable; auth, secret,
   config, model, and response-validation failures fail immediately
+- request pacing is instance-local, uses injectable monotonic clock + sleep
+  functions for tests, does not create a queue, and does not coordinate across
+  processes
+- pacing is evaluated before every real runtime call, including retry calls
+- retry backoff is applied first after a retryable failure; the next pacing
+  check then sleeps only the remaining time needed to satisfy
+  `min_request_interval_seconds`
 - the mapping layer is provider-local; it does not change `LLMReviewResult`,
   `LLMSidecarResult`, deterministic review JSON, deterministic Markdown
   reports, or quality-gate behavior

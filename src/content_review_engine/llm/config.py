@@ -31,6 +31,7 @@ class LLMProviderConfig(BaseModel):
     timeout_seconds: float | None = None
     retry_attempts: int = 0
     retry_backoff_seconds: float = 0.0
+    min_request_interval_seconds: float = 0.0
 
     @field_validator("provider")
     @classmethod
@@ -71,6 +72,15 @@ class LLMProviderConfig(BaseModel):
             raise ValueError("retry_backoff_seconds must be greater than or equal to 0")
         return value
 
+    @field_validator("min_request_interval_seconds")
+    @classmethod
+    def validate_min_request_interval_seconds(cls, value: float) -> float:
+        if value < 0:
+            raise ValueError(
+                "min_request_interval_seconds must be greater than or equal to 0"
+            )
+        return value
+
     @property
     def provider_type(self) -> LLMProviderType:
         if self.provider == "mock":
@@ -87,6 +97,7 @@ def load_llm_provider_config(
     timeout_seconds: float | None = None,
     retry_attempts: int = 0,
     retry_backoff_seconds: float = 0.0,
+    min_request_interval_seconds: float = 0.0,
 ) -> LLMProviderConfig:
     try:
         return LLMProviderConfig(
@@ -97,6 +108,7 @@ def load_llm_provider_config(
             timeout_seconds=timeout_seconds,
             retry_attempts=retry_attempts,
             retry_backoff_seconds=retry_backoff_seconds,
+            min_request_interval_seconds=min_request_interval_seconds,
         )
     except ValidationError as exc:
         message = exc.errors()[0]["msg"] if exc.errors() else "Invalid LLM provider config."

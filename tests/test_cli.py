@@ -781,6 +781,30 @@ def test_cli_review_llm_retry_without_enable_llm_does_not_affect_deterministic_r
     assert captured.err == ""
 
 
+def test_cli_review_llm_min_request_interval_without_enable_llm_does_not_affect_deterministic_review(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    markdown_path = "tests/fixtures/markdown/clean_article.md"
+    profile_path = "tests/fixtures/profiles/default.yml"
+
+    exit_code = main(
+        [
+            "review",
+            markdown_path,
+            "--profile",
+            profile_path,
+            "--llm-min-request-interval-seconds",
+            "2.5",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "Findings: 0" in captured.out
+    assert captured.err == ""
+
+
 def test_cli_review_rejects_invalid_llm_timeout(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
@@ -850,6 +874,30 @@ def test_cli_review_rejects_invalid_llm_retry_backoff_seconds(
     )
 
 
+def test_cli_review_rejects_invalid_llm_min_request_interval_seconds(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = main(
+        [
+            "review",
+            "tests/fixtures/markdown/clean_article.md",
+            "--profile",
+            "tests/fixtures/profiles/default.yml",
+            "--llm-min-request-interval-seconds",
+            "-0.5",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert captured.out == ""
+    assert (
+        "LLM minimum request interval seconds must be greater than or equal to 0."
+        in captured.err
+    )
+
+
 def test_cli_review_parser_accepts_llm_retry_arguments() -> None:
     parser = build_parser()
 
@@ -868,6 +916,23 @@ def test_cli_review_parser_accepts_llm_retry_arguments() -> None:
 
     assert args.llm_retry_attempts == 3
     assert args.llm_retry_backoff_seconds == 2.5
+
+
+def test_cli_review_parser_accepts_llm_min_request_interval_arguments() -> None:
+    parser = build_parser()
+
+    args = parser.parse_args(
+        [
+            "review",
+            "article.md",
+            "--profile",
+            "profile.yml",
+            "--llm-min-request-interval-seconds",
+            "2.5",
+        ]
+    )
+
+    assert args.llm_min_request_interval_seconds == 2.5
 
 
 def test_cli_review_llm_markdown_output_requires_enable_llm(
@@ -1127,6 +1192,50 @@ def test_cli_review_pydanticai_provider_passes_retry_config(
     assert captured_io.err == ""
     assert captured["retry_attempts"] == 2
     assert captured["retry_backoff_seconds"] == 1.25
+
+
+def test_cli_review_pydanticai_provider_passes_min_request_interval_config(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setenv("CONTENT_REVIEW_TEST_LLM_API_KEY", "test-secret-value")
+    llm_output_path = tmp_path / "review.llm.json"
+
+    captured = {"min_request_interval_seconds": None}
+
+    def fake_review(self, request):  # type: ignore[no-untyped-def]
+        del request
+        captured["min_request_interval_seconds"] = self.min_request_interval_seconds
+        return LLMReviewResult()
+
+    monkeypatch.setattr("content_review_engine.llm.pydanticai.PydanticAIReviewer.review", fake_review)
+
+    exit_code = main(
+        [
+            "review",
+            "tests/fixtures/markdown/clean_article.md",
+            "--profile",
+            "tests/fixtures/profiles/default.yml",
+            "--enable-llm",
+            "--llm-provider",
+            "pydanticai",
+            "--llm-model",
+            "gpt-4o-mini",
+            "--llm-api-key-env",
+            "CONTENT_REVIEW_TEST_LLM_API_KEY",
+            "--llm-min-request-interval-seconds",
+            "2.5",
+            "--llm-output",
+            str(llm_output_path),
+        ]
+    )
+
+    captured_io = capsys.readouterr()
+
+    assert exit_code == 0
+    assert captured_io.err == ""
+    assert captured["min_request_interval_seconds"] == 2.5
 
 
 def test_cli_review_pydanticai_provider_requires_api_key_env(
@@ -3095,6 +3204,30 @@ def test_cli_batch_llm_retry_without_enable_llm_does_not_affect_deterministic_re
     assert captured.err == ""
 
 
+def test_cli_batch_llm_min_request_interval_without_enable_llm_does_not_affect_deterministic_review(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    input_dir = "tests/fixtures/batch/articles"
+    profile_path = "tests/fixtures/batch/profile.yml"
+
+    exit_code = main(
+        [
+            "batch",
+            input_dir,
+            "--profile",
+            profile_path,
+            "--llm-min-request-interval-seconds",
+            "1.75",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "Batch review completed." in captured.out
+    assert captured.err == ""
+
+
 def test_cli_batch_llm_markdown_output_requires_enable_llm(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
@@ -3318,6 +3451,53 @@ def test_cli_batch_pydanticai_provider_passes_retry_config(
     assert exit_code == 0
     assert captured.err == ""
     assert captured_retry_values == [(3, 1.5), (3, 1.5), (3, 1.5)]
+
+
+def test_cli_batch_pydanticai_provider_passes_min_request_interval_config(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    input_dir = "tests/fixtures/batch/articles"
+    profile_path = "tests/fixtures/batch/profile.yml"
+    llm_output_dir = tmp_path / "llm-sidecars"
+
+    monkeypatch.setenv("CONTENT_REVIEW_TEST_LLM_API_KEY", "test-secret-value")
+    captured_interval_values: list[float] = []
+
+    def fake_review(self, request):  # type: ignore[no-untyped-def]
+        del request
+        captured_interval_values.append(self.min_request_interval_seconds)
+        return LLMReviewResult()
+
+    monkeypatch.setattr("content_review_engine.llm.pydanticai.PydanticAIReviewer.review", fake_review)
+
+    exit_code = main(
+        [
+            "batch",
+            input_dir,
+            "--profile",
+            profile_path,
+            "--recursive",
+            "--enable-llm",
+            "--llm-provider",
+            "pydanticai",
+            "--llm-model",
+            "gpt-4o-mini",
+            "--llm-api-key-env",
+            "CONTENT_REVIEW_TEST_LLM_API_KEY",
+            "--llm-min-request-interval-seconds",
+            "2.5",
+            "--llm-output-dir",
+            str(llm_output_dir),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert captured.err == ""
+    assert captured_interval_values == [2.5, 2.5, 2.5]
 
 
 def test_cli_batch_llm_markdown_output_writes_batch_report(

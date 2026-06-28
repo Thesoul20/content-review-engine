@@ -440,6 +440,7 @@ Current fields:
 | `timeout_seconds` | No | Optional LLM runtime timeout in seconds; if set, must be greater than `0` |
 | `retry_attempts` | Yes | Extra retry attempts after the initial provider call; default `0`; must be an integer greater than or equal to `0` |
 | `retry_backoff_seconds` | Yes | Fixed delay before each retryable retry; default `0.0`; must be greater than or equal to `0` |
+| `min_request_interval_seconds` | Yes | Minimum spacing between consecutive real runtime call start times on the same reviewer instance; default `0.0`; must be greater than or equal to `0` |
 
 Notes:
 
@@ -450,8 +451,9 @@ Notes:
 - `timeout_seconds = None` means the provider/runtime default timeout is used
 - `retry_attempts = 0` means no retry
 - `retry_backoff_seconds = 0.0` means no sleep before retry
-- timeout, retry count, and retry backoff are validated independently from
-  rate-limit or concurrency policy
+- `min_request_interval_seconds = 0.0` means no local request pacing
+- timeout, retry count, retry backoff, and minimum request interval are
+  validated independently from queueing or concurrency policy
 - `repr` and serialization do not contain any secret value because the model
   stores only the environment variable name
 

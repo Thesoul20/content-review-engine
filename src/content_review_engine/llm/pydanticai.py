@@ -103,6 +103,7 @@ class PydanticAIReviewer:
         agent_builder: Callable[..., Agent] | None = None,
         runtime_runner: Callable[[Agent, PydanticAIReviewRequestPayload], Any] | None = None,
         sleep_func: Callable[[float], None] | None = None,
+        monotonic_func: Callable[[], float] | None = None,
     ) -> None:
         self.config = config
         self.model = config.model
@@ -111,10 +112,13 @@ class PydanticAIReviewer:
         self.timeout_seconds = config.timeout_seconds
         self.retry_attempts = config.retry_attempts
         self.retry_backoff_seconds = config.retry_backoff_seconds
+        self.min_request_interval_seconds = config.min_request_interval_seconds
         self._secret_resolver = secret_resolver
         self._agent_builder = agent_builder or build_pydanticai_runtime_agent
         self._runtime_runner = runtime_runner or run_pydanticai_runtime_agent
         self._sleep_func = sleep_func or time.sleep
+        self._monotonic_func = monotonic_func or time.monotonic
+        self._last_request_started_at: float | None = None
         self._agent_type = Agent
         self.mapping = PydanticAIReviewMapper(
             provider=PYDANTICAI_PROVIDER_NAME,
@@ -130,6 +134,22 @@ class PydanticAIReviewer:
     ) -> PydanticAIReviewRequestPayload:
         return self.mapping.build_request(request)
 
+    def _apply_request_pacing(self) -> None:
+        if self.min_request_interval_seconds <= 0:
+            return
+
+        now = self._monotonic_func()
+        if self._last_request_started_at is None:
+            self._last_request_started_at = now
+            return
+
+        elapsed = now - self._last_request_started_at
+        remaining = self.min_request_interval_seconds - elapsed
+        if remaining > 0:
+            self._sleep_func(remaining)
+            now = self._monotonic_func()
+        self._last_request_started_at = now
+
     def _run_with_retries(
         self,
         *,
@@ -141,6 +161,7 @@ class PydanticAIReviewer:
 
         for attempt_number in range(1, max_attempts + 1):
             try:
+                self._apply_request_pacing()
                 return self._runtime_runner(agent, payload)
             except LLMResponseValidationError:
                 raise

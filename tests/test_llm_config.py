@@ -19,6 +19,7 @@ def test_llm_provider_config_defaults_to_mock() -> None:
     assert config.timeout_seconds is None
     assert config.retry_attempts == 0
     assert config.retry_backoff_seconds == 0.0
+    assert config.min_request_interval_seconds == 0.0
 
 
 def test_llm_provider_config_can_store_model() -> None:
@@ -44,6 +45,12 @@ def test_llm_provider_config_can_store_retry_fields() -> None:
 
     assert config.retry_attempts == 2
     assert config.retry_backoff_seconds == 1.5
+
+
+def test_llm_provider_config_can_store_min_request_interval_seconds() -> None:
+    config = load_llm_provider_config(min_request_interval_seconds=2.5)
+
+    assert config.min_request_interval_seconds == 2.5
 
 
 def test_llm_provider_config_repr_and_serialization_do_not_leak_secret_value() -> None:
@@ -99,4 +106,14 @@ def test_load_llm_provider_config_rejects_negative_retry_backoff_seconds() -> No
     assert (
         str(exc_info.value)
         == "retry_backoff_seconds must be greater than or equal to 0"
+    )
+
+
+def test_load_llm_provider_config_rejects_negative_min_request_interval_seconds() -> None:
+    with pytest.raises(LLMProviderConfigError) as exc_info:
+        load_llm_provider_config(min_request_interval_seconds=-0.5)
+
+    assert (
+        str(exc_info.value)
+        == "min_request_interval_seconds must be greater than or equal to 0"
     )

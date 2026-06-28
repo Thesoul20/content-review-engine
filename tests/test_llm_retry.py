@@ -32,12 +32,14 @@ def test_mock_provider_retry_config_does_not_change_behavior() -> None:
         provider="mock",
         retry_attempts=3,
         retry_backoff_seconds=2.0,
+        min_request_interval_seconds=1.5,
     )
 
     result = reviewer.review(_build_request())
 
     assert config.retry_attempts == 3
     assert config.retry_backoff_seconds == 2.0
+    assert config.min_request_interval_seconds == 1.5
     assert result.findings == ()
 
 
