@@ -3,6 +3,9 @@
 For the complete local setup flow before CI, see
 [docs/QUICKSTART.md](./QUICKSTART.md).
 
+For explicit real-provider manual verification guidance, see
+[docs/LLM_PROVIDER_USAGE.md](./LLM_PROVIDER_USAGE.md).
+
 For the rule-system reference behind `--fail-on`, suppression comments, and
 severity ordering, see [docs/RULES.md](./RULES.md), the canonical rule
 reference.
@@ -151,6 +154,15 @@ still do not change deterministic gate semantics. A missing or empty
 timeout, auth, network, rate-limit, model, and unknown failures are
 serialized into LLM sidecars without changing the deterministic exit code.
 Only deterministic findings contribute to exit code `1`.
+
+CI boundary for providers:
+
+- default CI should not run real `pydanticai` provider calls
+- default CI should not require a real API key
+- use deterministic review for gating
+- if CI needs LLM-sidecar wiring coverage, use `--llm-provider mock`
+- manual `pydanticai` verification belongs in a local developer workflow, not
+  in the default workflow example
 
 In GitHub Actions, exit code `0` passes the step. Exit code `1` or `2` fails
 the step.

@@ -1,0 +1,88 @@
+from __future__ import annotations
+
+import re
+from pathlib import Path
+
+from content_review_engine.config import load_profile
+from content_review_engine.parser import read_markdown
+
+
+USAGE_DOC_PATH = Path("docs/LLM_PROVIDER_USAGE.md")
+ENV_EXAMPLE_PATH = Path("examples/llm/pydanticai/.env.example")
+MANUAL_PROFILE_PATH = Path("examples/llm/pydanticai/manual-profile.yml")
+MANUAL_MARKDOWN_PATH = Path("examples/llm/pydanticai/manual-review.md")
+BATCH_DIR = Path("examples/llm/pydanticai/batch")
+
+
+def _looks_like_real_api_key(content: str) -> bool:
+    patterns = (
+        r"sk-[A-Za-z0-9_-]{16,}",
+        r"AIza[0-9A-Za-z\-_]{20,}",
+        r"ghp_[A-Za-z0-9]{20,}",
+    )
+    return any(re.search(pattern, content) for pattern in patterns)
+
+
+def test_manual_verification_fixtures_exist_and_are_non_empty() -> None:
+    paths = (
+        MANUAL_MARKDOWN_PATH,
+        MANUAL_PROFILE_PATH,
+        BATCH_DIR / "article-a.md",
+        BATCH_DIR / "article-b.md",
+        ENV_EXAMPLE_PATH,
+    )
+
+    for path in paths:
+        assert path.exists()
+        assert path.read_text(encoding="utf-8").strip()
+
+
+def test_env_example_contains_only_placeholders() -> None:
+    content = ENV_EXAMPLE_PATH.read_text(encoding="utf-8")
+
+    assert "YOUR_OPENAI_API_KEY_HERE" in content
+    assert "your-openai-compatible-endpoint.example" in content
+    assert not _looks_like_real_api_key(content)
+
+
+def test_usage_docs_exist_and_cover_required_provider_flags_and_boundaries() -> None:
+    content = USAGE_DOC_PATH.read_text(encoding="utf-8")
+
+    assert "--llm-provider pydanticai" in content
+    assert "--llm-model" in content
+    assert "--llm-api-key-env" in content
+    assert "--llm-base-url" in content
+    assert "--llm-timeout-seconds" in content
+    assert "Quality Gate behavior does not read LLM findings" in content
+    assert "Real `pydanticai` provider calls must not run in default `pytest` or CI." in content
+    assert "LLMProviderTimeoutError" in content
+    assert "LLMProviderAuthError" in content
+    assert "LLMProviderNetworkError" in content
+    assert "LLMProviderRateLimitError" in content
+    assert "LLMProviderModelError" in content
+    assert "LLMProviderRuntimeError" in content
+    assert "LLMResponseValidationError" in content
+    assert "LLMProviderSecretError" in content
+    assert not _looks_like_real_api_key(content)
+
+
+def test_manual_profile_fixture_loads_with_current_profile_loader() -> None:
+    profile = load_profile(MANUAL_PROFILE_PATH)
+
+    assert profile.name == "manual-pydanticai"
+
+
+def test_manual_markdown_fixture_loads_with_current_reader() -> None:
+    content = read_markdown(MANUAL_MARKDOWN_PATH)
+
+    assert "LLM sidecar" in content
+
+
+def test_docs_and_fixtures_do_not_require_real_network_or_real_api_key() -> None:
+    usage_doc = USAGE_DOC_PATH.read_text(encoding="utf-8")
+    env_example = ENV_EXAMPLE_PATH.read_text(encoding="utf-8")
+
+    assert "replace-with-your-real-key" in usage_doc
+    assert "mock`: safe for local tests and CI" in usage_doc
+    assert "default `pytest` or CI" in usage_doc
+    assert "YOUR_OPENAI_API_KEY_HERE" in env_example

@@ -8,6 +8,47 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0049
+
+### Added
+
+- Added `docs/LLM_PROVIDER_USAGE.md` with explicit `pydanticai` provider
+  usage guidance, manual verification commands, sidecar inspection steps,
+  troubleshooting coverage for runtime error types, secret safety notes, and
+  CI boundaries.
+- Added committed manual verification fixtures under
+  `examples/llm/pydanticai/`, including single-file Markdown input, batch
+  Markdown samples, a loadable profile fixture, and placeholder-only
+  `.env.example`.
+- Added `tests/test_llm_provider_usage_docs.py` to verify fixture presence,
+  placeholder-only environment examples, required usage-guide coverage, local
+  profile/Markdown loader compatibility, and no obvious real API key leakage.
+
+### Changed
+
+- Updated `docs/CLI.md` to link the new provider usage guide and clarify that
+  real `pydanticai` execution is for explicit manual verification while
+  deterministic quality-gate behavior stays unchanged.
+- Updated `docs/CI.md` to document that default CI should not run real
+  provider calls and should not require real API keys.
+- Updated `docs/ARCHITECTURE.md` to document the committed manual-verification
+  fixture boundary for the real provider path.
+- Updated `PROJECT_STATE.md` to record TASK-0049 completion.
+- Kept provider runtime behavior unchanged.
+- Kept `LLMSidecarResult` JSON schema unchanged.
+- Kept LLM sidecar Markdown report structure unchanged.
+- Kept deterministic review and batch JSON schemas unchanged.
+- Kept deterministic Markdown report structure unchanged.
+- Kept deterministic quality-gate semantics unchanged.
+
+### Not Added
+
+- No retry, rate-limit queue, batch concurrency, streaming, fallback
+  model/provider behavior, or `--fail-on-llm`.
+- No LLM merge into deterministic review outputs or quality-gate logic.
+- No real-network tests, real API-key test dependency, or CI real-provider
+  smoke tests.
+
 ## TASK-0048
 
 ### Added

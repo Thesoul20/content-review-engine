@@ -85,6 +85,27 @@ use.
 
 ## Recent Completion
 
+- TASK-0049 is complete.
+- Added `docs/LLM_PROVIDER_USAGE.md` with explicit `pydanticai` provider setup,
+  single-file and batch manual verification commands, sidecar JSON/Markdown
+  inspection guidance, troubleshooting coverage for runtime error types, secret
+  safety notes, and CI boundaries.
+- Added committed manual verification fixtures under `examples/llm/pydanticai/`
+  plus placeholder-only `.env.example`.
+- Added `tests/test_llm_provider_usage_docs.py` so docs and fixtures are
+  validated locally without real network access or real API keys.
+- Updated `docs/CLI.md`, `docs/CI.md`, and `docs/ARCHITECTURE.md` to link the
+  new usage guide and clarify that deterministic quality gates remain isolated
+  from LLM provider results.
+- Kept provider runtime behavior unchanged.
+- Kept `LLMSidecarResult` JSON schema unchanged.
+- Kept LLM sidecar Markdown report structure unchanged.
+- Kept deterministic review and batch JSON schemas unchanged.
+- Kept deterministic Markdown report structure unchanged.
+- Kept deterministic quality-gate semantics unchanged.
+- Added no retry, rate-limit queue, batch concurrency, streaming, fallback
+  model/provider behavior, API/MCP/GUI, or real-network test dependency.
+
 - TASK-0048 is complete.
 - Added `timeout_seconds` to `LLMProviderConfig` with validation that accepts
   `None` or any value greater than `0`.

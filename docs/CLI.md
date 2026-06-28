@@ -4,6 +4,9 @@ Start with [docs/QUICKSTART.md](./QUICKSTART.md) for the first-run workflow
 from `uv sync` through `review`, `batch`, Markdown reports, and CI-oriented
 exit codes.
 
+For real-provider setup, manual verification fixtures, sidecar inspection, and
+runtime troubleshooting, see [docs/LLM_PROVIDER_USAGE.md](./LLM_PROVIDER_USAGE.md).
+
 For a committed runnable demo workspace using the current CLI contract, see
 [`examples/demo/README.md`](../examples/demo/README.md).
 
@@ -123,6 +126,8 @@ Provider notes:
 - `pydanticai` does not fallback to `mock`
 - the CLI stores only the `api_key_env` name in config and never prints secret
   values
+- real `pydanticai` usage is intended for explicit manual verification, not
+  default tests or CI; use `mock` for no-network automation coverage
 
 ## Experimental Batch LLM Sidecar Review
 
@@ -201,6 +206,16 @@ Batch behavior guarantees:
 - quality-gate evaluation still reads only deterministic findings
 - the optional batch LLM sidecar Markdown report is independent from the
   deterministic batch Markdown report and does not affect `--fail-on`
+
+Manual provider verification reference:
+
+- use the committed fixtures under `examples/llm/pydanticai/`
+- keep real secrets out of the repository and load them only through
+  `--llm-api-key-env`
+- inspect sidecar JSON and optional Markdown outputs separately from the
+  deterministic review result
+- see [docs/LLM_PROVIDER_USAGE.md](./LLM_PROVIDER_USAGE.md) for single-file
+  and batch commands, troubleshooting, and safety notes
 
 ## Regex Rules
 

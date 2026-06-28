@@ -465,6 +465,11 @@ Mapping-layer notes:
 - the mapping layer is provider-local; it does not change `LLMReviewResult`,
   `LLMSidecarResult`, deterministic review JSON, deterministic Markdown
   reports, or quality-gate behavior
+- real provider usage is documented as a manual-verification workflow under
+  `docs/LLM_PROVIDER_USAGE.md` plus committed safe fixtures under
+  `examples/llm/pydanticai/`
+- default automated tests and CI remain on the no-network path and do not
+  require real provider secrets
 
 TASK-0036 adds a dedicated execution boundary between request construction and
 provider invocation:
