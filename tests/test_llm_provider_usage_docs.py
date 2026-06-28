@@ -54,6 +54,16 @@ def test_usage_docs_exist_and_cover_required_provider_flags_and_boundaries() -> 
 
     assert "--llm-provider pydanticai" in content
     assert "--llm-provider pydantic-ai-testmodel" in content
+    assert "test providers" in content
+    assert "reserved real providers" in content
+    assert "`openai`" in content
+    assert "`anthropic`" in content
+    assert "`gemini`" in content
+    assert "`deepseek`" in content
+    assert "`qwen`" in content
+    assert "`local`" in content
+    assert "reserved but not implemented yet" in content
+    assert "unsupported provider names" in content
     assert "--llm-config" in content
     assert "llm-check" in content
     assert "--runtime" in content
@@ -105,6 +115,9 @@ def test_docs_and_fixtures_do_not_require_real_network_or_real_api_key() -> None
 
     assert "replace-with-your-real-key" in usage_doc
     assert "mock`: safe for local tests and CI" in usage_doc
+    assert "`pydantic-ai-testmodel`: package-level testing provider" in usage_doc
+    assert "Reserved real provider names such as `openai` or `anthropic`" in usage_doc
+    assert "must not be used" in usage_doc
     assert "batch `--llm-provider` supports only `mock` and `pydantic-ai-testmodel`" in usage_doc
     assert "explicit sidecar writes `llm_provider_source: explicit`" in usage_doc
     assert "omitted `--llm-provider` writes `llm_provider_source: default` or `config`" in usage_doc

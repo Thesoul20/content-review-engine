@@ -3,9 +3,10 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import overload
 
-from content_review_engine.llm.config import LLMProviderConfig
-from content_review_engine.llm.errors import (
-    UnsupportedLLMProviderError,
+from content_review_engine.llm.config import (
+    LLMProviderConfig,
+    validate_llm_provider_config,
+    validate_llm_provider_name,
 )
 from content_review_engine.llm.mock import MockLLMReviewer
 from content_review_engine.llm.pydantic_ai_provider import (
@@ -51,45 +52,25 @@ LLM_REVIEWER_PROVIDER_REGISTRY: dict[str, ReviewerProviderFactory] = {
     LLM_REVIEWER_PROVIDER_MOCK: _create_mock_reviewer_from_name,
     LLM_REVIEWER_PROVIDER_PYDANTIC_AI_TESTMODEL: _create_pydantic_ai_testmodel_reviewer_from_name,
 }
-
-
-def _format_supported_provider_names(provider_names: tuple[str, ...]) -> str:
-    return ", ".join(repr(name) for name in provider_names)
-
-
-def _raise_unsupported_provider(
-    *,
-    provider: str,
-    supported_provider_names: tuple[str, ...],
-) -> None:
-    raise UnsupportedLLMProviderError(
-        f"Unknown LLM provider {provider!r}. Supported providers: "
-        f"{_format_supported_provider_names(supported_provider_names)}."
-    )
-
-
-def _normalize_provider_name(provider: str) -> str:
-    return provider.strip().lower()
-
-
 def _create_llm_reviewer_from_config(config: LLMProviderConfig) -> LLMReviewer:
+    config = validate_llm_provider_config(
+        config,
+        supported_provider_names=get_registered_llm_provider_names(),
+    )
     factory = LLM_PROVIDER_REGISTRY.get(config.provider)
     if factory is None:
-        _raise_unsupported_provider(
-            provider=config.provider,
-            supported_provider_names=get_registered_llm_provider_names(),
-        )
+        raise AssertionError(f"Missing provider factory for {config.provider!r}.")
     return factory(config)
 
 
 def _create_llm_reviewer_from_provider_name(provider: str) -> LLMReviewer:
-    normalized_provider = _normalize_provider_name(provider)
+    normalized_provider = validate_llm_provider_name(
+        provider,
+        supported_provider_names=SUPPORTED_LLM_REVIEWER_PROVIDERS,
+    )
     factory = LLM_REVIEWER_PROVIDER_REGISTRY.get(normalized_provider)
     if factory is None:
-        _raise_unsupported_provider(
-            provider=provider,
-            supported_provider_names=SUPPORTED_LLM_REVIEWER_PROVIDERS,
-        )
+        raise AssertionError(f"Missing reviewer provider factory for {normalized_provider!r}.")
     return factory()
 
 

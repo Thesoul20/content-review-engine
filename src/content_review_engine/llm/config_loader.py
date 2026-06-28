@@ -6,7 +6,7 @@ from typing import Any
 import yaml
 from pydantic import ValidationError
 
-from content_review_engine.llm.config import LLMProviderConfig
+from content_review_engine.llm.config import LLMProviderConfig, validate_llm_provider_name
 from content_review_engine.llm.errors import LLMProviderConfigError
 
 _ALLOWED_CONFIG_FIELDS = {
@@ -76,6 +76,8 @@ def load_llm_provider_config_file(path: str | Path) -> LLMProviderConfig:
         ) from exc
 
     validated_data = _validate_config_mapping(raw_data)
+    if "provider" in validated_data:
+        validated_data["provider"] = validate_llm_provider_name(validated_data["provider"])
     try:
         return LLMProviderConfig.model_validate(validated_data)
     except ValidationError as exc:

@@ -8,6 +8,45 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0060
+
+### Added
+
+- Added provider-contract validation helpers in
+  `src/content_review_engine/llm/config.py` for provider-name normalization and
+  config validation across current test providers, reserved future real
+  providers, and unsupported provider names.
+- Added `tests/test_llm_provider_config.py` for mock/testmodel validation,
+  blank-provider rejection, reserved-provider failures, unsupported-provider
+  failures, and no-`.env`/no-network contract coverage.
+
+### Changed
+
+- Updated `src/content_review_engine/llm/config_loader.py` to apply the new
+  provider-name validation boundary before constructing `LLMProviderConfig`
+  from YAML.
+- Updated `src/content_review_engine/llm/factory.py` so reviewer-name creation
+  still succeeds for `mock` and `pydantic-ai-testmodel`, while reserved real
+  provider names such as `openai` now fail clearly as reserved but not
+  implemented.
+- Updated `src/content_review_engine/llm/__init__.py`,
+  `tests/test_llm_provider_factory.py`, `tests/test_cli.py`, and
+  `tests/test_llm_provider_usage_docs.py` for the new validation contract and
+  reserved-provider error boundary.
+- Updated `docs/LLM_PROVIDER_USAGE.md`, `docs/DATA_MODELS.md`,
+  `docs/ARCHITECTURE.md`, `docs/CLI.md`, and `PROJECT_STATE.md` to document
+  current test providers, reserved future real provider names, unsupported
+  provider handling, and the no-`.env`/no-network validation boundary.
+
+### Not Added
+
+- No direct `openai`, `anthropic`, `gemini`, `deepseek`, `qwen`, or `local`
+  reviewer implementation.
+- No new real-provider class, no new SDK dependency, no `.env` loading, no
+  API-key reads for the new validation helper, and no external-network access.
+- No change to `LLMReviewResult`, `ReviewResult`, `BatchReviewResult`, sidecar
+  envelope v2 schema, Markdown report behavior, or quality-gate behavior.
+
 ## TASK-0059
 
 ### Added

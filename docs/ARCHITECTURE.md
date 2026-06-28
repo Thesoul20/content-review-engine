@@ -222,6 +222,10 @@ Current status:
   config-driven runtime provider selection for the existing CLI sidecar path,
   and name-driven reviewer construction for package-local reviewer providers
   such as `mock` and `pydantic-ai-testmodel`
+- `src/content_review_engine/llm/config.py` now also owns the provider-name
+  contract boundary that distinguishes current test providers, reserved real
+  provider names, and unsupported provider names before any `.env` read,
+  secret lookup, or network call
 - `content-review llm-check --provider` now uses that name-driven factory path
   for safe local smoke checks, while the existing config-driven `llm-check`
   path remains available for `mock` and `pydanticai`
@@ -249,6 +253,34 @@ Current status:
   aggregate `llm-review-manifest.json`, and an optional separate batch LLM
   sidecar Markdown report
 - the canonical deterministic JSON output schema remains unchanged
+
+Current provider-contract boundary:
+
+```text
+raw provider name or LLMProviderConfig
+  ↓
+validate_llm_provider_name / validate_llm_provider_config
+  ↓
+test provider
+  -> local factory path may create reviewer
+
+reserved real provider
+  -> fail as reserved but not implemented
+
+unsupported provider
+  -> fail as unknown provider
+```
+
+Current categories:
+
+- test providers: `mock`, `pydantic-ai-testmodel`
+- reserved real providers: `openai`, `anthropic`, `gemini`, `deepseek`,
+  `qwen`, `local`
+- existing config-driven runtime adapter: `pydanticai`
+
+This contract layer is intentionally local-only in the current task. It does
+not read `.env`, does not resolve API keys, does not access the network, and
+does not add new real-provider classes.
 
 The intended future boundary is:
 

@@ -72,9 +72,12 @@ def test_llm_provider_config_repr_and_serialization_do_not_leak_secret_value() -
 
 def test_load_llm_provider_config_rejects_unknown_provider() -> None:
     try:
-        load_llm_provider_config(provider="openai")
+        load_llm_provider_config(provider="custom-provider")
     except LLMProviderConfigError as exc:
-        assert str(exc) == "Unknown LLM provider 'openai'. Supported providers: 'mock', 'pydanticai'."
+        assert (
+            str(exc)
+            == "Unknown LLM provider 'custom-provider'. Supported providers: 'mock', 'pydanticai'."
+        )
     else:
         raise AssertionError("Expected LLMProviderConfigError")
 

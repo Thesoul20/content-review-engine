@@ -6,6 +6,8 @@ import pytest
 
 from content_review_engine.llm import (
     LLMProviderConfig,
+    LLMProviderConfigError,
+    LLMProviderNotImplementedError,
     LLMReviewer,
     MockLLMReviewer,
     PydanticAIReviewer,
@@ -38,15 +40,13 @@ def test_provider_factory_normalizes_provider_name_before_creation() -> None:
     assert isinstance(reviewer, PydanticAITestModelReviewer)
 
 
-def test_provider_factory_rejects_unsupported_provider_without_fallback() -> None:
-    with pytest.raises(UnsupportedLLMProviderError) as exc_info:
+def test_provider_factory_rejects_reserved_real_provider_without_fallback() -> None:
+    with pytest.raises(LLMProviderNotImplementedError) as exc_info:
         create_llm_reviewer("openai")
 
     message = str(exc_info.value)
 
-    assert "Unknown LLM provider 'openai'." in message
-    assert "'mock'" in message
-    assert "'pydantic-ai-testmodel'" in message
+    assert message == "Real LLM provider 'openai' is reserved but not implemented yet."
 
 
 def test_provider_factory_name_mode_rejects_pydanticai_without_fallback() -> None:
@@ -61,14 +61,10 @@ def test_provider_factory_name_mode_rejects_pydanticai_without_fallback() -> Non
 
 
 def test_provider_factory_rejects_blank_provider_without_fallback() -> None:
-    with pytest.raises(UnsupportedLLMProviderError) as exc_info:
+    with pytest.raises(LLMProviderConfigError) as exc_info:
         create_llm_reviewer("   ")
 
-    message = str(exc_info.value)
-
-    assert "Unknown LLM provider '   '." in message
-    assert "'mock'" in message
-    assert "'pydantic-ai-testmodel'" in message
+    assert str(exc_info.value) == "LLM provider name must not be empty."
 
 
 def test_provider_factory_name_mode_does_not_require_api_key_env_or_network(
@@ -108,14 +104,10 @@ def test_provider_factory_keeps_existing_config_based_pydanticai_behavior() -> N
 def test_provider_factory_config_mode_rejects_unknown_provider_defensively() -> None:
     config = LLMProviderConfig.model_construct(provider="openai")
 
-    with pytest.raises(UnsupportedLLMProviderError) as exc_info:
+    with pytest.raises(LLMProviderNotImplementedError) as exc_info:
         create_llm_reviewer(config)
 
-    message = str(exc_info.value)
-
-    assert "Unknown LLM provider 'openai'." in message
-    assert "'mock'" in message
-    assert "'pydanticai'" in message
+    assert str(exc_info.value) == "Real LLM provider 'openai' is reserved but not implemented yet."
 
 
 def test_supported_reviewer_provider_names_are_stable() -> None:

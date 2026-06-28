@@ -7,10 +7,23 @@ from pydantic import ConfigDict
 from pydantic import ValidationError
 from pydantic import field_validator
 
-from content_review_engine.llm.errors import LLMProviderConfigError
+from content_review_engine.llm.errors import (
+    LLMProviderConfigError,
+    LLMProviderNotImplementedError,
+    UnsupportedLLMProviderError,
+)
 
 LLM_DEFAULT_PROVIDER_NAME = "mock"
 LLM_PROVIDER_NAMES: tuple[str, ...] = ("mock", "pydanticai")
+LLM_TEST_PROVIDER_NAMES: tuple[str, ...] = ("mock", "pydantic-ai-testmodel")
+LLM_RESERVED_REAL_PROVIDER_NAMES: tuple[str, ...] = (
+    "openai",
+    "anthropic",
+    "gemini",
+    "deepseek",
+    "qwen",
+    "local",
+)
 LLMProviderName = Literal["mock", "pydanticai"]
 LLMProviderType = Literal["mock", "real"]
 
@@ -21,6 +34,34 @@ def _validate_optional_non_empty(value: str | None, *, field_name: str) -> str |
     normalized = value.strip()
     if normalized == "":
         raise ValueError(f"{field_name} must not be empty")
+    return normalized
+
+
+def _format_supported_provider_names(provider_names: tuple[str, ...]) -> str:
+    return ", ".join(repr(name) for name in provider_names)
+
+
+def normalize_llm_provider_name(provider: str) -> str:
+    return provider.strip().lower()
+
+
+def validate_llm_provider_name(
+    provider: str,
+    *,
+    supported_provider_names: tuple[str, ...] = LLM_PROVIDER_NAMES,
+) -> str:
+    normalized = normalize_llm_provider_name(provider)
+    if normalized == "":
+        raise LLMProviderConfigError("LLM provider name must not be empty.")
+    if normalized in LLM_RESERVED_REAL_PROVIDER_NAMES:
+        raise LLMProviderNotImplementedError(
+            f"Real LLM provider {normalized!r} is reserved but not implemented yet."
+        )
+    if normalized not in supported_provider_names:
+        raise UnsupportedLLMProviderError(
+            f"Unknown LLM provider {provider!r}. Supported providers: "
+            f"{_format_supported_provider_names(supported_provider_names)}."
+        )
     return normalized
 
 
@@ -39,13 +80,13 @@ class LLMProviderConfig(BaseModel):
     @field_validator("provider")
     @classmethod
     def validate_provider(cls, value: str) -> str:
-        normalized = value.strip()
-        if normalized not in LLM_PROVIDER_NAMES:
-            supported = ", ".join(repr(name) for name in LLM_PROVIDER_NAMES)
-            raise ValueError(
-                f"Unknown LLM provider {value!r}. Supported providers: {supported}."
+        try:
+            return validate_llm_provider_name(
+                value,
+                supported_provider_names=LLM_PROVIDER_NAMES,
             )
-        return normalized
+        except LLMProviderConfigError as exc:
+            raise ValueError(str(exc)) from exc
 
     @field_validator("model", "api_key_env", "base_url")
     @classmethod
@@ -102,9 +143,15 @@ def load_llm_provider_config(
     retry_backoff_seconds: float = 0.0,
     min_request_interval_seconds: float = 0.0,
 ) -> LLMProviderConfig:
+    normalized_provider = LLM_DEFAULT_PROVIDER_NAME
+    if provider is not None:
+        normalized_provider = validate_llm_provider_name(
+            provider,
+            supported_provider_names=LLM_PROVIDER_NAMES,
+        )
     try:
         return LLMProviderConfig(
-            provider=provider or LLM_DEFAULT_PROVIDER_NAME,
+            provider=normalized_provider,
             model=model,
             api_key_env=api_key_env,
             base_url=base_url,
@@ -118,6 +165,20 @@ def load_llm_provider_config(
         if message.startswith("Value error, "):
             message = message.removeprefix("Value error, ")
         raise LLMProviderConfigError(message) from exc
+
+
+def validate_llm_provider_config(
+    config: LLMProviderConfig,
+    *,
+    supported_provider_names: tuple[str, ...] = LLM_PROVIDER_NAMES,
+) -> LLMProviderConfig:
+    normalized_provider = validate_llm_provider_name(
+        config.provider,
+        supported_provider_names=supported_provider_names,
+    )
+    if normalized_provider == config.provider:
+        return config
+    return config.model_copy(update={"provider": normalized_provider})
 
 
 def merge_llm_provider_config(
@@ -161,9 +222,14 @@ def merge_llm_provider_config(
 __all__ = [
     "LLM_DEFAULT_PROVIDER_NAME",
     "LLM_PROVIDER_NAMES",
+    "LLM_RESERVED_REAL_PROVIDER_NAMES",
+    "LLM_TEST_PROVIDER_NAMES",
     "LLMProviderConfig",
     "LLMProviderName",
     "LLMProviderType",
     "merge_llm_provider_config",
+    "normalize_llm_provider_name",
     "load_llm_provider_config",
+    "validate_llm_provider_config",
+    "validate_llm_provider_name",
 ]

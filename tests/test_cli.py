@@ -1083,7 +1083,7 @@ def test_cli_review_llm_markdown_output_requires_enable_llm(
     assert "Error: --llm-markdown-output requires --enable-llm" in captured.err
 
 
-def test_cli_review_rejects_unsupported_llm_provider(
+def test_cli_review_rejects_reserved_real_llm_provider(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
@@ -1109,7 +1109,7 @@ def test_cli_review_rejects_unsupported_llm_provider(
     assert exit_code == 2
     assert captured.out == ""
     assert (
-        "Error: Unknown LLM provider 'openai'. Supported providers: 'mock', 'pydantic-ai-testmodel'."
+        "Error: Real LLM provider 'openai' is reserved but not implemented yet."
         in captured.err
     )
     assert not (tmp_path / "review.llm.json").exists()
@@ -3720,7 +3720,7 @@ def test_cli_batch_llm_markdown_output_requires_enable_llm(
     assert "Error: --llm-markdown-output requires --enable-llm" in captured.err
 
 
-def test_cli_batch_rejects_unsupported_llm_provider(
+def test_cli_batch_rejects_reserved_real_llm_provider(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
@@ -3746,7 +3746,7 @@ def test_cli_batch_rejects_unsupported_llm_provider(
     assert exit_code == 2
     assert captured.out == ""
     assert (
-        "Error: Unknown LLM provider 'openai'. Supported providers: 'mock', 'pydantic-ai-testmodel'."
+        "Error: Real LLM provider 'openai' is reserved but not implemented yet."
         in captured.err
     )
 
@@ -4727,7 +4727,7 @@ def test_cli_llm_check_provider_testmodel_runtime_succeeds_without_api_key_or_ne
     assert captured.err == ""
 
 
-def test_cli_llm_check_provider_rejects_unsupported_provider_without_fallback(
+def test_cli_llm_check_provider_rejects_reserved_real_provider_without_fallback(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     exit_code = main(
@@ -4742,11 +4742,13 @@ def test_cli_llm_check_provider_rejects_unsupported_provider_without_fallback(
 
     assert exit_code == 2
     assert captured.out == ""
-    assert "Error: Unknown LLM provider 'openai'." in captured.err
-    assert "Supported providers: 'mock', 'pydantic-ai-testmodel'." in captured.err
+    assert (
+        "Error: Real LLM provider 'openai' is reserved but not implemented yet."
+        in captured.err
+    )
 
 
-def test_cli_llm_check_provider_rejects_unsupported_provider_without_config_fallback(
+def test_cli_llm_check_provider_rejects_reserved_real_provider_without_config_fallback(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     exit_code = main(
@@ -4764,8 +4766,10 @@ def test_cli_llm_check_provider_rejects_unsupported_provider_without_config_fall
 
     assert exit_code == 2
     assert captured.out == ""
-    assert "Error: Unknown LLM provider 'openai'." in captured.err
-    assert "Supported providers: 'mock', 'pydantic-ai-testmodel'." in captured.err
+    assert (
+        "Error: Real LLM provider 'openai' is reserved but not implemented yet."
+        in captured.err
+    )
 
 
 def test_cli_llm_check_pydanticai_secret_missing_returns_error(

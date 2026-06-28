@@ -13,7 +13,9 @@ the deterministic review pipeline.
 - LLM findings do not change deterministic JSON, deterministic Markdown
   reports, or `--fail-on` quality-gate behavior.
 
-## Supported Providers
+## Provider Classes
+
+Current test providers:
 
 - `mock`: safe for local tests and CI, requires no API key, performs no
   network calls.
@@ -21,9 +23,25 @@ the deterministic review pipeline.
   `pydantic_ai.models.test.TestModel`, requires no API key, performs no
   network calls, and is available to `llm-check --provider` through the
   package reviewer factory.
-- `pydanticai`: real runtime provider, requires an API key through an
-  environment variable, can call an external OpenAI-compatible endpoint, and
-  should be used only for explicit manual verification.
+
+Current config-driven runtime provider:
+
+- `pydanticai`: existing adapter-backed runtime path, requires an API key
+  through an environment variable, can call an external OpenAI-compatible
+  endpoint, and should be used only for explicit manual verification.
+
+Current reserved real providers:
+
+- `openai`
+- `anthropic`
+- `gemini`
+- `deepseek`
+- `qwen`
+- `local`
+
+Reserved real provider names such as `openai` or `anthropic` must not be used
+yet. They are reserved but not implemented yet. Unsupported provider names are
+handled separately and still fail as unknown providers.
 
 ## Reviewer Provider Factory
 
@@ -50,9 +68,19 @@ Factory behavior:
 - `create_llm_reviewer("mock")` returns `MockLLMReviewer`
 - `create_llm_reviewer("pydantic-ai-testmodel")` returns
   `PydanticAITestModelReviewer`
-- unsupported provider names raise a clear error and do not silently fall back
+- reserved real provider names such as `openai` raise a clear
+  not-implemented error and do not silently fall back
+- unsupported provider names raise a clear unknown-provider error and do not
+  silently fall back
 - this factory path does not read `.env`, does not require an API key, and
   does not access the network for the supported reviewer providers above
+
+Current provider validation contract:
+
+- test providers validate without API keys
+- reserved real providers fail before any `.env` read, API-key lookup, or
+  network access
+- unsupported provider names fail as unknown providers
 
 This is a package boundary for future adapters. `llm-check --provider` now
 reuses it for the safe local reviewer providers above. Single-file
@@ -115,7 +143,10 @@ Default behavior:
 - does not require an API key
 - does not read `.env`
 - does not access the network for the supported factory providers
-- fails explicitly for unsupported values and does not fall back to config or `mock`
+- reserved real provider names fail as reserved-but-not-implemented and do not
+  fall back to config or `mock`
+- unsupported provider names fail explicitly as unknown providers and do not
+  fall back to config or `mock`
 
 `--runtime` behavior:
 
@@ -161,6 +192,9 @@ The same fields can also be used with `content-review llm-check`.
 For `review` and `batch`, explicit `--llm-provider` is reserved for the
 reviewer-factory names `mock` and `pydantic-ai-testmodel`; real `pydanticai`
 stays on the existing omitted-`--llm-provider` config-driven path.
+Direct CLI provider names for future real providers such as `openai`,
+`anthropic`, `gemini`, `deepseek`, `qwen`, and `local` are still not
+supported.
 
 ## Single-file Sidecar Provider Selection
 
@@ -175,7 +209,9 @@ Behavior:
 
 - explicit single-file `--llm-provider` supports only `mock` and `pydantic-ai-testmodel`
 - explicit single-file `--llm-provider` calls `create_llm_reviewer()` directly
-- unsupported explicit provider names fail clearly and do not fall back
+- reserved real provider names fail clearly as reserved but not implemented
+- unsupported explicit provider names fail clearly as unknown providers and do
+  not fall back
 - `--llm-provider` without the sidecar path fails clearly
 - omitting explicit `--llm-provider` keeps the existing single-file sidecar behavior unchanged
 - explicit single-file `--llm-provider` does not require an API key, does not read `.env`, and does not access the network for the supported providers above
@@ -196,7 +232,9 @@ Behavior:
 
 - explicit batch `--llm-provider` supports only `mock` and `pydantic-ai-testmodel`
 - explicit batch `--llm-provider` calls `create_llm_reviewer()` directly
-- unsupported explicit provider names fail clearly and do not fall back
+- reserved real provider names fail clearly as reserved but not implemented
+- unsupported explicit provider names fail clearly as unknown providers and do
+  not fall back
 - `--llm-provider` without the batch sidecar path fails clearly
 - omitting explicit batch `--llm-provider` keeps the existing batch sidecar behavior unchanged
 - explicit batch `--llm-provider` does not require an API key, does not read `.env`, and does not access the network for the supported providers above

@@ -63,7 +63,11 @@ Behavior:
 - `llm-check` does not write sidecars
 - `llm-check` does not produce deterministic `ReviewResult` or `BatchReviewResult`
 - `llm-check` does not affect deterministic quality-gate behavior
-- unsupported `--provider` values fail explicitly and do not fall back
+- reserved real provider names such as `openai`, `anthropic`, `gemini`,
+  `deepseek`, `qwen`, and `local` fail explicitly as reserved but not
+  implemented and do not fall back
+- unsupported `--provider` values fail explicitly as unknown providers and do
+  not fall back
 - command, config, secret, or runtime failures return exit code `2`
 
 Current text output stages:
@@ -114,7 +118,11 @@ Single-file `review` constraints:
 - explicit `--llm-provider` uses `create_llm_reviewer()` directly
 - explicit `--llm-provider mock` requires no API key and does not access the network
 - explicit `--llm-provider pydantic-ai-testmodel` requires no API key and does not access the network
-- unsupported explicit `--llm-provider` values fail explicitly and do not fall back
+- reserved real explicit `--llm-provider` values such as `openai`,
+  `anthropic`, `gemini`, `deepseek`, `qwen`, and `local` fail explicitly as
+  reserved but not implemented
+- unsupported explicit `--llm-provider` values fail explicitly as unknown
+  providers and do not fall back
 - real `pydanticai` single-file sidecar usage remains available through `--llm-config` plus the shared config-driven provider path
 - `--llm-model` is required for config-driven `pydanticai`
 - `--llm-model`, `--llm-api-key-env`, `--llm-base-url`, and
@@ -199,6 +207,9 @@ Provider notes:
   name is selected
 - `pydantic-ai-testmodel` is available only through explicit single-file
   `--llm-provider` reviewer selection and runs through `create_llm_reviewer()`
+- direct future real-provider names such as `openai`, `anthropic`, `gemini`,
+  `deepseek`, `qwen`, and `local` are reserved contract values only and do
+  not create real reviewers yet
 - `pydanticai` now performs a real runtime call after secret preflight
 - `pydanticai` uses the shared structured prompt builder, structured response
   schema, and response mapper
@@ -247,7 +258,11 @@ Batch constraints:
 - explicit batch `--llm-provider` uses `create_llm_reviewer()` directly
 - explicit batch `--llm-provider mock` requires no API key and does not access the network
 - explicit batch `--llm-provider pydantic-ai-testmodel` requires no API key and does not access the network
-- unsupported explicit batch `--llm-provider` values fail explicitly and do not fall back
+- reserved real explicit batch `--llm-provider` values such as `openai`,
+  `anthropic`, `gemini`, `deepseek`, `qwen`, and `local` fail explicitly as
+  reserved but not implemented
+- unsupported explicit batch `--llm-provider` values fail explicitly as
+  unknown providers and do not fall back
 - real `pydanticai` batch sidecar usage remains available through `--llm-config` plus the shared config-driven provider path
 - `--llm-model` is required for config-driven `pydanticai`
 - `--llm-base-url` is optional and is passed through for OpenAI-compatible

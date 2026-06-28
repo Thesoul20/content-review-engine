@@ -85,6 +85,33 @@ use.
 
 ## Recent Completion
 
+- TASK-0060 is complete.
+- Added provider-contract validation helpers in
+  `src/content_review_engine/llm/config.py` so current code can distinguish
+  test providers, reserved future real-provider names, and unsupported
+  provider names without reading `.env` or accessing the network.
+- Kept `LLMProviderConfig` field schema unchanged while documenting the new
+  validation boundary and exporting stable provider-name constants for current
+  test providers and reserved future real providers.
+- Updated `src/content_review_engine/llm/factory.py` so
+  `create_llm_reviewer("openai")` and other reserved real provider names fail
+  clearly as reserved but not implemented, while `mock` and
+  `pydantic-ai-testmodel` still create local reviewers successfully.
+- Added `tests/test_llm_provider_config.py` plus updates to
+  `tests/test_llm_provider_factory.py`, `tests/test_cli.py`, and
+  `tests/test_llm_provider_usage_docs.py` for validation boundaries,
+  reserved-provider failures, unchanged test-provider behavior, and doc
+  contract coverage.
+- Updated `docs/LLM_PROVIDER_USAGE.md`, `docs/DATA_MODELS.md`,
+  `docs/ARCHITECTURE.md`, and `docs/CLI.md` to document the contract boundary
+  before any future direct `openai`/`anthropic`/`gemini`/`deepseek`/`qwen`/
+  `local` integration.
+- Kept `LLMReviewResult`, `ReviewResult`, `BatchReviewResult`,
+  sidecar envelope v2, Markdown report behavior, quality-gate behavior, and
+  existing config-driven `pydanticai` runtime path unchanged.
+- Kept real provider SDK additions, `.env` loading, API-key reads for the new
+  validation helper, and external-network access out of TASK-0060.
+
 - TASK-0059 is complete.
 - Added sidecar-envelope provider metadata for single-file and batch LLM
   sidecar JSON output through top-level `llm_provider` and

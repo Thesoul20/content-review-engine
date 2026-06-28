@@ -4,11 +4,16 @@ import content_review_engine.llm.pydanticai as pydanticai
 from content_review_engine.llm.config import (
     LLM_DEFAULT_PROVIDER_NAME,
     LLM_PROVIDER_NAMES,
+    LLM_RESERVED_REAL_PROVIDER_NAMES,
+    LLM_TEST_PROVIDER_NAMES,
     LLMProviderConfig,
     LLMProviderName,
     LLMProviderType,
     merge_llm_provider_config,
+    normalize_llm_provider_name,
     load_llm_provider_config,
+    validate_llm_provider_config,
+    validate_llm_provider_name,
 )
 from content_review_engine.llm.config_loader import load_llm_provider_config_file
 from content_review_engine.llm.errors import (
@@ -119,7 +124,9 @@ __all__ = [
     "LLM_DEFAULT_PROVIDER_NAME",
     "LLM_OVERALL_RISK_VALUES",
     "LLM_PROVIDER_NAMES",
+    "LLM_RESERVED_REAL_PROVIDER_NAMES",
     "LLM_PROVIDER_REGISTRY",
+    "LLM_TEST_PROVIDER_NAMES",
     "LLMProviderConfig",
     "LLMProviderAuthError",
     "LLMProviderConfigError",
@@ -197,6 +204,7 @@ __all__ = [
     "llm_sidecar_result_to_json",
     "llm_sidecar_summary_to_dict",
     "merge_llm_provider_config",
+    "normalize_llm_provider_name",
     "load_llm_provider_config",
     "build_llm_smoke_check_request",
     "mock",
@@ -209,5 +217,7 @@ __all__ = [
     "raise_pydanticai_not_implemented",
     "run_pydantic_ai_testmodel_agent",
     "run_llm_smoke_check",
+    "validate_llm_provider_config",
+    "validate_llm_provider_name",
     "validate_pydanticai_review_response",
 ]

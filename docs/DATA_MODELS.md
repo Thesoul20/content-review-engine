@@ -275,6 +275,9 @@ It can now be created directly from CLI flags or loaded from a dedicated YAML
 config file through `load_llm_provider_config_file()`.
 TASK-0055 does not change this schema and does not add
 `pydanticai-testmodel` as a config-driven CLI provider.
+TASK-0060 keeps the schema fields unchanged but adds an explicit validation
+contract for current test providers, reserved future real providers, and
+unsupported provider names.
 
 | Field | Required | Description |
 |---|---|---|
@@ -294,6 +297,12 @@ Config-file notes:
 - secret-like fields such as `api_key`, `secret`, `token`, or `password` are rejected
 - the config file stores only `api_key_env`, never a secret value
 - explicit CLI flags override the same field from a loaded config file
+- provider-name validation is local only and does not read `.env`, does not
+  resolve API keys, and does not access the network
+- reserved real provider names currently include `openai`, `anthropic`,
+  `gemini`, `deepseek`, `qwen`, and `local`; they fail clearly as reserved
+  but not implemented
+- unsupported provider names fail separately as unknown providers
 
 Current batch CLI sidecar boundary:
 
@@ -518,8 +527,14 @@ Notes:
 
 - the default config uses `provider = "mock"`
 - `provider_type` is derived as `mock` or `real`
-- config loading validates provider names and rejects unknown providers with
-  `LLMProviderConfigError`
+- `validate_llm_provider_name()` and `validate_llm_provider_config()` provide
+  the current provider-name contract boundary
+- current test-provider names are `mock` and `pydantic-ai-testmodel`
+- current reserved real provider names are `openai`, `anthropic`, `gemini`,
+  `deepseek`, `qwen`, and `local`
+- config loading validates provider names locally, rejects reserved real
+  provider names with `LLMProviderNotImplementedError`, and rejects
+  unsupported provider names with `UnsupportedLLMProviderError`
 - `timeout_seconds = None` means the provider/runtime default timeout is used
 - `retry_attempts = 0` means no retry
 - `retry_backoff_seconds = 0.0` means no sleep before retry
@@ -528,6 +543,8 @@ Notes:
   validated independently from queueing or concurrency policy
 - `repr` and serialization do not contain any secret value because the model
   stores only the environment variable name
+- this validation boundary does not read `.env`, does not resolve secrets, and
+  does not access the network
 
 ---
 
@@ -658,7 +675,11 @@ Current behavior:
   policy from `retry_attempts` and `retry_backoff_seconds` while keeping the
   SDK client at `max_retries=0`, and maps `PydanticAIReviewResponse` back into
   `LLMReviewResult`
-- unknown providers raise `LLMProviderConfigError`
+- reviewer-name factory validation distinguishes reserved real provider names
+  from unsupported names before construction
+- reserved real providers such as `openai` raise
+  `LLMProviderNotImplementedError`
+- unknown providers raise `UnsupportedLLMProviderError`
 - the factory does not read environment variables, perform network requests,
   or depend on the CLI layer
 - response validation failures use `LLMResponseValidationError`
@@ -676,6 +697,8 @@ The future LLM adapter boundary now defines minimal error types in
 |---|---|
 | `LLMReviewError` | Base exception for future LLM review failures |
 | `LLMProviderConfigError` | Invalid or unsupported provider configuration |
+| `UnsupportedLLMProviderError` | Provider name is not recognized by the current boundary |
+| `LLMProviderNotImplementedError` | Provider name is reserved but not implemented yet |
 | `LLMProviderSecretError` | Missing, unset, or empty provider secret configuration |
 | `LLMProviderError` | Provider adapter failure, such as transport or upstream execution failure |
 | `LLMProviderRuntimeError` | Stable fallback for unknown provider runtime failures |
