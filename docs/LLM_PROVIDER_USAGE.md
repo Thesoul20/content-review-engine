@@ -16,9 +16,32 @@ the deterministic review pipeline.
 
 - `mock`: safe for local tests and CI, requires no API key, performs no
   network calls.
+- `pydanticai-testmodel`: package-level testing provider built on
+  `pydantic_ai.models.test.TestModel`, requires no API key, performs no
+  network calls, and is not wired into the CLI provider factory.
 - `pydanticai`: real runtime provider, requires an API key through an
   environment variable, can call an external OpenAI-compatible endpoint, and
   should be used only for explicit manual verification.
+
+## PydanticAI TestModel Provider
+
+`PydanticAITestModelReviewer` exists to test the project's `LLMReviewer`
+boundary without real provider credentials or runtime network access.
+
+Use it when you need:
+
+- a provider implementation that accepts `LLMReviewRequest`
+- stable prompt/request construction through the existing PydanticAI mapping
+- a returned `LLMReviewResult` instead of raw PydanticAI output
+- local unit tests that do not depend on `.env`, shell secrets, or remote APIs
+
+Current limitations:
+
+- it is a Python package provider only, not a CLI-selectable provider
+- it does not read `LLMProviderConfig`
+- it does not participate in `content-review review`, `batch`, or
+  `llm-check`
+- it should not be treated as a production LLM integration
 
 ## LLM Check Command
 

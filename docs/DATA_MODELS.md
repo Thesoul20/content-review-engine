@@ -388,6 +388,9 @@ Notes:
 - metadata keys and values must not be empty after trimming
 - the model does not include provider-specific options, API keys, or runtime
   transport settings
+- `MockLLMReviewer`, `PydanticAITestModelReviewer`, and `PydanticAIReviewer`
+  all consume this same request model rather than introducing
+  provider-specific request schemas
 
 ---
 
@@ -407,8 +410,12 @@ Notes:
 
 - the initial boundary is synchronous to match the current project shape
 - adapters should return `LLMReviewResult`
-- the current runnable implementation is `MockLLMReviewer`
+- current runnable implementations include `MockLLMReviewer`,
+  `PydanticAITestModelReviewer`, and `PydanticAIReviewer`
 - reviewer construction now goes through `create_llm_reviewer(config)`
+- the TestModel provider stays outside `LLMProviderConfig` and the CLI
+  factory because it is a package-level test adapter rather than a user-facing
+  runtime provider
 
 ---
 

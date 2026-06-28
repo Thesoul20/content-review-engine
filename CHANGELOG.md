@@ -8,6 +8,42 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0054
+
+### Added
+
+- Added `src/content_review_engine/llm/pydantic_ai_provider.py` with
+  `PydanticAITestModelReviewer`, provider-local request helpers, and a
+  `pydantic_ai.models.test.TestModel` execution path that returns
+  `LLMReviewResult` without real provider credentials.
+- Added `tests/test_llm_pydantic_ai_provider.py` for the TestModel provider's
+  success path, serialization, request helper, wrapped runtime failure path,
+  response-validation path, and `MockLLMReviewer` stability.
+
+### Changed
+
+- Updated `src/content_review_engine/llm/__init__.py` to export the new
+  TestModel reviewer and helper functions.
+- Updated `docs/LLM_PROVIDER_USAGE.md`, `docs/ARCHITECTURE.md`,
+  `docs/DATA_MODELS.md`, and `PROJECT_STATE.md` to document the package-level
+  TestModel provider boundary and its non-CLI, no-secret, no-network testing
+  role.
+- Kept `LLMProviderConfig` unchanged.
+- Kept `LLMSidecarResult` JSON schema unchanged.
+- Kept LLM sidecar Markdown report structure unchanged.
+- Kept deterministic review and batch JSON schemas unchanged.
+- Kept deterministic Markdown report structure unchanged.
+- Kept deterministic quality-gate semantics unchanged.
+
+### Not Added
+
+- No real OpenAI, Anthropic, Gemini, DeepSeek, or Qwen provider integration.
+- No `.env` loading, no API-key requirement, and no external-network test
+  dependency.
+- No new CLI provider flags, no default `review` or `batch` behavior change,
+  no `llm-check` user-visible behavior change, and no LLM merge into
+  deterministic review outputs.
+
 ## TASK-0053
 
 ### Added

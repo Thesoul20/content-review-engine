@@ -53,6 +53,15 @@ from content_review_engine.llm.pydanticai import (
     build_pydanticai_runtime_agent,
     raise_pydanticai_not_implemented,
 )
+from content_review_engine.llm.pydantic_ai_provider import (
+    PYDANTIC_AI_TESTMODEL_MODEL_NAME,
+    PYDANTIC_AI_TESTMODEL_PROVIDER_NAME,
+    PydanticAITestModelReviewer,
+    build_pydantic_ai_testmodel_agent,
+    build_pydantic_ai_testmodel_request,
+    build_pydantic_ai_testmodel_response_args,
+    run_pydantic_ai_testmodel_agent,
+)
 from content_review_engine.llm.pydanticai_errors import (
     build_pydanticai_retry_exhausted_error,
     classify_pydanticai_runtime_error,
@@ -138,13 +147,19 @@ __all__ = [
     "PYDANTICAI_PROVIDER_NAME",
     "PYDANTICAI_ALLOWED_SEVERITIES",
     "PYDANTICAI_PROMPT_VERSION",
+    "PYDANTIC_AI_TESTMODEL_MODEL_NAME",
+    "PYDANTIC_AI_TESTMODEL_PROVIDER_NAME",
     "PydanticAIReviewFinding",
     "PydanticAIReviewMapper",
     "PydanticAIReviewRequestPayload",
     "PydanticAIReviewResponse",
     "PydanticAIReviewSummary",
     "PydanticAIReviewer",
+    "PydanticAITestModelReviewer",
     "ResolvedLLMSecret",
+    "build_pydantic_ai_testmodel_agent",
+    "build_pydantic_ai_testmodel_request",
+    "build_pydantic_ai_testmodel_response_args",
     "build_pydanticai_review_prompt",
     "build_pydanticai_review_request",
     "build_pydanticai_system_prompt",
@@ -178,6 +193,7 @@ __all__ = [
     "resolve_llm_api_key",
     "render_llm_smoke_check_result",
     "raise_pydanticai_not_implemented",
+    "run_pydantic_ai_testmodel_agent",
     "run_llm_smoke_check",
     "validate_pydanticai_review_response",
 ]

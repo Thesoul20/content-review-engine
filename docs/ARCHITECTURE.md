@@ -419,6 +419,10 @@ Current LLM provider-boundary status:
   `ResolvedLLMSecret`
 - `src/content_review_engine/llm/mock.py` defines `MockLLMReviewer`, a
   deterministic adapter for tests and future wiring work
+- `src/content_review_engine/llm/pydantic_ai_provider.py` defines
+  `PydanticAITestModelReviewer`, a package-level `TestModel` adapter that
+  reuses the existing request/response mapping boundary and returns normal
+  `LLMReviewResult` values without API keys or network access
 - `src/content_review_engine/llm/pydanticai.py` now implements the real
   provider adapter boundary for `pydanticai`; it resolves secrets through the
   shared resolver, builds provider-local request payloads through the mapping
@@ -564,6 +568,8 @@ Current LLM runner status:
   injection
 - provider-layer `LLMReviewError` failures propagate unchanged
 - `MockLLMReviewer` remains the deterministic test adapter for the runner
+- `PydanticAITestModelReviewer` remains a separate package-level provider
+  test adapter and is not registered as a CLI-selectable provider
 - the runner is now wired only into the single-file CLI LLM sidecar flow
 - `src/content_review_engine/llm/errors.py` defines minimal future-facing LLM
   error types

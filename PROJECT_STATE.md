@@ -85,6 +85,28 @@ use.
 
 ## Recent Completion
 
+- TASK-0054 is complete.
+- Added `src/content_review_engine/llm/pydantic_ai_provider.py` with
+  `PydanticAITestModelReviewer`, provider-local request helpers, and a
+  `pydantic_ai.models.test.TestModel` execution path that returns the
+  existing `LLMReviewResult`.
+- Kept the TestModel provider separate from the CLI provider factory, secret
+  resolution, and `llm-check` so no API key or network access is required for
+  its tests.
+- Added `tests/test_llm_pydantic_ai_provider.py` for provider protocol,
+  request helper, serializable success path, response-validation path, wrapped
+  runtime failure path, and continued `MockLLMReviewer` stability.
+- Updated architecture, data-model, and provider-usage docs to document the
+  package-level TestModel provider boundary and its limitations.
+- Kept `LLMProviderConfig` unchanged.
+- Kept `LLMSidecarResult` JSON schema unchanged.
+- Kept LLM sidecar Markdown report structure unchanged.
+- Kept deterministic review and batch JSON schemas unchanged.
+- Kept deterministic Markdown report structure unchanged.
+- Kept deterministic quality-gate semantics unchanged.
+- Added no CLI provider flags, no factory registration for the TestModel
+  provider, no real API-key dependency, and no real-network test dependency.
+
 - TASK-0053 is complete.
 - Added `content-review llm-check` for standalone LLM provider config, secret,
   and optional runtime smoke checks.
