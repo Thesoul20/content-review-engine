@@ -222,6 +222,9 @@ Current status:
   config-driven runtime provider selection for the existing CLI sidecar path,
   and name-driven reviewer construction for package-local reviewer providers
   such as `mock` and `pydantic-ai-testmodel`
+- for config-driven `pydanticai`, that factory can now also accept a resolved
+  in-memory secret value for construction-only checks without resolving the
+  secret itself
 - `src/content_review_engine/llm/config.py` now also owns the provider-name
   contract boundary that distinguishes current test providers, reserved real
   provider names, and unsupported provider names before any `.env` read,
@@ -317,7 +320,7 @@ MockLLMReviewer / PydanticAITestModelReviewer
 
 CLI/config-driven runtime provider config
   ↓
-create_llm_reviewer(LLMProviderConfig)
+create_llm_reviewer(LLMProviderConfig, secret_value=None)
   ↓
 MockLLMReviewer / PydanticAIReviewer
 ```
@@ -505,14 +508,16 @@ Current LLM provider-boundary status:
   optional `retry_backoff_seconds`, and optional
   `min_request_interval_seconds`
 - `src/content_review_engine/llm/factory.py` defines the provider registry and
-  `create_llm_reviewer(config)`
+  `create_llm_reviewer(config, secret_value=None)`
 - `src/content_review_engine/llm/secrets.py` defines the secret-resolution
   boundary; `resolve_llm_provider_secret(config, env=None)` resolves a secret
   string from `LLMProviderConfig.api_key_env`, while `resolve_llm_api_key(...)`
   wraps that value in a redacted `ResolvedLLMSecret`
 - `src/content_review_engine/llm/smoke_check.py` now owns config-driven
   `llm-check` secret preflight by calling that shared resolver directly and
-  rendering only the secret reference plus a redacted secret state
+  rendering only the secret reference plus a redacted secret state; it then
+  passes the resolved in-memory secret into the factory for local provider
+  construction checks
 - `src/content_review_engine/llm/mock.py` defines `MockLLMReviewer`, a
   deterministic adapter for tests and future wiring work
 - `src/content_review_engine/llm/pydantic_ai_provider.py` defines
@@ -520,8 +525,9 @@ Current LLM provider-boundary status:
   reuses the existing request/response mapping boundary and returns normal
   `LLMReviewResult` values without API keys or network access
 - `src/content_review_engine/llm/pydanticai.py` now implements the real
-  provider adapter boundary for `pydanticai`; it resolves secrets through the
-  shared resolver, builds provider-local request payloads through the mapping
+  provider adapter boundary for `pydanticai`; it can accept a pre-resolved
+  secret for local construction checks or resolve one later during explicit
+  runtime review, builds provider-local request payloads through the mapping
   layer, executes the PydanticAI runtime, passes optional timeout config to
   the underlying OpenAI-compatible client, keeps that client at
   `max_retries=0`, applies explicit project-level retry logic around the
@@ -545,6 +551,8 @@ Secret resolver boundary:
 - CLI flag parsing does not resolve secrets
 - smoke-check orchestration resolves secrets only through
   `resolve_llm_provider_secret(config, env=None)`
+- smoke-check orchestration may then pass that resolved in-memory value into
+  `create_llm_reviewer(config, secret_value=...)`
 - the resolver reads only `api_key_env`
 - the resolver can read from an explicit mapping for tests
 - otherwise it reads the current process environment
@@ -555,6 +563,8 @@ Secret resolver boundary:
   result models
 - config-driven `llm-check` may show the env var name and a redacted secret
   marker, but never the full secret
+- config-driven `llm-check` now also reports `Construction: ok` and
+  `Live call: not run` by default for construction-only verification
 - reviewer-name factory execution does not fallback to `mock`
 
 TASK-0036 adds the runner boundary:

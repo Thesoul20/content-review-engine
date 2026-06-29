@@ -85,6 +85,33 @@ use.
 
 ## Recent Completion
 
+- TASK-0063 is complete.
+- Added real config-driven `pydanticai` provider construction support in
+  `src/content_review_engine/llm/factory.py` so
+  `create_llm_reviewer(LLMProviderConfig(...), secret_value=...)` can build a
+  `PydanticAIReviewer` without resolving secrets inside the factory.
+- Updated `src/content_review_engine/llm/pydanticai.py` so the reviewer can
+  accept a pre-resolved in-memory secret, perform a local construction-only
+  agent build, and keep live provider calls separate from construction.
+- Updated `src/content_review_engine/llm/smoke_check.py` so config-driven
+  `content-review llm-check` now orchestrates secret preflight, local
+  provider construction, and explicit reporting of `Construction: ok` plus
+  `Live call: not run` by default.
+- Added and updated `tests/test_llm_pydanticai_provider.py`,
+  `tests/test_llm_provider_factory.py`, `tests/test_llm_smoke_check.py`,
+  `tests/test_cli.py`, and `tests/test_llm_provider_usage_docs.py` for
+  pre-resolved-secret construction, no-env/no-network construction checks,
+  reserved-provider stability, non-leaking output, and default no-live-call
+  behavior.
+- Updated `docs/LLM_PROVIDER_USAGE.md`, `docs/CLI.md`,
+  `docs/ARCHITECTURE.md`, `docs/DATA_MODELS.md`, and `CHANGELOG.md` to
+  document the new factory `secret_value` boundary, construction-only
+  `llm-check` behavior, and unchanged canonical schemas.
+- Kept real API calls out of default tests, kept provider-factory secret
+  resolution out of scope, kept reserved real provider names unavailable, and
+  did not add plaintext API-key flags, `.env` loading, `--live`, or changes
+  to deterministic review behavior or sidecar metadata.
+
 - TASK-0062 is complete.
 - Wired `resolve_llm_provider_secret(config, env=None)` directly into
   `src/content_review_engine/llm/smoke_check.py` so config-driven

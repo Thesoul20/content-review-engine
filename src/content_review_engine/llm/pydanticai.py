@@ -99,6 +99,7 @@ class PydanticAIReviewer:
         self,
         config: LLMProviderConfig,
         *,
+        resolved_secret: ResolvedLLMSecret | None = None,
         secret_resolver: Callable[[LLMProviderConfig], ResolvedLLMSecret] = resolve_llm_api_key,
         agent_builder: Callable[..., Agent] | None = None,
         runtime_runner: Callable[[Agent, PydanticAIReviewRequestPayload], Any] | None = None,
@@ -113,6 +114,7 @@ class PydanticAIReviewer:
         self.retry_attempts = config.retry_attempts
         self.retry_backoff_seconds = config.retry_backoff_seconds
         self.min_request_interval_seconds = config.min_request_interval_seconds
+        self._resolved_secret = resolved_secret
         self._secret_resolver = secret_resolver
         self._agent_builder = agent_builder or build_pydanticai_runtime_agent
         self._runtime_runner = runtime_runner or run_pydanticai_runtime_agent
@@ -126,7 +128,22 @@ class PydanticAIReviewer:
         )
 
     def resolve_secret(self) -> ResolvedLLMSecret:
+        if self._resolved_secret is not None:
+            return self._resolved_secret
         return self._secret_resolver(self.config)
+
+    def build_runtime_agent(self, system_prompt: str) -> Agent:
+        return self._agent_builder(
+            model=_normalize_model_name(self.model),
+            system_prompt=system_prompt,
+            secret=self.resolve_secret(),
+            base_url=self.base_url,
+            timeout_seconds=self.timeout_seconds,
+            agent_type=self._agent_type,
+        )
+
+    def run_construction_check(self) -> None:
+        self.build_runtime_agent("LLM smoke check construction-only prompt.")
 
     def build_request_payload(
         self,
@@ -189,15 +206,7 @@ class PydanticAIReviewer:
 
     def review(self, request: LLMReviewRequest) -> LLMReviewResult:
         payload = self.build_request_payload(request)
-        secret = self.resolve_secret()
-        agent = self._agent_builder(
-            model=_normalize_model_name(self.model),
-            system_prompt=payload.system_prompt,
-            secret=secret,
-            base_url=self.base_url,
-            timeout_seconds=self.timeout_seconds,
-            agent_type=self._agent_type,
-        )
+        agent = self.build_runtime_agent(payload.system_prompt)
         response = self._run_with_retries(agent=agent, payload=payload)
         return self.mapping.response_to_result(response, request)
 

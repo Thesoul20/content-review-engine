@@ -592,7 +592,8 @@ Current fields:
 | `secret_status` | Yes | Secret stage status: `resolved` or `not_required` |
 | `api_key_env` | No | Environment variable name reference shown only when secret resolution is required |
 | `redacted_secret` | No | Redacted secret display value produced through `redact_secret_value()` |
-| `runtime_status` | Yes | Runtime stage status: `ok` or `skipped` |
+| `construction_status` | Yes | Provider construction stage status |
+| `live_call_status` | Yes | Live-call stage status: `ok` or `not run` |
 
 Notes:
 
@@ -601,8 +602,12 @@ Notes:
 - `redacted_secret` must never contain the full secret value
 - config-driven `llm-check` fills the secret fields through
   `resolve_llm_provider_secret(config, env=None)` plus `redact_secret_value()`
+- config-driven `llm-check` then performs local provider construction through
+  `create_llm_reviewer(config, secret_value=...)`
 - reviewer factory construction remains a separate boundary and does not
   resolve environment variables
+- default text rendering shows `Construction: ok` and `Live call: not run`
+  when only local preflight and construction checks ran
 
 ---
 
@@ -705,8 +710,9 @@ Current behavior:
 
 - `provider = "mock"` returns `MockLLMReviewer`
 - `provider = "pydanticai"` returns `PydanticAIReviewer`, which still requires
-  secret preflight, requires `model`, builds provider-local request payloads
-  through `PydanticAIReviewMapper`, executes the PydanticAI runtime, passes
+  secret preflight, can accept an already resolved in-memory `secret_value`
+  for construction-only checks, requires `model`, builds provider-local request
+  payloads through `PydanticAIReviewMapper`, executes the PydanticAI runtime, passes
   optional `timeout_seconds` into the runtime client, applies explicit retry
   policy from `retry_attempts` and `retry_backoff_seconds` while keeping the
   SDK client at `max_retries=0`, and maps `PydanticAIReviewResponse` back into

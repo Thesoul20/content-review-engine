@@ -61,6 +61,7 @@ from content_review_engine.llm import create_llm_reviewer
 
 reviewer = create_llm_reviewer("mock")
 testmodel_reviewer = create_llm_reviewer("pydantic-ai-testmodel")
+config_reviewer = create_llm_reviewer(config, secret_value="replace-with-your-real-key")
 ```
 
 Factory behavior:
@@ -68,12 +69,19 @@ Factory behavior:
 - `create_llm_reviewer("mock")` returns `MockLLMReviewer`
 - `create_llm_reviewer("pydantic-ai-testmodel")` returns
   `PydanticAITestModelReviewer`
+- `create_llm_reviewer(config, secret_value=...)` can now construct the real
+  config-driven `PydanticAIReviewer` without asking the factory to resolve the
+  secret itself
 - reserved real provider names such as `openai` raise a clear
   not-implemented error and do not silently fall back
 - unsupported provider names raise a clear unknown-provider error and do not
   silently fall back
 - this factory path does not read `.env`, does not require an API key, and
   does not access the network for the supported reviewer providers above
+- for config-driven `pydanticai`, provider construction also stays local and
+  does not access the network; the live call remains a separate later step
+
+In short: provider construction also stays local and does not access the network.
 
 Current provider validation contract:
 
@@ -135,10 +143,13 @@ Default behavior:
 
 - config check
 - secret check when the provider requires one
-- no runtime call
+- local provider construction check when the provider supports it
+- no live provider call
 - successful secret checks print `API key env: ...`, `API key: <redacted>`,
   and `Secret: resolved`
 - providers that do not require a secret print `Secret: not required`
+- successful construction checks print `Construction: ok`
+- default output also prints `Live call: not run`
 - failures may name the missing env var reference, but they do not print the
   secret value
 
@@ -238,6 +249,12 @@ Current `llm-check` behavior on top of that resolver:
 
 - `llm-check` reuses `resolve_llm_provider_secret(config, env=None)` directly
   for config-driven secret preflight
+- after secret preflight, `llm-check` passes the resolved in-memory secret to
+  `create_llm_reviewer(config, secret_value=...)`
+- the provider factory does not resolve the secret, does not read `.env`, and
+  does not read `os.environ`
+- config-driven `pydanticai` then performs a local construction-only agent
+  build that does not execute a live model call
 - `llm-check` reuses `redact_secret_value()` for the displayed secret state
 - `llm-check` prints the env var name and `<redacted>`, never the full secret
 - `llm-check` does not read `.env` and does not fallback to a plaintext

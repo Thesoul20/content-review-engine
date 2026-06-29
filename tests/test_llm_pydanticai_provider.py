@@ -795,3 +795,41 @@ def test_pydanticai_review_secret_resolution_redacts_secret() -> None:
     assert secret.api_key_env == "CONTENT_REVIEW_TEST_LLM_API_KEY"
     assert "test-secret-value" not in repr(secret)
     assert secret.model_dump() == {"api_key_env": "CONTENT_REVIEW_TEST_LLM_API_KEY"}
+
+
+def test_pydanticai_construction_check_uses_pre_resolved_secret_without_env_lookup(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail_secret_resolver(*args, **kwargs):  # type: ignore[no-untyped-def]
+        raise AssertionError(f"Unexpected secret resolution: {args!r} {kwargs!r}")
+
+    reviewer = PydanticAIReviewer(
+        LLMProviderConfig(
+            provider="pydanticai",
+            model="openai:gpt-4o-mini",
+            api_key_env="CONTENT_REVIEW_TEST_LLM_API_KEY",
+        ),
+        resolved_secret=reviewer_secret("CONTENT_REVIEW_TEST_LLM_API_KEY"),
+        secret_resolver=fail_secret_resolver,
+    )
+
+    reviewer.run_construction_check()
+
+
+def test_pydanticai_construction_check_does_not_access_network(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail_create_connection(*args, **kwargs):  # type: ignore[no-untyped-def]
+        raise AssertionError(f"Unexpected network call: {args!r} {kwargs!r}")
+
+    monkeypatch.setattr(socket, "create_connection", fail_create_connection)
+    reviewer = PydanticAIReviewer(
+        LLMProviderConfig(
+            provider="pydanticai",
+            model="openai:gpt-4o-mini",
+            api_key_env="CONTENT_REVIEW_TEST_LLM_API_KEY",
+        ),
+        resolved_secret=reviewer_secret("CONTENT_REVIEW_TEST_LLM_API_KEY"),
+    )
+
+    reviewer.run_construction_check()

@@ -15,6 +15,7 @@ from content_review_engine.llm.secrets import (
 
 LLMSmokeCheckStatus = Literal["ok", "skipped"]
 LLMSmokeCheckSecretStatus = Literal["resolved", "not_required"]
+LLMSmokeCheckLiveCallStatus = Literal["not run", "ok"]
 
 _SMOKE_CHECK_CONTENT = "LLM smoke check synthetic request."
 _UNSET_MODEL_TEXT = "<not configured>"
@@ -28,7 +29,8 @@ class LLMSmokeCheckResult:
     secret_status: LLMSmokeCheckSecretStatus
     api_key_env: str | None
     redacted_secret: str | None
-    runtime_status: LLMSmokeCheckStatus
+    construction_status: LLMSmokeCheckStatus
+    live_call_status: LLMSmokeCheckLiveCallStatus
 
 
 def build_llm_smoke_check_request() -> LLMReviewRequest:
@@ -49,26 +51,34 @@ def run_llm_smoke_check(
     env: Mapping[str, str] | None = None,
 ) -> LLMSmokeCheckResult:
     provider_name = config.provider
-    if reviewer_provider is not None:
-        provider_name = reviewer_provider.strip().lower()
-        reviewer = create_llm_reviewer(reviewer_provider)
-    else:
-        reviewer = create_llm_reviewer(config)
+    secret_value: str | None = None
     secret_status: LLMSmokeCheckSecretStatus = "not_required"
     api_key_env: str | None = None
     redacted_secret: str | None = None
 
-    if reviewer_provider is None and config.provider == "pydanticai":
+    if reviewer_provider is not None:
+        provider_name = reviewer_provider.strip().lower()
+        reviewer = create_llm_reviewer(reviewer_provider)
+    else:
+        if config.provider == "pydanticai":
+            secret_value = resolve_llm_provider_secret(config, env=env)
+            reviewer = create_llm_reviewer(config, secret_value=secret_value)
+        else:
+            reviewer = create_llm_reviewer(config)
+
+    if reviewer_provider is None and config.provider == "pydanticai" and secret_value is not None:
         api_key_env = config.api_key_env
-        redacted_secret = redact_secret_value(
-            resolve_llm_provider_secret(config, env=env)
-        )
+        redacted_secret = redact_secret_value(secret_value)
         secret_status = "resolved"
 
-    runtime_status: LLMSmokeCheckStatus = "skipped"
+    construction_status: LLMSmokeCheckStatus = "ok"
+    if reviewer_provider is None and hasattr(reviewer, "run_construction_check"):
+        reviewer.run_construction_check()
+
+    live_call_status: LLMSmokeCheckLiveCallStatus = "not run"
     if runtime:
         reviewer.review(build_llm_smoke_check_request())
-        runtime_status = "ok"
+        live_call_status = "ok"
 
     return LLMSmokeCheckResult(
         provider=provider_name,
@@ -77,7 +87,8 @@ def run_llm_smoke_check(
         secret_status=secret_status,
         api_key_env=api_key_env,
         redacted_secret=redacted_secret,
-        runtime_status=runtime_status,
+        construction_status=construction_status,
+        live_call_status=live_call_status,
     )
 
 
@@ -99,7 +110,8 @@ def render_llm_smoke_check_result(result: LLMSmokeCheckResult) -> str:
         )
     else:
         lines.append("Secret: not required")
-    lines.append(f"Runtime: {result.runtime_status}")
+    lines.append(f"Construction: {result.construction_status}")
+    lines.append(f"Live call: {result.live_call_status}")
     return "\n".join(lines)
 
 

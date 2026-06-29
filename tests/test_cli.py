@@ -4623,7 +4623,8 @@ def test_cli_llm_check_mock_config_succeeds(
     assert "Model: mock-model" in captured.out
     assert "Config: ok" in captured.out
     assert "Secret: not required" in captured.out
-    assert "Runtime: skipped" in captured.out
+    assert "Construction: ok" in captured.out
+    assert "Live call: not run" in captured.out
     assert captured.err == ""
 
 
@@ -4640,7 +4641,8 @@ def test_cli_llm_check_default_behavior_stays_unchanged(
     assert "Model: <not configured>" in captured.out
     assert "Config: ok" in captured.out
     assert "Secret: not required" in captured.out
-    assert "Runtime: skipped" in captured.out
+    assert "Construction: ok" in captured.out
+    assert "Live call: not run" in captured.out
     assert captured.err == ""
 
 
@@ -4667,7 +4669,7 @@ def test_cli_llm_check_mock_runtime_succeeds_without_network(
     captured = capsys.readouterr()
 
     assert exit_code == 0
-    assert "Runtime: ok" in captured.out
+    assert "Live call: ok" in captured.out
     assert captured.err == ""
 
 
@@ -4696,7 +4698,7 @@ def test_cli_llm_check_provider_mock_runtime_succeeds_without_network(
     assert exit_code == 0
     assert "Provider: mock" in captured.out
     assert "Secret: not required" in captured.out
-    assert "Runtime: ok" in captured.out
+    assert "Live call: ok" in captured.out
     assert captured.err == ""
 
 
@@ -4726,7 +4728,7 @@ def test_cli_llm_check_provider_testmodel_runtime_succeeds_without_api_key_or_ne
     assert exit_code == 0
     assert "Provider: pydantic-ai-testmodel" in captured.out
     assert "Secret: not required" in captured.out
-    assert "Runtime: ok" in captured.out
+    assert "Live call: ok" in captured.out
     assert captured.err == ""
 
 
@@ -4773,6 +4775,48 @@ def test_cli_llm_check_provider_rejects_reserved_real_provider_without_config_fa
         "Error: Real LLM provider 'openai' is reserved but not implemented yet."
         in captured.err
     )
+
+
+def test_cli_llm_check_pydanticai_construction_succeeds_without_live_call_or_network(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    import socket
+
+    def fail_create_connection(*args, **kwargs):  # type: ignore[no-untyped-def]
+        raise AssertionError(f"Unexpected network call: {args!r} {kwargs!r}")
+
+    def fail_review(self, request):  # type: ignore[no-untyped-def]
+        del self, request
+        raise AssertionError("Live call should not run during default llm-check.")
+
+    monkeypatch.setenv("OPENAI_API_KEY", "super-secret-value")
+    monkeypatch.setattr(socket, "create_connection", fail_create_connection)
+    monkeypatch.setattr("content_review_engine.llm.pydanticai.PydanticAIReviewer.review", fail_review)
+
+    exit_code = main(
+        [
+            "llm-check",
+            "--llm-provider",
+            "pydanticai",
+            "--llm-model",
+            "openai:gpt-4o-mini",
+            "--llm-api-key-env",
+            "OPENAI_API_KEY",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "Provider: pydanticai" in captured.out
+    assert "API key env: OPENAI_API_KEY" in captured.out
+    assert "API key: <redacted>" in captured.out
+    assert "Secret: resolved" in captured.out
+    assert "Construction: ok" in captured.out
+    assert "Live call: not run" in captured.out
+    assert "super-secret-value" not in captured.out
+    assert captured.err == ""
 
 
 def test_cli_llm_check_pydanticai_secret_missing_returns_error(
@@ -4918,7 +4962,8 @@ def test_cli_llm_check_uses_cli_override_precedence(
             secret_status="resolved",
             api_key_env=config.api_key_env,
             redacted_secret="<redacted>",
-            runtime_status="skipped",
+            construction_status="ok",
+            live_call_status="not run",
         )
 
     monkeypatch.setattr("content_review_engine.cli.run_llm_smoke_check", fake_run_llm_smoke_check)
@@ -4976,7 +5021,8 @@ def test_cli_llm_check_output_does_not_leak_secret_value_or_full_prompt(
             secret_status="resolved",
             api_key_env="OPENAI_API_KEY",
             redacted_secret="<redacted>",
-            runtime_status="ok",
+            construction_status="ok",
+            live_call_status="ok",
         )
 
     monkeypatch.setattr("content_review_engine.cli.run_llm_smoke_check", fake_run_llm_smoke_check)
@@ -5001,5 +5047,7 @@ def test_cli_llm_check_output_does_not_leak_secret_value_or_full_prompt(
     assert "API key env: OPENAI_API_KEY" in captured.out
     assert "API key: <redacted>" in captured.out
     assert "Secret: resolved" in captured.out
+    assert "Construction: ok" in captured.out
+    assert "Live call: ok" in captured.out
     assert "LLM smoke check synthetic request." not in captured.out
     assert captured.err == ""

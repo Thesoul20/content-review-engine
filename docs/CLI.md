@@ -31,7 +31,9 @@ The batch command reuses the same pipeline for each discovered Markdown file and
 The profile validation command reuses the existing profile loader and registry checks and returns a canonical `ProfileValidationResult`.
 The profile init command creates a new editable YAML profile from one built-in template and keeps validation on the existing loader path.
 The profile list command exposes the same built-in template registry used by `profile init` and returns either text output or a canonical `profile-template-list.v1` JSON payload.
-The `llm-check` command validates LLM provider config, secret resolution, and optional runtime reachability without reading article content, loading a review profile, or writing sidecars.
+The `llm-check` command validates LLM provider config, secret resolution,
+provider construction, and optional runtime reachability without reading
+article content, loading a review profile, or writing sidecars.
 
 ## LLM Smoke Check
 
@@ -59,8 +61,10 @@ Behavior:
 - `llm-check --provider` uses `create_llm_reviewer()` directly with `mock` or `pydantic-ai-testmodel`
 - `llm-check --provider` does not require an API key, does not read `.env`, and does not access the network for the supported factory providers
 - config-driven `llm-check` resolves `LLMProviderConfig.api_key_env` through the shared `resolve_llm_provider_secret(config, env=None)` boundary when the selected provider requires a secret
+- config-driven `llm-check` passes the resolved in-memory secret value into `create_llm_reviewer(config, secret_value=...)` and does not ask the factory to resolve secrets
+- config-driven `pydanticai` then performs a local construction-only check that builds the runtime agent without executing a live provider call
 - `--llm-api-key-env` is a secret reference only; it passes the environment variable name and never passes or prints a plaintext API key
-- default behavior is config check plus secret check only
+- default behavior is config check plus secret check plus local construction check only
 - `--runtime` adds a synthetic minimal runtime smoke call
 - `llm-check` does not write sidecars
 - `llm-check` does not produce deterministic `ReviewResult` or `BatchReviewResult`
@@ -78,7 +82,9 @@ Current text output stages:
 - `Model: <not configured>` when no model is set
 - `API key env: <ENV_NAME>` plus `API key: <redacted>` when a secret is required and resolves successfully
 - `Secret: resolved` or `Secret: not required`
-- `Runtime: ok` or `Runtime: skipped`
+- `Construction: ok`
+- `Live call: not run` by default
+- `Live call: ok` only when `--runtime` executes the synthetic runtime request
 
 For real-provider setup and manual verification guidance, see
 [docs/LLM_PROVIDER_USAGE.md](./LLM_PROVIDER_USAGE.md).

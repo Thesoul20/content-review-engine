@@ -48,7 +48,8 @@ def test_run_llm_smoke_check_mock_config_only_succeeds() -> None:
     assert result.secret_status == "not_required"
     assert result.api_key_env is None
     assert result.redacted_secret is None
-    assert result.runtime_status == "skipped"
+    assert result.construction_status == "ok"
+    assert result.live_call_status == "not run"
 
 
 def test_run_llm_smoke_check_mock_runtime_succeeds_without_network(
@@ -63,7 +64,8 @@ def test_run_llm_smoke_check_mock_runtime_succeeds_without_network(
 
     assert result.provider == "mock"
     assert result.secret_status == "not_required"
-    assert result.runtime_status == "ok"
+    assert result.construction_status == "ok"
+    assert result.live_call_status == "ok"
 
 
 def test_run_llm_smoke_check_provider_mode_uses_factory_name_and_testmodel_without_network(
@@ -92,13 +94,18 @@ def test_run_llm_smoke_check_provider_mode_uses_factory_name_and_testmodel_witho
     assert captured_provider == {"value": "pydantic-ai-testmodel"}
     assert result.provider == "pydantic-ai-testmodel"
     assert result.secret_status == "not_required"
-    assert result.runtime_status == "ok"
+    assert result.construction_status == "ok"
+    assert result.live_call_status == "ok"
 
 
-def test_run_llm_smoke_check_pydanticai_secret_present_without_runtime_resolves_secret_without_calling_review() -> None:
+def test_run_llm_smoke_check_pydanticai_secret_present_runs_construction_without_calling_review() -> None:
     review_called = {"value": False}
+    construction_called = {"value": False}
 
     class GuardedReviewer:
+        def run_construction_check(self) -> None:
+            construction_called["value"] = True
+
         def review(self, request):  # type: ignore[no-untyped-def]
             del request
             review_called["value"] = True
@@ -106,8 +113,15 @@ def test_run_llm_smoke_check_pydanticai_secret_present_without_runtime_resolves_
 
     from content_review_engine.llm import smoke_check as module
 
+    captured_secret_value: dict[str, str] = {}
     original_factory = module.create_llm_reviewer
-    module.create_llm_reviewer = lambda config: GuardedReviewer()  # type: ignore[assignment]
+
+    def fake_create_llm_reviewer(config, *, secret_value=None):  # type: ignore[no-untyped-def]
+        del config
+        captured_secret_value["value"] = secret_value or ""
+        return GuardedReviewer()
+
+    module.create_llm_reviewer = fake_create_llm_reviewer  # type: ignore[assignment]
     try:
         result = run_llm_smoke_check(
             LLMProviderConfig(
@@ -124,8 +138,11 @@ def test_run_llm_smoke_check_pydanticai_secret_present_without_runtime_resolves_
     assert result.secret_status == "resolved"
     assert result.api_key_env == "OPENAI_API_KEY"
     assert result.redacted_secret == REDACTED_SECRET_TEXT
-    assert result.runtime_status == "skipped"
+    assert result.construction_status == "ok"
+    assert result.live_call_status == "not run"
+    assert construction_called["value"] is True
     assert review_called["value"] is False
+    assert captured_secret_value == {"value": "test-secret-value"}
 
 
 def test_run_llm_smoke_check_pydanticai_runtime_success_with_fake_runtime() -> None:
@@ -135,14 +152,16 @@ def test_run_llm_smoke_check_pydanticai_runtime_success_with_fake_runtime() -> N
             model="openai:gpt-4o-mini",
             api_key_env="OPENAI_API_KEY",
         ),
-        secret_resolver=lambda config: _reviewer_secret(config.api_key_env or "missing"),
+        resolved_secret=_reviewer_secret("OPENAI_API_KEY"),
         runtime_runner=lambda _agent, _payload: {"findings": []},
     )
 
     from content_review_engine.llm import smoke_check as module
 
     original_factory = module.create_llm_reviewer
-    module.create_llm_reviewer = lambda config: reviewer  # type: ignore[assignment]
+    module.create_llm_reviewer = (  # type: ignore[assignment]
+        lambda config, *, secret_value=None: reviewer
+    )
     try:
         result = run_llm_smoke_check(
             reviewer.config,
@@ -155,7 +174,8 @@ def test_run_llm_smoke_check_pydanticai_runtime_success_with_fake_runtime() -> N
     assert result.secret_status == "resolved"
     assert result.api_key_env == "OPENAI_API_KEY"
     assert result.redacted_secret == REDACTED_SECRET_TEXT
-    assert result.runtime_status == "ok"
+    assert result.construction_status == "ok"
+    assert result.live_call_status == "ok"
 
 
 def test_run_llm_smoke_check_pydanticai_runtime_failure_with_fake_runtime() -> None:
@@ -165,7 +185,7 @@ def test_run_llm_smoke_check_pydanticai_runtime_failure_with_fake_runtime() -> N
             model="openai:gpt-4o-mini",
             api_key_env="OPENAI_API_KEY",
         ),
-        secret_resolver=lambda config: _reviewer_secret(config.api_key_env or "missing"),
+        resolved_secret=_reviewer_secret("OPENAI_API_KEY"),
         runtime_runner=lambda _agent, _payload: (_ for _ in ()).throw(
             TimeoutError("hidden runtime timeout")
         ),
@@ -174,7 +194,9 @@ def test_run_llm_smoke_check_pydanticai_runtime_failure_with_fake_runtime() -> N
     from content_review_engine.llm import smoke_check as module
 
     original_factory = module.create_llm_reviewer
-    module.create_llm_reviewer = lambda config: reviewer  # type: ignore[assignment]
+    module.create_llm_reviewer = (  # type: ignore[assignment]
+        lambda config, *, secret_value=None: reviewer
+    )
     try:
         with pytest.raises(LLMProviderRuntimeError) as exc_info:
             run_llm_smoke_check(
@@ -239,7 +261,8 @@ def test_render_llm_smoke_check_result_does_not_include_full_synthetic_request()
     assert "Model: <not configured>" in rendered
     assert "Config: ok" in rendered
     assert "Secret: not required" in rendered
-    assert "Runtime: ok" in rendered
+    assert "Construction: ok" in rendered
+    assert "Live call: ok" in rendered
     assert "LLM smoke check synthetic request." not in rendered
     assert "<llm-check>" not in rendered
 
@@ -261,4 +284,6 @@ def test_render_llm_smoke_check_result_shows_redacted_secret_only() -> None:
     assert "API key env: OPENAI_API_KEY" in rendered
     assert f"API key: {REDACTED_SECRET_TEXT}" in rendered
     assert "Secret: resolved" in rendered
+    assert "Construction: ok" in rendered
+    assert "Live call: not run" in rendered
     assert "test-secret-value" not in rendered

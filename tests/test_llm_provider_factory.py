@@ -102,6 +102,20 @@ def test_provider_factory_keeps_existing_config_based_pydanticai_behavior() -> N
     assert reviewer.config is config
 
 
+def test_provider_factory_can_construct_pydanticai_with_resolved_secret_value() -> None:
+    config = LLMProviderConfig(
+        provider="pydanticai",
+        model="openai:gpt-4o-mini",
+        api_key_env="OPENAI_API_KEY",
+    )
+
+    reviewer = create_llm_reviewer(config, secret_value="test-secret-value")
+
+    assert isinstance(reviewer, PydanticAIReviewer)
+    assert reviewer.resolve_secret().api_key_env == "OPENAI_API_KEY"
+    assert reviewer.resolve_secret().api_key.get_secret_value() == "test-secret-value"
+
+
 def test_provider_factory_config_mode_does_not_resolve_secret_value(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -119,6 +133,34 @@ def test_provider_factory_config_mode_does_not_resolve_secret_value(
 
     assert isinstance(reviewer, PydanticAIReviewer)
     assert reviewer.config is config
+
+
+def test_provider_factory_config_mode_with_secret_value_does_not_read_env_or_call_network(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail_secret_resolver(*args, **kwargs):  # type: ignore[no-untyped-def]
+        raise AssertionError(f"Unexpected secret resolution: {args!r} {kwargs!r}")
+
+    config = LLMProviderConfig(
+        provider="pydanticai",
+        model="openai:gpt-4o-mini",
+        api_key_env="OPENAI_API_KEY",
+    )
+
+    reviewer = create_llm_reviewer(config, secret_value="test-secret-value")
+    monkeypatch.setattr(reviewer, "_secret_resolver", fail_secret_resolver)
+
+    assert isinstance(reviewer, PydanticAIReviewer)
+
+
+def test_provider_factory_name_mode_rejects_secret_value_argument() -> None:
+    with pytest.raises(ValueError) as exc_info:
+        create_llm_reviewer("mock", secret_value="test-secret-value")
+
+    assert (
+        str(exc_info.value)
+        == "secret_value is supported only for config-based provider construction."
+    )
 
 
 def test_provider_factory_config_mode_rejects_unknown_provider_defensively() -> None:

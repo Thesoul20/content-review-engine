@@ -8,6 +8,40 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0063
+
+### Changed
+
+- Updated `src/content_review_engine/llm/pydanticai.py` so
+  `PydanticAIReviewer` can accept a pre-resolved in-memory secret, reuse that
+  secret without resolver/env access during construction, and perform a local
+  construction-only agent build separate from live review calls.
+- Updated `src/content_review_engine/llm/factory.py` so config-driven
+  `create_llm_reviewer(config, secret_value=...)` can construct the real
+  `pydanticai` reviewer while keeping factory-side secret resolution out of
+  scope and reserved real provider behavior unchanged.
+- Updated `src/content_review_engine/llm/smoke_check.py` so config-driven
+  `llm-check` now runs secret preflight, local provider construction, and
+  explicit `Construction: ok` / `Live call: not run` rendering by default.
+- Updated `tests/test_llm_pydanticai_provider.py`,
+  `tests/test_llm_provider_factory.py`, `tests/test_llm_smoke_check.py`,
+  `tests/test_cli.py`, and `tests/test_llm_provider_usage_docs.py` for
+  construction-only `pydanticai` checks, no-env/no-network boundaries,
+  non-leaking output, and default no-live-call CLI behavior.
+- Updated `docs/LLM_PROVIDER_USAGE.md`, `docs/CLI.md`,
+  `docs/ARCHITECTURE.md`, `docs/DATA_MODELS.md`, and `PROJECT_STATE.md` to
+  document the new construction boundary and confirm that canonical result
+  schemas remain unchanged.
+
+### Not Added
+
+- No plaintext API-key CLI argument, no `.env` loading, no provider-factory
+  env reads, no `--live`, no default-test network access, and no required
+  real API key.
+- No change to `ReviewResult`, `BatchReviewResult`, `LLMReviewResult`,
+  sidecar metadata, deterministic review behavior, or reserved real provider
+  availability.
+
 ## TASK-0062
 
 ### Changed
