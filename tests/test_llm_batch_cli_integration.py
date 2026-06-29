@@ -206,6 +206,8 @@ def test_batch_review_enable_llm_report_only_writes_markdown_report(
     assert captured.err == ""
     assert "# Batch LLM Review Report" in report
     assert "| Files Reviewed | 3 |" in report
+    assert "| Advisory | yes |" in report
+    assert "| Quality Gate Participation | no |" in report
     assert not (tmp_path / "batch.llm.json").exists()
 
 
@@ -252,6 +254,8 @@ def test_batch_review_report_index_includes_deterministic_and_llm_outputs(
     assert "| Quality Gate Source | deterministic review only |" in report
     assert "| Files Reviewed | 3 |" in report
     assert "## LLM File Status Summary" in report
+    assert "| Advisory | yes |" in report
+    assert "advisory semantic review suggestions" in report
 
 
 def test_batch_review_partial_llm_failure_is_recorded_and_returns_non_zero(

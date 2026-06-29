@@ -211,6 +211,8 @@ def test_single_file_review_enable_llm_report_only_writes_markdown_report(
     assert captured.err == ""
     assert "# LLM Review Report" in report
     assert "| File | tests/fixtures/markdown/clean_article.md |" in report
+    assert "| Advisory | yes |" in report
+    assert "| Quality Gate Participation | no |" in report
     assert "Possible overclaim." in report
     assert not (tmp_path / "review.llm.json").exists()
 
@@ -328,6 +330,8 @@ def test_single_file_review_report_index_includes_deterministic_and_llm_outputs(
     assert "| Quality Gate Source | deterministic review only |" in report
     assert "| LLM Findings | 1 |" in report
     assert "| Summary | One semantic issue found. |" in report
+    assert "| Advisory | yes |" in report
+    assert "advisory semantic review suggestions" in report
 
 
 def test_single_file_review_llm_provider_flags_require_provider_or_config(

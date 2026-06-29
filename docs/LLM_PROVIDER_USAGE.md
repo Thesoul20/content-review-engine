@@ -15,6 +15,14 @@ the deterministic review pipeline.
   but it remains a separate Markdown guide and not a schema-bearing result.
 - LLM findings do not change deterministic JSON, deterministic Markdown
   reports, or `--fail-on` quality-gate behavior.
+- LLM findings are advisory semantic review suggestions from the LLM layer.
+- LLM advisory severity is display-only and does not change deterministic
+  hard-rule outcomes.
+- LLM report presentation normalizes advisory severity to
+  `critical`, `error`, `warning`, `info`, or `unknown`.
+- missing or blank LLM `rule_id` is displayed as `llm.semantic_review`.
+- confidence is optional in presentation; missing values display as
+  `not provided`.
 
 ## LLM semantic review prompt contract
 
@@ -244,6 +252,10 @@ Current guarantees:
 - the report index states explicitly that quality gate still uses deterministic
   review only
 - quality gate still uses deterministic review only
+- the separate LLM Markdown report now marks each finding with
+  `source = llm`, `advisory = yes`, and `quality gate participation = no`
+- LLM `critical` or `error` findings remain advisory and do not become
+  deterministic hard-rule failures
 - `--include-llm-report` is not supported for single-file review
 - `--llm-provider pydanticai` requires `--llm-model` and `--llm-api-key-env`
 - missing, unset, or empty env vars fail before any real provider call
@@ -280,6 +292,8 @@ Current guarantees:
 - report index does not change aggregate `LLMSidecarResult` JSON
 - report index does not merge LLM findings into deterministic findings
 - report index does not make LLM findings participate in quality gate
+- report index repeats that LLM findings are advisory semantic review
+  suggestions and that deterministic review remains the only gate source
 - when LLM is disabled, the index renders a stable `LLM not enabled` summary
 - when batch LLM review has partial failures, the index records an LLM file
   status summary plus a compact LLM error summary

@@ -107,6 +107,10 @@ def test_usage_docs_exist_and_cover_required_provider_flags_and_boundaries() -> 
     assert "LLM not enabled" in content
     assert "matched_text" in content
     assert "confidence: null stays null" in content
+    assert "advisory semantic review suggestions" in content
+    assert "LLM advisory severity" in content
+    assert "llm.semantic_review" in content
+    assert "not provided" in content
     assert "does not execute a real provider call" in content
     assert "`run_semantic_review()` is now reused by both `content-review review` and `content-review batch`" in content
     assert "deterministic JSON and Markdown reports do not include LLM findings" in content
@@ -170,6 +174,7 @@ def test_docs_and_fixtures_do_not_require_real_network_or_real_api_key() -> None
     assert "`--llm-report` writes a separate Markdown report rendered from the same" in usage_doc
     assert "`--report-index` can summarize deterministic output plus optional LLM output" in usage_doc
     assert "quality gate still uses deterministic review only" in usage_doc
+    assert "LLM findings are advisory semantic review suggestions" in usage_doc
     assert "Batch `--llm-output` writes one aggregate `LLMSidecarResult` JSON sidecar" in usage_doc
     assert "default `pytest` or CI" in usage_doc
     assert "YOUR_OPENAI_API_KEY_HERE" in env_example

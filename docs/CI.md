@@ -167,6 +167,11 @@ failures are serialized into LLM sidecars without changing the deterministic
 exit code.
 Only deterministic findings contribute to exit code `1`.
 
+When LLM output artifacts are written in CI, treat every LLM finding as
+`source = llm`, `advisory = yes`, and `quality gate participation = no`.
+Advisory LLM severities such as `critical` or `error` remain display-only and
+do not change deterministic gate semantics.
+
 CI boundary for providers:
 
 - default CI should not run real `pydanticai` provider calls

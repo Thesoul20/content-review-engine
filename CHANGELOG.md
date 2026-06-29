@@ -8,6 +8,47 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0073
+
+### Added
+
+- Added `src/content_review_engine/llm/policy.py` with stable display-only
+  advisory policy helpers for LLM finding source, advisory status,
+  quality-gate participation, severity normalization, rule-id normalization,
+  and confidence-like display handling.
+- Added `tests/test_llm_finding_policy.py` for advisory metadata, severity and
+  rule-id normalization, confidence fallback, confidence-like field support,
+  advisory note text, and input immutability coverage.
+
+### Changed
+
+- Updated `src/content_review_engine/llm/__init__.py` to export the new LLM
+  advisory policy helpers.
+- Updated `src/content_review_engine/reports/llm_markdown.py` so LLM Markdown
+  reports now include an advisory-policy section and finding-level display of
+  source, advisory status, quality-gate participation, normalized severity,
+  normalized rule ID, and stable confidence text.
+- Updated `src/content_review_engine/reports/report_index.py` so single-file
+  and batch report indexes repeat the LLM advisory boundary in the
+  interpretation section and LLM summary tables.
+- Updated `tests/test_llm_markdown_report.py`,
+  `tests/test_report_index.py`,
+  `tests/test_llm_single_file_cli_integration.py`,
+  `tests/test_llm_batch_cli_integration.py`, and
+  `tests/test_llm_provider_usage_docs.py` for advisory display coverage and
+  unchanged deterministic boundary assertions.
+- Updated `docs/CLI.md`, `docs/LLM_PROVIDER_USAGE.md`,
+  `docs/DATA_MODELS.md`, `docs/ARCHITECTURE.md`, `docs/CI.md`, and
+  `PROJECT_STATE.md` to document the LLM advisory display policy.
+
+### Not Added
+
+- No `ReviewResult`, `BatchReviewResult`, `LLMReviewResult`, or
+  `LLMSidecarResult` schema change.
+- No LLM finding merge into deterministic findings, no LLM quality-gate
+  participation, no fail-on behavior change, no deterministic count change,
+  no new provider, and no real-network requirement in tests.
+
 ## TASK-0072
 
 ### Added

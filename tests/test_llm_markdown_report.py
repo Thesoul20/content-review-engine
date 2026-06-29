@@ -23,10 +23,14 @@ def test_render_single_file_llm_markdown_report_with_no_findings() -> None:
     assert report.startswith("# LLM Review Report\n")
     assert "| File | article.md |" in report
     assert "| Total Findings | 0 |" in report
+    assert "| Source | llm |" in report
+    assert "| Advisory | yes |" in report
+    assert "| Quality Gate Participation | no |" in report
     assert "| critical | 0 |" in report
     assert "| error | 0 |" in report
     assert "| warning | 0 |" in report
     assert "| info | 0 |" in report
+    assert "| unknown | 0 |" in report
     assert report.count("No LLM findings.") == 2
 
 
@@ -76,17 +80,46 @@ def test_render_single_file_llm_markdown_report_with_multiple_findings() -> None
     assert "| LLM Summary | Two semantic issues found. |" in report
     assert "| Recommended Action | Revise before publishing. |" in report
     assert "| Confidence | 0.85 |" in report
+    assert "LLM advisory severity only" in report
     assert "| warning | 1 |" in report
     assert "| error | 1 |" in report
-    assert "| warning | llm.semantic.overclaim | 3 | 5 | Possible unsupported claim. | Add evidence. |" in report
-    assert "| error | llm.semantic.risky_advice | - | - | Potentially risky advice. | Add a safety disclaimer. |" in report
+    assert "| warning | llm.semantic.overclaim | llm | yes | no | not provided | 3 | 5 | Possible unsupported claim. | Add evidence. |" in report
+    assert "| error | llm.semantic.risky_advice | llm | yes | no | 0.91 | - | - | Potentially risky advice. | Add a safety disclaimer. |" in report
     assert "### 1. llm.semantic.overclaim" in report
+    assert "- Source: llm" in report
+    assert "- Advisory: yes" in report
+    assert "- Quality Gate Participation: no" in report
+    assert "- Confidence: not provided" in report
     assert "- Location: line 3, column 5 to line 3, column 14" in report
     assert "- Matched Text: `guaranteed`" in report
     assert "### 2. llm.semantic.risky_advice" in report
     assert "- Rationale: Medical advice lacks context." in report
     assert "- Category: safety" in report
     assert "- Confidence: 0.91" in report
+
+
+def test_render_single_file_llm_markdown_report_normalizes_unknown_fields() -> None:
+    result = LLMReviewResult.model_construct(
+        findings=(
+            LLMReviewFinding.model_construct(
+                rule_id=" \n ",
+                severity=" Warning ",
+                message="Normalized finding.",
+                suggestion="Rewrite it.",
+            ),
+            LLMReviewFinding.model_construct(
+                rule_id="llm.semantic.custom\nrule",
+                severity="SEVERE",
+                message="Unknown severity.",
+                suggestion="Check manually.",
+            ),
+        )
+    )
+
+    report = render_llm_review_markdown(result, file_path="article.md")
+
+    assert "| warning | llm.semantic_review | llm | yes | no | not provided | - | - | Normalized finding. | Rewrite it. |" in report
+    assert "| unknown | llm.semantic.custom rule | llm | yes | no | not provided | - | - | Unknown severity. | Check manually. |" in report
 
 
 def test_render_single_file_llm_markdown_report_escapes_markdown_table_cells() -> None:
@@ -104,7 +137,7 @@ def test_render_single_file_llm_markdown_report_escapes_markdown_table_cells() -
     report = render_llm_review_markdown(result, file_path="article|one.md")
 
     assert r"| File | article\|one.md |" in report
-    assert r"| warning | llm.semantic.overclaim | - | - | Line 1 \| claim<br>Line 2 | Rewrite \| carefully<br>now |" in report
+    assert r"| warning | llm.semantic.overclaim | llm | yes | no | not provided | - | - | Line 1 \| claim<br>Line 2 | Rewrite \| carefully<br>now |" in report
 
 
 def test_render_batch_llm_markdown_report_for_all_success() -> None:
@@ -153,6 +186,9 @@ def test_render_batch_llm_markdown_report_for_all_success() -> None:
     assert "| Files With LLM Findings | 2 |" in report
     assert "| Files With LLM Errors | 0 |" in report
     assert "| Total LLM Findings | 2 |" in report
+    assert "| Source | llm |" in report
+    assert "| Advisory | yes |" in report
+    assert "| Quality Gate Participation | no |" in report
     assert "| critical | 0 |" in report
     assert "| error | 1 |" in report
     assert "| warning | 1 |" in report
@@ -162,6 +198,7 @@ def test_render_batch_llm_markdown_report_for_all_success() -> None:
     assert "### `b.md`" in report
     assert "- Overall Risk: medium" in report
     assert "- Summary: One issue in this file." in report
+    assert "- Confidence: not provided" in report
 
 
 def test_render_batch_llm_markdown_report_for_partial_failure() -> None:

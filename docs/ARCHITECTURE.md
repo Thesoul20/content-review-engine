@@ -252,12 +252,18 @@ Current status:
   `--llm-report`
 - the CLI can also optionally write a separate hybrid report index through
   `--report-index`
+- LLM presentation now also runs through a separate advisory policy helper in
+  `src/content_review_engine/llm/policy.py` for display-only semantics such as
+  source, advisory status, quality-gate participation, normalized severity,
+  normalized rule ID, and optional confidence display
 - single-file deterministic Markdown output no longer appends LLM findings;
   `--include-llm-report` is not supported for the TASK-0069 path
 - no LLM output is merged into the current `ReviewResult`
 - no LLM output is merged into deterministic severity counts, rule counts, or
   quality-gate evaluation
 - the report index is presentation-only and does not merge or rewrite
+- the advisory policy helper does not call providers, run CLI logic, write
+  files, modify result objects, or participate in quality-gate evaluation
   deterministic JSON, deterministic Markdown, raw `LLMReviewResult`, or
   aggregate `LLMSidecarResult`
 - batch review now supports one aggregate `LLMSidecarResult` JSON sidecar at

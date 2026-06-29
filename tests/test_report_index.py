@@ -76,6 +76,7 @@ def test_render_single_file_report_index_for_deterministic_only() -> None:
     assert "| Warning Findings | 1 |" in report
     assert "## LLM Review Summary" in report
     assert "| Status | LLM not enabled |" in report
+    assert "advisory semantic review suggestions" in report
 
 
 def test_render_single_file_report_index_for_hybrid_review() -> None:
@@ -116,9 +117,14 @@ def test_render_single_file_report_index_for_hybrid_review() -> None:
     assert "| Schema Version | llm-review-result.v1 |" in report
     assert "| Provider | mock |" in report
     assert "| Model | mock-model |" in report
+    assert "| Source | llm |" in report
+    assert "| Advisory | yes |" in report
+    assert "| Quality Gate Participation | no |" in report
+    assert "| Severity Semantics | LLM advisory severity only |" in report
     assert "| Overall Risk | medium |" in report
     assert "| Summary | One semantic issue found. |" in report
     assert "| Recommended Action | Revise wording. |" in report
+    assert "advisory semantic review suggestions" in report
 
 
 def test_render_single_file_report_index_handles_markdown_escaping() -> None:
@@ -204,6 +210,7 @@ def test_render_batch_report_index_for_deterministic_only() -> None:
     assert "| Error Findings | 1 |" in report
     assert "| - | LLM not enabled | - | - |" in report
     assert "## LLM Error Summary" not in report
+    assert "advisory semantic review suggestions" in report
 
 
 def test_render_batch_report_index_for_hybrid_review() -> None:
@@ -262,11 +269,16 @@ def test_render_batch_report_index_for_hybrid_review() -> None:
     assert "| LLM Markdown Report | batch.llm.md | markdown | Human-readable aggregate LLM semantic review report | no |" in report
     assert "| Provider | mock |" in report
     assert "| Provider Source | explicit |" in report
+    assert "| Source | llm |" in report
+    assert "| Advisory | yes |" in report
+    assert "| Quality Gate Participation | no |" in report
+    assert "| Severity Semantics | LLM advisory severity only |" in report
     assert "| Files With LLM Findings | 2 |" in report
     assert "| Files With LLM Errors | 0 |" in report
     assert "| z.md | success | 0 | - |" in report
     assert "| a.md | success | 1 | - |" in report
     assert "| m.md | success | 1 | - |" in report
+    assert "advisory semantic review suggestions" in report
 
 
 def test_render_batch_report_index_for_partial_llm_failure() -> None:

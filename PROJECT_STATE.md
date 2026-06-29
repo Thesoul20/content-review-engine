@@ -41,6 +41,10 @@ single-file and batch review, plus CLI support for `--report-index` that
 summarizes deterministic output, optional LLM sidecars, optional LLM
 Markdown reports, and interpretation boundaries without changing any result
 schema or quality-gate behavior.
+It now also includes a separate LLM finding advisory policy helper that keeps
+LLM presentation semantics stable across the dedicated LLM Markdown report
+and hybrid report index without changing any stored result schema, provider
+path, or quality-gate behavior.
 
 ---
 
@@ -107,9 +111,35 @@ schema or quality-gate behavior.
 
 ## In Progress
 
-- TASK-0072: Add hybrid review report index.
+- TASK-0073: Add LLM finding advisory policy.
 
 ## Recent Completion
+
+- TASK-0073 is complete.
+- Added `src/content_review_engine/llm/policy.py` with stable display-only
+  advisory policy helpers for LLM finding source, advisory status,
+  quality-gate participation, severity normalization, rule-id normalization,
+  and confidence-like display handling.
+- Updated `src/content_review_engine/reports/llm_markdown.py` so single-file
+  and batch LLM Markdown reports now include an explicit advisory-policy
+  section plus finding-level `source`, `advisory`, `quality gate
+  participation`, normalized severity, normalized rule ID, and stable
+  confidence display.
+- Updated `src/content_review_engine/reports/report_index.py` so single-file
+  and batch report indexes now repeat the LLM advisory boundary in both the
+  interpretation bullets and the LLM summary tables.
+- Added `tests/test_llm_finding_policy.py` and updated
+  `tests/test_llm_markdown_report.py`,
+  `tests/test_report_index.py`,
+  `tests/test_llm_single_file_cli_integration.py`,
+  `tests/test_llm_batch_cli_integration.py`, and
+  `tests/test_llm_provider_usage_docs.py` for policy normalization,
+  confidence-not-provided handling, input immutability, report rendering,
+  hybrid-index advisory boundaries, and CLI-facing artifact text coverage.
+- Updated `docs/CLI.md`, `docs/LLM_PROVIDER_USAGE.md`,
+  `docs/DATA_MODELS.md`, `docs/ARCHITECTURE.md`, `docs/CI.md`, and
+  `CHANGELOG.md` to document that LLM findings remain advisory semantic
+  suggestions and do not affect deterministic quality-gate behavior.
 
 - TASK-0072 is complete.
 - Added `src/content_review_engine/reports/report_index.py` with separate

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from content_review_engine.core.models import BatchReviewResult, REVIEW_SUMMARY_SEVERITIES, ReviewResult
 from content_review_engine.llm.models import LLMSidecarFile, LLMSidecarResult, LLMReviewResult
+from content_review_engine.llm.policy import render_llm_finding_policy_note
 
 
 def _escape_cell(value: str | None) -> str:
@@ -149,6 +150,10 @@ def _append_single_file_llm_summary(
         ("Provider", _escape_cell(llm_result.provider)),
         ("Model", _escape_cell(llm_result.model)),
         ("Total Findings", str(len(llm_result.findings))),
+        ("Source", "llm"),
+        ("Advisory", "yes"),
+        ("Quality Gate Participation", "no"),
+        ("Severity Semantics", "LLM advisory severity only"),
     ]
     if llm_result.summary is not None:
         rows.extend(
@@ -222,6 +227,7 @@ def render_single_file_report_index(
             "Deterministic review is the stable review layer and the only quality-gate source.",
             "LLM review is advisory semantic analysis and does not change deterministic findings.",
             "LLM findings do not participate in fail-on or quality-gate decisions.",
+            render_llm_finding_policy_note(),
             "Use deterministic output for compliance checks and CI gating.",
             "Use LLM output for semantic review suggestions and follow-up inspection.",
         ],
@@ -275,6 +281,10 @@ def _append_batch_llm_summary(
         ("Schema Version", _escape_cell(llm_result.schema_version)),
         ("Provider", _escape_cell(llm_result.llm_provider)),
         ("Provider Source", _escape_cell(llm_result.llm_provider_source)),
+        ("Source", "llm"),
+        ("Advisory", "yes"),
+        ("Quality Gate Participation", "no"),
+        ("Severity Semantics", "LLM advisory severity only"),
         ("Files Reviewed", str(llm_result.summary.file_count)),
         ("Files With LLM Findings", str(files_with_findings)),
         ("Files With LLM Errors", str(llm_result.summary.failed_count)),
@@ -448,6 +458,7 @@ def render_batch_report_index(
             "Deterministic batch review is the stable review layer and the only quality-gate source.",
             "Batch LLM review is advisory semantic analysis and remains separate from deterministic findings.",
             "LLM partial failures do not rewrite deterministic results, but they should be inspected before trusting LLM coverage.",
+            render_llm_finding_policy_note(),
             "Use deterministic output for CI gating and rule-based compliance checks.",
             "Use LLM output for semantic suggestions and per-file follow-up review.",
         ],

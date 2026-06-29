@@ -58,6 +58,10 @@ Current guarantees:
   `--llm-report`
 - the index is a human-readable guide only and is not a full combined report
 - quality gate still reads deterministic findings only
+- when LLM output is present, the index marks it as `source = llm`,
+  `advisory = yes`, and `quality gate participation = no`
+- LLM severity shown in LLM reports or the report index is advisory severity
+  only and does not map to deterministic hard-rule failure
 
 ## LLM Smoke Check
 
@@ -164,9 +168,17 @@ Single-file sidecar shape:
 - the sidecar does not include secrets, prompt text, or raw provider output
 - the sidecar is separate from deterministic stdout and separate from deterministic JSON / Markdown reports
 - `--llm-report` writes a separate human-readable Markdown report derived from the same `LLMReviewResult`
+- each LLM finding row also shows stable display-only policy fields:
+  `source = llm`, `advisory = yes`, and `quality gate participation = no`
+- LLM finding severity in the report is normalized to
+  `critical`, `error`, `warning`, `info`, or `unknown`
+- missing or blank LLM `rule_id` is displayed as `llm.semantic_review`
+- confidence is optional; when missing, the report displays `not provided`
 - `--llm-output` and `--llm-report` can be used together
 - `--llm-report` can be used without `--llm-output`
 - `--report-index` writes a separate Markdown index that lists deterministic output, optional LLM output, optional LLM report, the report-index path itself, deterministic summary, optional LLM summary, canonical status, and the rule that quality gate uses deterministic review only
+- the report index also repeats the LLM advisory boundary so `critical` or
+  `error` LLM findings are not misread as deterministic gate failures
 
 Current behavior guarantees:
 
@@ -297,6 +309,9 @@ Batch behavior guarantees:
   and LLM reports into a single combined report
 - `--format markdown` does not add a `## LLM Review` section
 - batch summary counts do not include LLM findings
+- batch LLM report and report index use the same advisory display policy as
+  single-file LLM output: `source = llm`, `advisory = yes`, and
+  `quality gate participation = no`
 - deterministic severity counts and rule counts are unchanged
 - deterministic finding order is unchanged
 - quality-gate evaluation still reads only deterministic findings

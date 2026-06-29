@@ -263,6 +263,8 @@ Current report-index guarantees:
 - `--report-index` does not add fields to `BatchReviewResult`
 - `--report-index` does not add fields to `LLMReviewResult`
 - `--report-index` does not add fields to `LLMSidecarResult`
+- advisory display policy for LLM findings is presentation-only and does not
+  change `LLMReviewResult` or `LLMSidecarResult`
 - report index is a renderer-layer Markdown artifact only
 
 Current validated semantic-output conversion boundary:
@@ -285,6 +287,20 @@ Current conversion behavior:
   `suggestion`, and numeric `confidence` are copied as-is
 - validated `evidence` maps to `LLMReviewFinding.matched_text`
 - `confidence = null` stays `None`; it is not converted to `0` or `1`
+
+Current LLM finding display policy:
+
+- `source` is displayed as stable `llm`
+- `advisory` is displayed as stable `yes`
+- `quality gate participation` is displayed as stable `no`
+- severity display is normalized to `critical`, `error`, `warning`, `info`,
+  or `unknown`
+- unknown, missing, or blank severity displays as `unknown`
+- missing or blank `rule_id` displays as `llm.semantic_review`
+- confidence remains optional; missing confidence-like values display as
+  `not provided`
+- this policy is presentation-only and does not mutate the stored result
+  object or persisted sidecar schema
 - this conversion does not change `ReviewResult`, `BatchReviewResult`, or
   sidecar envelope schemas
 

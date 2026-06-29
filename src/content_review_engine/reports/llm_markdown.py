@@ -1,8 +1,12 @@
 from __future__ import annotations
 
 from content_review_engine.llm.models import LLMSidecarFile, LLMSidecarResult, LLMReviewFinding, LLMReviewResult
-
-_MARKDOWN_SEVERITY_ORDER: tuple[str, ...] = ("critical", "error", "warning", "info")
+from content_review_engine.llm.policy import (
+    LLM_FINDING_SEVERITY_ORDER,
+    build_llm_finding_display_metadata,
+    format_llm_confidence_like_value,
+    render_llm_finding_policy_note,
+)
 
 
 def _escape_cell(value: str | None) -> str:
@@ -33,9 +37,10 @@ def _format_location(finding: LLMReviewFinding) -> str:
 
 
 def _severity_counts(findings: tuple[LLMReviewFinding, ...]) -> dict[str, int]:
-    counts = {severity: 0 for severity in _MARKDOWN_SEVERITY_ORDER}
+    counts = {severity: 0 for severity in LLM_FINDING_SEVERITY_ORDER}
     for finding in findings:
-        counts[finding.severity] = counts.get(finding.severity, 0) + 1
+        metadata = build_llm_finding_display_metadata(finding)
+        counts[metadata.severity] = counts.get(metadata.severity, 0) + 1
     return counts
 
 
@@ -63,9 +68,27 @@ def _append_severity_counts(lines: list[str], findings: tuple[LLMReviewFinding, 
         ]
     )
     counts = _severity_counts(findings)
-    for severity in _MARKDOWN_SEVERITY_ORDER:
+    for severity in LLM_FINDING_SEVERITY_ORDER:
         lines.append(f"| {severity} | {counts[severity]} |")
     lines.append("")
+
+
+def _append_policy_table(lines: list[str]) -> None:
+    lines.extend(
+        [
+            "## Advisory Policy",
+            "",
+            "| Field | Value |",
+            "| --- | --- |",
+            "| Source | llm |",
+            "| Advisory | yes |",
+            "| Quality Gate Participation | no |",
+            "| Severity Semantics | LLM advisory severity only |",
+            "| Rule ID Semantics | LLM semantic review layer only |",
+            f"| Policy Note | {_escape_cell(render_llm_finding_policy_note())} |",
+            "",
+        ]
+    )
 
 
 def _append_findings_table(lines: list[str], findings: tuple[LLMReviewFinding, ...]) -> None:
@@ -76,15 +99,20 @@ def _append_findings_table(lines: list[str], findings: tuple[LLMReviewFinding, .
 
     lines.extend(
         [
-            "| Severity | Rule | Line | Column | Message | Suggestion |",
-            "| --- | --- | ---: | ---: | --- | --- |",
+            "| Severity | Rule | Source | Advisory | Quality Gate | Confidence | Line | Column | Message | Suggestion |",
+            "| --- | --- | --- | --- | --- | --- | ---: | ---: | --- | --- |",
         ]
     )
     for finding in findings:
+        metadata = build_llm_finding_display_metadata(finding)
         lines.append(
             "| "
-            f"{finding.severity} | "
-            f"{_escape_cell(finding.rule_id)} | "
+            f"{metadata.severity} | "
+            f"{_escape_cell(metadata.rule_id)} | "
+            f"{metadata.source} | "
+            f"{metadata.advisory} | "
+            f"{metadata.participates_in_quality_gate} | "
+            f"{_escape_cell(metadata.confidence)} | "
             f"{finding.line if finding.line is not None else '-'} | "
             f"{finding.column if finding.column is not None else '-'} | "
             f"{_escape_cell(finding.message)} | "
@@ -100,12 +128,17 @@ def _append_detailed_findings(lines: list[str], findings: tuple[LLMReviewFinding
         return
 
     for index, finding in enumerate(findings, start=1):
+        metadata = build_llm_finding_display_metadata(finding)
         lines.extend(
             [
-                f"### {index}. {_escape_cell(finding.rule_id)}",
+                f"### {index}. {_escape_cell(metadata.rule_id)}",
                 "",
-                f"- Severity: {finding.severity}",
-                f"- Rule: {_format_inline_code(finding.rule_id)}",
+                f"- Severity: {metadata.severity}",
+                f"- Rule: {_format_inline_code(metadata.rule_id)}",
+                f"- Source: {metadata.source}",
+                f"- Advisory: {metadata.advisory}",
+                f"- Quality Gate Participation: {metadata.participates_in_quality_gate}",
+                f"- Confidence: {metadata.confidence}",
                 f"- Location: {_format_location(finding)}",
                 f"- Message: {_escape_cell(finding.message)}",
                 f"- Suggestion: {_escape_cell(finding.suggestion)}",
@@ -116,8 +149,6 @@ def _append_detailed_findings(lines: list[str], findings: tuple[LLMReviewFinding
             lines.append(f"- Rationale: {_escape_cell(finding.rationale)}")
         if finding.category is not None:
             lines.append(f"- Category: {_escape_cell(finding.category)}")
-        if finding.confidence is not None:
-            lines.append(f"- Confidence: {finding.confidence}")
         lines.append("")
 
 
@@ -152,6 +183,7 @@ def render_llm_review_markdown(
 
     lines = ["# LLM Review Report", ""]
     _append_summary_table(lines, summary_rows)
+    _append_policy_table(lines)
     _append_severity_counts(lines, result.findings)
     _append_findings_table(lines, result.findings)
     _append_detailed_findings(lines, result.findings)
@@ -242,8 +274,7 @@ def _append_batch_file_details(lines: list[str], result: LLMSidecarResult) -> No
             lines.append(
                 f"- Recommended Action: {_escape_cell(summary.recommended_action)}"
             )
-            if summary.confidence is not None:
-                lines.append(f"- Confidence: {summary.confidence}")
+            lines.append(f"- Confidence: {format_llm_confidence_like_value(summary)}")
         lines.append("")
         _append_findings_table(lines, file.review.findings)
         _append_detailed_findings(lines, file.review.findings)
@@ -252,6 +283,7 @@ def _append_batch_file_details(lines: list[str], result: LLMSidecarResult) -> No
 def render_llm_sidecar_markdown(result: LLMSidecarResult) -> str:
     lines = ["# Batch LLM Review Report", ""]
     _append_batch_summary(lines, result)
+    _append_policy_table(lines)
     _append_batch_severity_counts(lines, result)
     _append_file_status(lines, result)
     _append_batch_file_details(lines, result)
