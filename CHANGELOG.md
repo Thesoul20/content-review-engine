@@ -8,6 +8,43 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0070
+
+### Added
+
+- Added aggregate batch LLM sidecar integration tests in
+  `tests/test_llm_batch_cli_integration.py` for per-file success/failure
+  entries, partial failure recording, provider/parse/validation failures,
+  secret-safe behavior, sidecar write failures, and no-network coverage.
+
+### Changed
+
+- Updated `src/content_review_engine/llm/runner.py` to expose shared
+  `build_llm_review_request(...)` plus `run_batch_llm_review(...)`, so batch
+  LLM execution now reuses the same semantic-review and result-conversion
+  pipeline as single-file review.
+- Updated `src/content_review_engine/cli.py` so
+  `content-review batch --enable-llm` now requires `--llm-output`, supports
+  explicit `pydanticai` provider selection, writes one aggregate
+  `LLMSidecarResult` JSON sidecar with per-file entries, records partial
+  failures, and returns exit code `2` when any LLM failure occurs without
+  changing deterministic batch output schemas or quality-gate behavior.
+- Updated `src/content_review_engine/llm/__init__.py`,
+  `tests/test_cli.py`, `tests/test_llm_runner.py`, and
+  `tests/test_llm_provider_usage_docs.py` for the new batch runner exports,
+  batch CLI argument contract, and aggregate sidecar documentation boundary.
+- Updated `docs/CLI.md`, `docs/LLM_PROVIDER_USAGE.md`,
+  `docs/DATA_MODELS.md`, `docs/ARCHITECTURE.md`, and `PROJECT_STATE.md` to
+  document aggregate batch sidecar output, per-file error recording, and the
+  unchanged deterministic review boundary.
+
+### Not Added
+
+- No LLM findings merged into deterministic `BatchReviewResult`, no batch JSON
+  or Markdown schema change, no LLM quality-gate participation, no fail-on/CI
+  gate behavior change, no `.env` loading, no plaintext API-key CLI
+  arguments, and no default-test real network access.
+
 ## TASK-0069
 
 ### Added

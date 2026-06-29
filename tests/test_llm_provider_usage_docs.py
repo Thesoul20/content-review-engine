@@ -104,10 +104,9 @@ def test_usage_docs_exist_and_cover_required_provider_flags_and_boundaries() -> 
     assert "matched_text" in content
     assert "confidence: null stays null" in content
     assert "does not execute a real provider call" in content
-    assert "`run_semantic_review()` is now reused by the single-file `content-review review`" in content
-    assert "still not wired into `content-review batch`" in content
+    assert "`run_semantic_review()` is now reused by both `content-review review` and `content-review batch`" in content
     assert "deterministic JSON and Markdown reports do not include LLM findings" in content
-    assert "Batch sidecars still use `LLMSidecarResult` envelopes" in content
+    assert "Batch `--llm-output` writes one aggregate `LLMSidecarResult` JSON sidecar" in content
     assert "Real `pydanticai` provider calls must not run in default `pytest` or CI." in content
     assert "LLMProviderTimeoutError" in content
     assert "LLMProviderAuthError" in content
@@ -165,6 +164,6 @@ def test_docs_and_fixtures_do_not_require_real_network_or_real_api_key() -> None
     assert "Single-file `content-review review --enable-llm --llm-output ...` now writes" in usage_doc
     assert "raw `LLMReviewResult` JSON" in usage_doc
     assert "`--include-llm-report` is not supported for single-file review" in usage_doc
-    assert "Batch sidecars still use `LLMSidecarResult` envelopes" in usage_doc
+    assert "Batch `--llm-output` writes one aggregate `LLMSidecarResult` JSON sidecar" in usage_doc
     assert "default `pytest` or CI" in usage_doc
     assert "YOUR_OPENAI_API_KEY_HERE" in env_example

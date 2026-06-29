@@ -344,10 +344,7 @@ Current batch CLI sidecar boundary:
 BatchReviewResult JSON
   = canonical deterministic batch output
 
-Each reviewed Markdown file
-  = separate optional LLMSidecarResult JSON
-
---llm-output-dir/llm-review-manifest.json
+Batch --llm-output JSON
   = aggregate LLMSidecarResult summary for the batch run
 ```
 
@@ -381,12 +378,10 @@ Current guarantees:
 - batch sidecars do not add an `llm_review` field to `BatchReviewResult`
 - batch sidecars do not change batch summary counts, deterministic finding
   order, or batch Markdown report structure
-- batch sidecar files preserve the input path relative to the batch input
-  directory and append `.llm-review.json`
-- batch sidecars also write `llm-review-manifest.json` with aggregate
-  `file_count`, `succeeded_count`, `failed_count`, `skipped_count`, and
-  `finding_count`
-- successful manifest entries can include nested `LLMReviewResult` so the
+- batch sidecars record one `files[]` entry per reviewed Markdown file
+- batch sidecars record aggregate `file_count`, `succeeded_count`,
+  `failed_count`, `skipped_count`, and `finding_count`
+- successful file entries can include nested `LLMReviewResult` so the
   optional standalone sidecar Markdown report can render per-file findings
 - provider-specific structured output is converted before serialization, so a
   successful sidecar entry can still embed an `LLMReviewResult` even when the

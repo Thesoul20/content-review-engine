@@ -102,6 +102,30 @@ pipeline.
 
 ## Recent Completion
 
+- TASK-0070 is complete.
+- Batch `content-review batch --enable-llm` now reuses the semantic-review
+  runner path to build one `LLMSidecarResult` aggregate JSON sidecar at
+  `--llm-output`, with per-file success or failure entries and stable
+  summary counts.
+- Batch LLM review now reuses `resolve_llm_provider_secret(...)`,
+  `create_llm_reviewer(config, secret_value=...)`,
+  `PydanticAIReviewer.run_semantic_review()`, and
+  `convert_validated_semantic_output_to_llm_review_result(...)` while keeping
+  deterministic stdout, deterministic JSON / Markdown output, and quality-gate
+  behavior unchanged.
+- Batch LLM partial failures are now recorded in the sidecar and return exit
+  code `2`, but they still do not merge findings into `BatchReviewResult`,
+  batch Markdown reports, or deterministic quality gates.
+- Added `tests/test_llm_batch_cli_integration.py` and updated
+  `tests/test_cli.py`, `tests/test_llm_runner.py`, and
+  `tests/test_llm_provider_usage_docs.py` for aggregate sidecar output,
+  missing-config errors, env-missing/env-empty failures, provider/parse/
+  validation failures, sidecar write failures, partial-failure recording, and
+  no-network fake-reviewer coverage.
+- Updated `docs/CLI.md`, `docs/LLM_PROVIDER_USAGE.md`,
+  `docs/DATA_MODELS.md`, `docs/ARCHITECTURE.md`, and `CHANGELOG.md` to
+  document the TASK-0070 batch sidecar boundary.
+
 - TASK-0069 is complete.
 - Single-file `content-review review --enable-llm` now builds
   `LLMReviewRequest`, reuses `resolve_llm_provider_secret(...)`,

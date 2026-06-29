@@ -18,7 +18,7 @@ suppression comments, counts, and quality gates, see
 
 ```bash
 uv run content-review review <markdown_file> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--fail-on info|warning|error|critical] [--enable-llm --llm-output <file> [--llm-markdown-output <file>] [--llm-config <path>] [--llm-provider mock|pydanticai|pydantic-ai-testmodel] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>] [--llm-timeout-seconds <seconds>] [--llm-retry-attempts <count>] [--llm-retry-backoff-seconds <seconds>] [--llm-min-request-interval-seconds <seconds>]]
-uv run content-review batch <input_dir> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--recursive] [--pattern "*.md"] [--fail-on info|warning|error|critical] [--enable-llm --llm-output-dir <dir> [--llm-markdown-output <file>] [--llm-config <path>] [--llm-provider mock|pydantic-ai-testmodel] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>] [--llm-timeout-seconds <seconds>] [--llm-retry-attempts <count>] [--llm-retry-backoff-seconds <seconds>] [--llm-min-request-interval-seconds <seconds>]]
+uv run content-review batch <input_dir> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--recursive] [--pattern "*.md"] [--fail-on info|warning|error|critical] [--enable-llm --llm-output <file> [--llm-markdown-output <file>] [--llm-config <path>] [--llm-provider mock|pydanticai|pydantic-ai-testmodel] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>] [--llm-timeout-seconds <seconds>] [--llm-retry-attempts <count>] [--llm-retry-backoff-seconds <seconds>] [--llm-min-request-interval-seconds <seconds>]]
 uv run content-review llm-check [--provider mock|pydantic-ai-testmodel] [--llm-config <path>] [--llm-provider mock|pydanticai] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>] [--llm-timeout-seconds <seconds>] [--llm-retry-attempts <count>] [--llm-retry-backoff-seconds <seconds>] [--llm-min-request-interval-seconds <seconds>] [--live|--runtime]
 uv run content-review profile validate <profile_file> [--format text|json]
 uv run content-review profile init --template <general-basic|general-publishing|health-content|marketing-copy|technical-blog|wechat-basic|wechat-article|wechat-strict> --output <profile_file> [--force]
@@ -178,37 +178,37 @@ Provider notes:
 
 ## Experimental Batch LLM Sidecar Review
 
-Batch `review` also supports an explicit experimental per-file LLM sidecar
+Batch `review` also supports an explicit experimental aggregate LLM sidecar
 flow:
 
 ```bash
-uv run content-review batch articles --profile profile.yaml --recursive --enable-llm --llm-output-dir llm-sidecars
-uv run content-review batch articles --profile profile.yaml --recursive --enable-llm --llm-provider mock --llm-output-dir llm-sidecars
-uv run content-review batch articles --profile profile.yaml --recursive --enable-llm --llm-provider pydantic-ai-testmodel --llm-output-dir llm-sidecars
-uv run content-review batch articles --profile profile.yaml --recursive --enable-llm --llm-config examples/llm/mock/llm-provider.yml --llm-output-dir llm-sidecars
-uv run content-review batch articles --profile profile.yaml --recursive --enable-llm --llm-output-dir llm-sidecars --llm-markdown-output llm-sidecars.md
-uv run content-review batch articles --profile profile.yaml --recursive --enable-llm --llm-config examples/llm/pydanticai/llm-provider.yml --llm-output-dir llm-sidecars
+uv run content-review batch articles --profile profile.yaml --recursive --enable-llm --llm-output batch.llm.json
+uv run content-review batch articles --profile profile.yaml --recursive --enable-llm --llm-provider mock --llm-output batch.llm.json
+uv run content-review batch articles --profile profile.yaml --recursive --enable-llm --llm-provider pydantic-ai-testmodel --llm-output batch.llm.json
+uv run content-review batch articles --profile profile.yaml --recursive --enable-llm --llm-config examples/llm/mock/llm-provider.yml --llm-output batch.llm.json
+uv run content-review batch articles --profile profile.yaml --recursive --enable-llm --llm-output batch.llm.json --llm-markdown-output batch.llm.md
+uv run content-review batch articles --profile profile.yaml --recursive --enable-llm --llm-config examples/llm/pydanticai/llm-provider.yml --llm-output batch.llm.json
 ```
 
 Batch constraints:
 
 - this path is opt-in and disabled by default
-- `--enable-llm` requires `--llm-output-dir`
-- `--llm-output-dir` without `--enable-llm` fails
+- `--enable-llm` requires `--llm-output`
+- `--llm-output` without `--enable-llm` fails
 - `--llm-markdown-output` without `--enable-llm` fails
-- explicit batch `--llm-provider` supports only `mock` and `pydantic-ai-testmodel`
+- explicit batch `--llm-provider` supports `mock`, `pydanticai`, and `pydantic-ai-testmodel`
 - `--llm-provider` without `--enable-llm` fails
 - `--llm-config` loads a YAML `LLMProviderConfig` file for batch review too
-- omitted batch `--llm-provider` keeps the existing config-driven sidecar behavior
-- explicit batch `--llm-provider` uses `create_llm_reviewer()` directly
+- batch LLM review reuses the same provider construction path as single-file review
 - explicit batch `--llm-provider mock` requires no API key and does not access the network
 - explicit batch `--llm-provider pydantic-ai-testmodel` requires no API key and does not access the network
+- explicit batch `--llm-provider pydanticai` requires `--llm-model` and `--llm-api-key-env`
 - reserved real explicit batch `--llm-provider` values such as `openai`,
   `anthropic`, `gemini`, `deepseek`, `qwen`, and `local` fail explicitly as
   reserved but not implemented
 - unsupported explicit batch `--llm-provider` values fail explicitly as
   unknown providers and do not fall back
-- real `pydanticai` batch sidecar usage remains available through `--llm-config` plus the shared config-driven provider path
+- real `pydanticai` batch sidecar usage also remains available through `--llm-config`
 - `--llm-model` is required for config-driven `pydanticai`
 - `--llm-base-url` is optional and is passed through for OpenAI-compatible
   endpoints when configured
@@ -225,44 +225,29 @@ Batch constraints:
 - the `pydanticai` path reuses the same internal request/prompt/response
   mapping contract used in single-file review
 - the CLI does not support a plaintext `--llm-api-key` argument
-- batch sidecar JSON uses the same envelope metadata as single-file sidecar:
+- batch sidecar JSON uses `LLMSidecarResult` envelope metadata:
   `llm_provider` plus `llm_provider_source`
 - explicit batch sidecar writes `llm_provider_source: explicit`
 - omitted batch `--llm-provider` writes `llm_provider_source: default` or
   `config`
-- the batch command writes one separate UTF-8 `LLMSidecarResult` JSON sidecar
-  per reviewed Markdown file
-- the batch command also writes
-  `--llm-output-dir/llm-review-manifest.json` as an aggregate
-  `LLMSidecarResult` summary
+- the batch command writes one UTF-8 aggregate `LLMSidecarResult` JSON sidecar
+  to `--llm-output`
 - `--llm-markdown-output` optionally writes one separate UTF-8 Markdown sidecar
-  report rendered from the aggregate manifest
-
-Sidecar path rule:
-
-```text
-articles/post-a.md
-  -> llm-sidecars/post-a.md.llm-review.json
-
-articles/nested/post-b.md
-  -> llm-sidecars/nested/post-b.md.llm-review.json
-```
-
-The path is computed relative to the batch input directory. Parent
-directories are created automatically under `--llm-output-dir`.
+  report rendered from the same aggregate sidecar
 
 Batch sidecar behavior:
 
-- per-file sidecars use `summary.file_count = 1` and record that file's
-  `status`, `finding_count`, optional nested `review`, and optional `error`
-- `llm-review-manifest.json` aggregates the full run with `file_count`,
-  `succeeded_count`, `failed_count`, `skipped_count`, and `finding_count`
-- successful manifest entries can include nested `review` payloads so the
-  optional batch Markdown sidecar report can show per-file LLM findings
+- the aggregate sidecar records one `files[]` entry per reviewed Markdown file
+- each file entry records `status`, `finding_count`, optional nested `review`,
+  and optional `error`
+- summary fields record `file_count`, `succeeded_count`, `failed_count`,
+  `skipped_count`, and `finding_count`
 - batch LLM review supports partial success; one file with `status = failed`
-  does not block other files from generating sidecars
+  does not block other files from being reviewed and recorded
 - failed entries expose only `error_type` and `message`, not tracebacks or
   secrets
+- any LLM failure makes the command return exit code `2`, even though
+  deterministic quality-gate behavior stays unchanged
 
 Batch behavior guarantees:
 

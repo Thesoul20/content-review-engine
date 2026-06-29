@@ -238,10 +238,10 @@ Current status:
   `create_llm_reviewer(config, secret_value=...)`, then reuses
   `run_semantic_review(request)` plus
   `convert_validated_semantic_output_to_llm_review_result()`
-- batch sidecar review now follows that same split:
-  omitted `--llm-provider` keeps the existing config-driven boundary, while
-  explicit `--llm-provider mock|pydantic-ai-testmodel` uses the name-driven
-  `create_llm_reviewer()` boundary
+- batch sidecar review now follows that same split too:
+  omitted `--llm-provider` keeps the config-driven boundary, while explicit
+  `--llm-provider` reuses the same reviewer-construction path as single-file
+  review
 - batch sidecar envelopes still record `llm_provider` plus
   `llm_provider_source`; single-file `--llm-output` now writes raw
   `LLMReviewResult` JSON instead of an envelope
@@ -252,8 +252,8 @@ Current status:
 - no LLM output is merged into the current `ReviewResult`
 - no LLM output is merged into deterministic severity counts, rule counts, or
   quality-gate evaluation
-- batch review now supports per-file `LLMSidecarResult` JSON sidecars, an
-  aggregate `llm-review-manifest.json`, and an optional separate batch LLM
+- batch review now supports one aggregate `LLMSidecarResult` JSON sidecar at
+  `--llm-output` with per-file entries, plus an optional separate batch LLM
   sidecar Markdown report
 - `src/content_review_engine/llm/prompt_contract.py` now defines a separate
   semantic-review prompt contract builder that produces stable system/user
@@ -534,41 +534,29 @@ Per reviewed Markdown file:
     ↓
   LLMReviewRunner
     ↓
-  explicit --llm-provider mock|pydantic-ai-testmodel
+  create_llm_reviewer("<provider-name>" or LLMProviderConfig)
     ↓
-  create_llm_reviewer("<provider-name>")
-    or
-  omitted --llm-provider
+  LLMReviewResult or structured file failure
     ↓
-  create_llm_reviewer(LLMProviderConfig)
-    ↓
-  LLMReviewResult
-    ↓
-  LLMSidecarResult per-file JSON under --llm-output-dir
-
-Batch manifest:
-  LLMSidecarResult summary under
-  --llm-output-dir/llm-review-manifest.json
+  aggregate LLMSidecarResult entry in batch --llm-output JSON
 ```
 
 Current batch path guarantees:
 
 - batch LLM sidecars are opt-in and generated only when `--enable-llm` is set
-- each reviewed Markdown file gets an independent `LLMSidecarResult` JSON
-  sidecar
-- explicit batch `--llm-provider` supports only `mock` and
+- the aggregate batch sidecar records one `files[]` entry per reviewed file
+- explicit batch `--llm-provider` supports `mock`, `pydanticai`, and
   `pydantic-ai-testmodel`, fails explicitly for unsupported values, and does
   not fall back
 - explicit batch `--llm-provider` without batch sidecar output fails clearly
 - omitted batch `--llm-provider` keeps the existing config-driven runtime path
-- the sidecar path preserves the file path relative to the batch input
-  directory and appends `.llm-review.json`
-- each batch run also writes `llm-review-manifest.json` with aggregate status
-  counts, per-file status entries, and success-entry nested `review` payloads
-- the batch CLI can also render that manifest into a separate Markdown sidecar
+- each batch run writes one aggregate sidecar JSON with summary counts,
+  per-file status entries, and success-entry nested `review` payloads
+- the batch CLI can also render that aggregate sidecar into a separate Markdown sidecar
   report through `--llm-markdown-output`
 - a failed LLM review for one file is recorded in sidecar JSON and does not
-  stop LLM sidecar generation for other files
+  stop LLM sidecar generation for other files, but it does make the command
+  return exit code `2`
 - the canonical `BatchReviewResult` schema is unchanged
 - deterministic batch Markdown reports remain deterministic-only
 - batch quality gates still read only deterministic findings

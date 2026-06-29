@@ -1,7 +1,9 @@
 import pytest
 
 from content_review_engine.llm import (
+    BatchLLMReviewItem,
     LLMProviderError,
+    LLMSidecarResult,
     LLMReviewFinding,
     LLMReviewRequest,
     LLMReviewResult,
@@ -9,6 +11,8 @@ from content_review_engine.llm import (
     LLMReviewSummary,
     MockLLMReviewer,
     ValidatedLLMSemanticReviewOutput,
+    build_llm_review_request,
+    run_batch_llm_review,
     run_single_file_llm_review,
 )
 
@@ -157,3 +161,86 @@ def test_run_single_file_llm_review_uses_semantic_pipeline_when_available() -> N
     assert result.model == "openai:gpt-4o-mini"
     assert result.findings[0].rule_id == "llm.semantic.overclaim"
     assert result.findings[0].matched_text == "always safe"
+
+
+def test_build_llm_review_request_builds_semantic_review_request() -> None:
+    request = build_llm_review_request(
+        markdown_text="This article says the method is always safe.",
+        markdown_path="articles/example.md",
+        profile_name="semantic-risk",
+    )
+
+    assert request.profile_name == "semantic-risk"
+    assert request.content_path == "articles/example.md"
+    assert request.review_goal == "semantic_review"
+
+
+def test_run_batch_llm_review_builds_batch_sidecar_result() -> None:
+    reviewer = SemanticReviewer()
+    items = [
+        BatchLLMReviewItem(
+            path="articles/one.md",
+            request=build_llm_review_request(
+                markdown_text="always safe",
+                markdown_path="articles/one.md",
+                profile_name="semantic-risk",
+            ),
+        ),
+        BatchLLMReviewItem(
+            path="articles/two.md",
+            request=build_llm_review_request(
+                markdown_text="always safe again",
+                markdown_path="articles/two.md",
+                profile_name="semantic-risk",
+            ),
+        ),
+    ]
+
+    result = run_batch_llm_review(
+        items,
+        reviewer=reviewer,  # type: ignore[arg-type]
+        llm_provider="pydanticai",
+        llm_provider_source="explicit",
+        provider="pydanticai",
+    )
+
+    assert isinstance(result, LLMSidecarResult)
+    assert result.summary.file_count == 2
+    assert result.summary.succeeded_count == 2
+    assert result.summary.failed_count == 0
+    assert result.summary.finding_count == 2
+    assert result.files[0].review is not None
+    assert result.files[0].review.findings[0].rule_id == "llm.semantic.overclaim"
+
+
+def test_run_batch_llm_review_records_per_file_failures() -> None:
+    reviewer = SemanticReviewer()
+    items = [
+        BatchLLMReviewItem(
+            path="articles/one.md",
+            request=build_llm_review_request(
+                markdown_text="always safe",
+                markdown_path="articles/one.md",
+                profile_name="semantic-risk",
+            ),
+        ),
+        BatchLLMReviewItem(
+            path="articles/two.md",
+            error=LLMProviderError("provider failed"),
+        ),
+    ]
+
+    result = run_batch_llm_review(
+        items,
+        reviewer=reviewer,  # type: ignore[arg-type]
+        llm_provider="pydanticai",
+        llm_provider_source="explicit",
+        provider="pydanticai",
+    )
+
+    assert result.summary.file_count == 2
+    assert result.summary.succeeded_count == 1
+    assert result.summary.failed_count == 1
+    assert result.files[1].status == "failed"
+    assert result.files[1].error is not None
+    assert result.files[1].error.error_type == "LLMProviderError"

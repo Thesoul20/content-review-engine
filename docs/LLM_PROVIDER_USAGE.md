@@ -147,10 +147,9 @@ Current guarantees:
   errors
 - `run_semantic_review()` returns `ValidatedLLMSemanticReviewOutput`, not
   `LLMReviewResult`
-- `run_semantic_review()` is now reused by the single-file `content-review review`
-  LLM adapter path
+- `run_semantic_review()` is now reused by both `content-review review` and `content-review batch`
 - `run_semantic_review()` still does not change deterministic quality-gate
-  behavior and is still not wired into `content-review batch`
+  behavior
 - provider execution does not inject the API secret into the prompt, the
   validated output, or stable error messages
 - default tests for this path use fake/stub runtime calls and must not access
@@ -201,10 +200,10 @@ Current guarantees:
 - the conversion helper does not output secrets
 - `run_semantic_review()` still returns `ValidatedLLMSemanticReviewOutput`
   and does not directly return `LLMReviewResult`
-- this conversion layer is now reused by the single-file `content-review review`
-  LLM sidecar path
+- this conversion layer is now reused by both `content-review review` and
+  `content-review batch`
 - this conversion layer still does not change deterministic Quality Gate
-  behavior and is still not wired into `content-review batch`
+  behavior
 
 ## Single-file CLI LLM integration
 
@@ -319,7 +318,7 @@ Current provider validation contract:
 This is a package boundary for future adapters. `llm-check --provider` now
 reuses it for the safe local reviewer providers above. Single-file
 `content-review review --enable-llm --llm-output ... --llm-provider <name>`
-and batch `content-review batch --enable-llm --llm-output-dir ...
+and batch `content-review batch --enable-llm --llm-output ...
 --llm-provider <name>` now also reuse it for those same safe local reviewer
 providers. It still does not change the default behavior of `review`,
 `batch`, or `llm-check` when `--llm-provider` is omitted.
@@ -342,9 +341,9 @@ Current limitations:
   CLI paths that explicitly opt into that reviewer-name factory boundary:
   `llm-check --provider` and single-file `review --enable-llm --llm-output ...
   --llm-provider pydantic-ai-testmodel`, plus batch
-  `batch --enable-llm --llm-output-dir ... --llm-provider pydantic-ai-testmodel`
+  `batch --enable-llm --llm-output ... --llm-provider pydantic-ai-testmodel`
 - it does not read `LLMProviderConfig`
-- omitted `--llm-provider` still leaves batch sidecar review on the existing
+- omitted `--llm-provider` still leaves batch sidecar review on the
   config-driven path
 - it should not be treated as a production LLM integration
 
@@ -523,23 +522,26 @@ Behavior:
 
 ## Batch Sidecar Provider Selection
 
-Use explicit batch `--llm-provider` only with the existing batch sidecar path:
+Use explicit batch `--llm-provider` only with the batch sidecar path:
 
 ```bash
-uv run content-review batch articles --profile profile.yml --recursive --enable-llm --llm-output-dir llm-sidecars --llm-provider mock
-uv run content-review batch articles --profile profile.yml --recursive --enable-llm --llm-output-dir llm-sidecars --llm-provider pydantic-ai-testmodel
+uv run content-review batch articles --profile profile.yml --recursive --enable-llm --llm-output batch.llm.json --llm-provider mock
+uv run content-review batch articles --profile profile.yml --recursive --enable-llm --llm-output batch.llm.json --llm-provider pydantic-ai-testmodel
+uv run content-review batch articles --profile profile.yml --recursive --enable-llm --llm-output batch.llm.json --llm-provider pydanticai --llm-model openai:gpt-4o-mini --llm-api-key-env OPENAI_API_KEY
 ```
 
 Behavior:
 
-- explicit batch `--llm-provider` supports only `mock` and `pydantic-ai-testmodel`
-- explicit batch `--llm-provider` calls `create_llm_reviewer()` directly
+- explicit batch `--llm-provider` supports `mock`, `pydanticai`, and `pydantic-ai-testmodel`
+- explicit batch `--llm-provider` reuses the same reviewer construction path as single-file review
 - reserved real provider names fail clearly as reserved but not implemented
 - unsupported explicit provider names fail clearly as unknown providers and do
   not fall back
 - `--llm-provider` without the batch sidecar path fails clearly
-- omitting explicit batch `--llm-provider` keeps the existing batch sidecar behavior unchanged
-- explicit batch `--llm-provider` does not require an API key, does not read `.env`, and does not access the network for the supported providers above
+- omitting explicit batch `--llm-provider` keeps the config-driven batch sidecar behavior unchanged
+- explicit batch `--llm-provider mock` and `--llm-provider pydantic-ai-testmodel`
+  do not require an API key, do not read `.env`, and do not access the network
+- explicit batch `--llm-provider pydanticai` requires `--llm-model` and `--llm-api-key-env`
 - explicit sidecar writes `llm_provider_source: explicit`
 - omitted `--llm-provider` writes `llm_provider_source: default` or `config`
   and still records the concrete `llm_provider` name in the sidecar envelope
@@ -651,15 +653,15 @@ uv run content-review batch \
   --enable-llm \
   --llm-config examples/llm/pydanticai/llm-provider.yml \
   --llm-base-url "$OPENAI_BASE_URL" \
-  --llm-output-dir /tmp/content-review-batch-llm \
+  --llm-output /tmp/content-review-batch-llm.json \
   --llm-markdown-output /tmp/content-review-batch-llm.md
 ```
 
 What to verify:
 
-1. One sidecar JSON file is written per Markdown file.
-2. `/tmp/content-review-batch-llm/llm-review-manifest.json` exists.
-3. `/tmp/content-review-batch-llm.md` exists.
+1. `/tmp/content-review-batch-llm.json` exists.
+2. `/tmp/content-review-batch-llm.md` exists.
+3. The JSON sidecar contains one `files[]` entry per Markdown file.
 4. A failed LLM file, if any, is recorded in the sidecar output without
    changing deterministic batch quality-gate semantics.
 
@@ -668,7 +670,7 @@ What to verify:
 Single-file and batch LLM sidecars now differ:
 
 - single-file `--llm-output` writes raw `LLMReviewResult`
-- batch sidecars still use `LLMSidecarResult`
+- Batch `--llm-output` writes one aggregate `LLMSidecarResult` JSON sidecar
 
 Check:
 
@@ -684,7 +686,7 @@ Useful inspection commands:
 
 ```bash
 uv run python -m json.tool /tmp/content-review-single.llm.json
-uv run python -m json.tool /tmp/content-review-batch-llm/llm-review-manifest.json
+uv run python -m json.tool /tmp/content-review-batch-llm.json
 ```
 
 ## Sidecar Markdown Output
