@@ -101,6 +101,7 @@ def test_usage_docs_exist_and_cover_required_provider_flags_and_boundaries() -> 
     assert "Validated LLM semantic output to LLMReviewResult conversion" in content
     assert "Single-file CLI LLM integration" in content
     assert "--llm-output` writes raw `LLMReviewResult` JSON" in content
+    assert "--llm-report` writes a separate Markdown report rendered from the same" in content
     assert "matched_text" in content
     assert "confidence: null stays null" in content
     assert "does not execute a real provider call" in content
@@ -163,7 +164,7 @@ def test_docs_and_fixtures_do_not_require_real_network_or_real_api_key() -> None
     assert "provider execution reuses `parse_llm_semantic_review_output()`" in usage_doc
     assert "Single-file `content-review review --enable-llm --llm-output ...` now writes" in usage_doc
     assert "raw `LLMReviewResult` JSON" in usage_doc
-    assert "`--include-llm-report` is not supported for single-file review" in usage_doc
+    assert "`--llm-report` writes a separate Markdown report rendered from the same" in usage_doc
     assert "Batch `--llm-output` writes one aggregate `LLMSidecarResult` JSON sidecar" in usage_doc
     assert "default `pytest` or CI" in usage_doc
     assert "YOUR_OPENAI_API_KEY_HERE" in env_example

@@ -143,7 +143,7 @@ Workflow example:
 If you also enable the experimental LLM sidecar path, LLM finding content and
 LLM sidecar failures still do not affect the deterministic quality-gate exit
 code. The same rule applies if you also write an independent LLM sidecar
-Markdown report through `--llm-markdown-output`. The same boundary applies to
+Markdown report through `--llm-report`. The same boundary applies to
 LLM provider config such as `--llm-config`, `--llm-provider`, `--llm-model`, or
 `--llm-api-key-env`, or `--llm-timeout-seconds`,
 `--llm-retry-attempts`, `--llm-retry-backoff-seconds`, or

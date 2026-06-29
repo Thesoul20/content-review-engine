@@ -229,6 +229,10 @@ Current guarantees:
 
 - `--enable-llm` is required before any single-file LLM call happens
 - `--llm-output` writes raw `LLMReviewResult` JSON, not `LLMSidecarResult`
+- `--llm-report` writes a separate Markdown report rendered from the same
+  `LLMReviewResult`
+- `--llm-output` and `--llm-report` can be used together
+- `--llm-report` can also be used without `--llm-output`
 - the sidecar JSON does not include secrets, prompt text, or raw provider output
 - deterministic stdout does not include LLM findings
 - deterministic JSON and Markdown reports do not include LLM findings
@@ -619,8 +623,7 @@ uv run content-review review \
   --llm-config examples/llm/pydanticai/llm-provider.yml \
   --llm-base-url "$OPENAI_BASE_URL" \
   --llm-output /tmp/content-review-single.llm.json \
-  --llm-markdown-output /tmp/content-review-single.llm.md \
-  --include-llm-report
+  --llm-report /tmp/content-review-single.llm.md
 ```
 
 CLI override example:
@@ -654,7 +657,7 @@ uv run content-review batch \
   --llm-config examples/llm/pydanticai/llm-provider.yml \
   --llm-base-url "$OPENAI_BASE_URL" \
   --llm-output /tmp/content-review-batch-llm.json \
-  --llm-markdown-output /tmp/content-review-batch-llm.md
+  --llm-report /tmp/content-review-batch-llm.md
 ```
 
 What to verify:

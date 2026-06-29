@@ -3,11 +3,13 @@ from content_review_engine.reports.markdown import (
     render_markdown_report,
 )
 from content_review_engine.reports.llm_markdown import (
-    render_llm_sidecar_markdown_report,
+    render_llm_review_markdown,
+    render_llm_sidecar_markdown,
 )
 
 __all__ = [
     "render_batch_markdown_report",
-    "render_llm_sidecar_markdown_report",
+    "render_llm_review_markdown",
+    "render_llm_sidecar_markdown",
     "render_markdown_report",
 ]

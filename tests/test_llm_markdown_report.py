@@ -12,84 +12,99 @@ from content_review_engine.llm import (
     build_llm_sidecar_file_success,
     build_llm_sidecar_result,
 )
-from content_review_engine.reports import render_llm_sidecar_markdown_report
-
-
-def test_render_single_file_llm_markdown_report_with_findings() -> None:
-    result = build_llm_sidecar_result(
-        [
-            build_llm_sidecar_file_success(
-                path="article.md",
-                review=LLMReviewResult(
-                    provider="mock",
-                    model="mock-model",
-                    findings=(
-                        LLMReviewFinding(
-                            rule_id="llm_semantic_risk",
-                            severity="warning",
-                            message="Possible unsupported claim.",
-                            suggestion="Add evidence.",
-                            matched_text="guaranteed",
-                            line=3,
-                            column=5,
-                            end_line=3,
-                            end_column=14,
-                        ),
-                    ),
-                    summary=LLMReviewSummary(
-                        overall_risk="medium",
-                        summary="One semantic issue.",
-                        recommended_action="Revise the claim.",
-                        confidence=0.8,
-                    ),
-                ),
-            )
-        ]
-    )
-
-    report = render_llm_sidecar_markdown_report(result)
-
-    assert report.startswith("# LLM Sidecar Review Report\n")
-    assert "| Files | 1 |" in report
-    assert "| Succeeded | 1 |" in report
-    assert "| Failed | 0 |" in report
-    assert "| Skipped | 0 |" in report
-    assert "| Findings | 1 |" in report
-    assert "| article.md | success | 1 | - |" in report
-    assert "#### Review Summary" in report
-    assert "- Overall Risk: medium" in report
-    assert "- Summary: One semantic issue." in report
-    assert "- Recommended Action: Revise the claim." in report
-    assert "#### Finding 1" in report
-    assert "- Rule: `llm_semantic_risk`" in report
-    assert "- Suggestion: Add evidence." in report
-    assert "- Matched Text: `guaranteed`" in report
-    assert "- Location: line 3, column 5 to line 3, column 14" in report
+from content_review_engine.reports import render_llm_review_markdown, render_llm_sidecar_markdown
 
 
 def test_render_single_file_llm_markdown_report_with_no_findings() -> None:
-    result = build_llm_sidecar_result(
-        [build_llm_sidecar_file_success(path="article.md", review=LLMReviewResult())]
+    result = LLMReviewResult()
+
+    report = render_llm_review_markdown(result, file_path="article.md")
+
+    assert report.startswith("# LLM Review Report\n")
+    assert "| File | article.md |" in report
+    assert "| Total Findings | 0 |" in report
+    assert "| critical | 0 |" in report
+    assert "| error | 0 |" in report
+    assert "| warning | 0 |" in report
+    assert "| info | 0 |" in report
+    assert report.count("No LLM findings.") == 2
+
+
+def test_render_single_file_llm_markdown_report_with_multiple_findings() -> None:
+    result = LLMReviewResult(
+        provider="mock",
+        model="mock-model",
+        prompt_version="llm-semantic-review-prompt.v1",
+        profile_name="default",
+        findings=(
+            LLMReviewFinding(
+                rule_id="llm.semantic.overclaim",
+                severity="warning",
+                message="Possible unsupported claim.",
+                suggestion="Add evidence.",
+                matched_text="guaranteed",
+                line=3,
+                column=5,
+                end_line=3,
+                end_column=14,
+            ),
+            LLMReviewFinding(
+                rule_id="llm.semantic.risky_advice",
+                severity="error",
+                message="Potentially risky advice.",
+                suggestion="Add a safety disclaimer.",
+                rationale="Medical advice lacks context.",
+                category="safety",
+                confidence=0.91,
+            ),
+        ),
+        summary=LLMReviewSummary(
+            overall_risk="high",
+            summary="Two semantic issues found.",
+            recommended_action="Revise before publishing.",
+            confidence=0.85,
+        ),
     )
 
-    report = render_llm_sidecar_markdown_report(result)
+    report = render_llm_review_markdown(result, file_path="article.md")
 
-    assert "| article.md | success | 0 | - |" in report
-    assert "No LLM findings." in report
+    assert "| Provider | mock |" in report
+    assert "| Model | mock-model |" in report
+    assert "| Prompt Version | llm-semantic-review-prompt.v1 |" in report
+    assert "| Profile Name | default |" in report
+    assert "| Overall Risk | high |" in report
+    assert "| LLM Summary | Two semantic issues found. |" in report
+    assert "| Recommended Action | Revise before publishing. |" in report
+    assert "| Confidence | 0.85 |" in report
+    assert "| warning | 1 |" in report
+    assert "| error | 1 |" in report
+    assert "| warning | llm.semantic.overclaim | 3 | 5 | Possible unsupported claim. | Add evidence. |" in report
+    assert "| error | llm.semantic.risky_advice | - | - | Potentially risky advice. | Add a safety disclaimer. |" in report
+    assert "### 1. llm.semantic.overclaim" in report
+    assert "- Location: line 3, column 5 to line 3, column 14" in report
+    assert "- Matched Text: `guaranteed`" in report
+    assert "### 2. llm.semantic.risky_advice" in report
+    assert "- Rationale: Medical advice lacks context." in report
+    assert "- Category: safety" in report
+    assert "- Confidence: 0.91" in report
 
 
-def test_render_single_file_llm_markdown_report_for_failed_file() -> None:
-    result = build_llm_sidecar_result(
-        [build_llm_sidecar_file_failed(path="article.md", exc=RuntimeError("provider failed"))]
+def test_render_single_file_llm_markdown_report_escapes_markdown_table_cells() -> None:
+    result = LLMReviewResult(
+        findings=(
+            LLMReviewFinding(
+                rule_id="llm.semantic.overclaim",
+                severity="warning",
+                message="Line 1 | claim\nLine 2",
+                suggestion="Rewrite | carefully\nnow",
+            ),
+        )
     )
 
-    report = render_llm_sidecar_markdown_report(result)
+    report = render_llm_review_markdown(result, file_path="article|one.md")
 
-    assert "| article.md | failed | 0 | RuntimeError: provider failed |" in report
-    assert "LLM review failed." in report
-    assert "- Error Type: `RuntimeError`" in report
-    assert "- Message: provider failed" in report
-    assert "Traceback" not in report
+    assert r"| File | article\|one.md |" in report
+    assert r"| warning | llm.semantic.overclaim | - | - | Line 1 \| claim<br>Line 2 | Rewrite \| carefully<br>now |" in report
 
 
 def test_render_batch_llm_markdown_report_for_all_success() -> None:
@@ -100,8 +115,8 @@ def test_render_batch_llm_markdown_report_for_all_success() -> None:
                 review=LLMReviewResult(
                     findings=(
                         LLMReviewFinding(
-                            rule_id="llm_a",
-                            severity="info",
+                            rule_id="llm.semantic.overclaim",
+                            severity="warning",
                             message="First finding.",
                         ),
                     )
@@ -112,26 +127,41 @@ def test_render_batch_llm_markdown_report_for_all_success() -> None:
                 review=LLMReviewResult(
                     findings=(
                         LLMReviewFinding(
-                            rule_id="llm_b",
-                            severity="warning",
+                            rule_id="llm.semantic.risky_advice",
+                            severity="error",
                             message="Second finding.",
                         ),
-                    )
+                    ),
+                    summary=LLMReviewSummary(
+                        overall_risk="medium",
+                        summary="One issue in this file.",
+                        recommended_action="Revise wording.",
+                    ),
                 ),
             ),
-        ]
+        ],
+        llm_provider="mock",
+        llm_provider_source="explicit",
     )
 
-    report = render_llm_sidecar_markdown_report(result)
+    report = render_llm_sidecar_markdown(result)
 
-    assert report.startswith("# Batch LLM Sidecar Review Report\n")
-    assert "| Files | 2 |" in report
-    assert "| Succeeded | 2 |" in report
-    assert "| Findings | 2 |" in report
+    assert report.startswith("# Batch LLM Review Report\n")
+    assert "| LLM Provider | mock |" in report
+    assert "| LLM Provider Source | explicit |" in report
+    assert "| Files Reviewed | 2 |" in report
+    assert "| Files With LLM Findings | 2 |" in report
+    assert "| Files With LLM Errors | 0 |" in report
+    assert "| Total LLM Findings | 2 |" in report
+    assert "| critical | 0 |" in report
+    assert "| error | 1 |" in report
+    assert "| warning | 1 |" in report
+    assert "| a.md | success | 1 | - |" in report
+    assert "| b.md | success | 1 | - |" in report
     assert "### `a.md`" in report
     assert "### `b.md`" in report
-    assert "- Rule: `llm_a`" in report
-    assert "- Rule: `llm_b`" in report
+    assert "- Overall Risk: medium" in report
+    assert "- Summary: One issue in this file." in report
 
 
 def test_render_batch_llm_markdown_report_for_partial_failure() -> None:
@@ -142,7 +172,7 @@ def test_render_batch_llm_markdown_report_for_partial_failure() -> None:
                 review=LLMReviewResult(
                     findings=(
                         LLMReviewFinding(
-                            rule_id="llm_success",
+                            rule_id="llm.semantic.overclaim",
                             severity="warning",
                             message="Success finding.",
                         ),
@@ -153,55 +183,91 @@ def test_render_batch_llm_markdown_report_for_partial_failure() -> None:
         ]
     )
 
-    report = render_llm_sidecar_markdown_report(result)
+    report = render_llm_sidecar_markdown(result)
 
-    assert "| Succeeded | 1 |" in report
-    assert "| Failed | 1 |" in report
+    assert "| Files With LLM Findings | 1 |" in report
+    assert "| Files With LLM Errors | 1 |" in report
     assert "| a.md | success | 1 | - |" in report
     assert "| b.md | failed | 0 | RuntimeError: request failed |" in report
     assert "### `b.md`" in report
-    assert "LLM review failed." in report
+    assert "- Error Type: `RuntimeError`" in report
+    assert "- Message: request failed" in report
 
 
-def test_render_batch_llm_markdown_report_for_all_failed() -> None:
+def test_render_batch_llm_markdown_report_for_all_no_findings() -> None:
     result = build_llm_sidecar_result(
         [
-            build_llm_sidecar_file_failed(path="a.md", exc=RuntimeError("a failed")),
-            build_llm_sidecar_file_failed(path="b.md", exc=RuntimeError("b failed")),
+            build_llm_sidecar_file_success(path="a.md", review=LLMReviewResult()),
+            build_llm_sidecar_file_success(path="b.md", review=LLMReviewResult()),
         ]
     )
 
-    report = render_llm_sidecar_markdown_report(result)
+    report = render_llm_sidecar_markdown(result)
 
-    assert "| Succeeded | 0 |" in report
-    assert "| Failed | 2 |" in report
-    assert "| Findings | 0 |" in report
-    assert report.count("LLM review failed.") == 2
+    assert "| Files With LLM Findings | 0 |" in report
+    assert "| Total LLM Findings | 0 |" in report
+    assert report.count("No LLM findings.") == 4
 
 
-def test_render_batch_llm_markdown_report_displays_skipped_entries() -> None:
+def test_render_batch_llm_markdown_report_preserves_stable_ordering() -> None:
     result = LLMSidecarResult(
         summary=LLMSidecarSummary(
-            file_count=2,
-            succeeded_count=0,
-            failed_count=0,
-            skipped_count=2,
-            finding_count=0,
+            file_count=3,
+            succeeded_count=2,
+            failed_count=1,
+            skipped_count=0,
+            finding_count=2,
         ),
         files=(
-            LLMSidecarFile(path="a.md", status="skipped", finding_count=0),
-            LLMSidecarFile(path="b.md", status="skipped", finding_count=0),
+            LLMSidecarFile(
+                path="z.md",
+                status="success",
+                finding_count=1,
+                review=LLMReviewResult(
+                    findings=(
+                        LLMReviewFinding(
+                            rule_id="llm.semantic.overclaim",
+                            severity="warning",
+                            message="Z finding.",
+                        ),
+                    )
+                ),
+            ),
+            LLMSidecarFile(
+                path="a.md",
+                status="failed",
+                finding_count=0,
+                error=LLMSidecarError(
+                    error_type="LLMProviderError",
+                    message="provider failed",
+                ),
+            ),
+            LLMSidecarFile(
+                path="m.md",
+                status="success",
+                finding_count=1,
+                review=LLMReviewResult(
+                    findings=(
+                        LLMReviewFinding(
+                            rule_id="llm.semantic.risky_advice",
+                            severity="error",
+                            message="M finding.",
+                        ),
+                    )
+                ),
+            ),
         ),
     )
 
-    report = render_llm_sidecar_markdown_report(result)
+    report = render_llm_sidecar_markdown(result)
 
-    assert "| Skipped | 2 |" in report
-    assert "| a.md | skipped | 0 | - |" in report
-    assert report.count("LLM review skipped.") == 2
+    assert report.index("| z.md | success | 1 | - |") < report.index("| a.md | failed | 0 | LLMProviderError: provider failed |")
+    assert report.index("| a.md | failed | 0 | LLMProviderError: provider failed |") < report.index("| m.md | success | 1 | - |")
+    assert report.index("### `z.md`") < report.index("### `a.md`")
+    assert report.index("### `a.md`") < report.index("### `m.md`")
 
 
-def test_render_llm_markdown_report_escapes_markdown_table_cells() -> None:
+def test_render_batch_llm_markdown_report_escapes_markdown_table_cells() -> None:
     result = LLMSidecarResult(
         summary=LLMSidecarSummary(
             file_count=1,
@@ -223,6 +289,6 @@ def test_render_llm_markdown_report_escapes_markdown_table_cells() -> None:
         ),
     )
 
-    report = render_llm_sidecar_markdown_report(result)
+    report = render_llm_sidecar_markdown(result)
 
     assert r"| article\|one.md | failed | 0 | LLM\|ProviderError: Line 1<br>Line 2 |" in report

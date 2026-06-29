@@ -245,8 +245,8 @@ Current status:
 - batch sidecar envelopes still record `llm_provider` plus
   `llm_provider_source`; single-file `--llm-output` now writes raw
   `LLMReviewResult` JSON instead of an envelope
-- the CLI can optionally write a separate LLM sidecar Markdown report for
-  single-file or batch sidecar output through `--llm-markdown-output`
+- the CLI can optionally write a separate LLM Markdown report through
+  `--llm-report`
 - single-file deterministic Markdown output no longer appends LLM findings;
   `--include-llm-report` is not supported for the TASK-0069 path
 - no LLM output is merged into the current `ReviewResult`
@@ -510,7 +510,7 @@ Independent LLM sidecar Markdown report boundary:
 ```text
 LLMSidecarResult
   ↓ optional explicit CLI opt-in
-render_llm_sidecar_markdown_report
+render_llm_review_markdown / render_llm_sidecar_markdown
   ↓
 Standalone LLM sidecar Markdown report
 ```
@@ -552,8 +552,8 @@ Current batch path guarantees:
 - omitted batch `--llm-provider` keeps the existing config-driven runtime path
 - each batch run writes one aggregate sidecar JSON with summary counts,
   per-file status entries, and success-entry nested `review` payloads
-- the batch CLI can also render that aggregate sidecar into a separate Markdown sidecar
-  report through `--llm-markdown-output`
+- the batch CLI can also render that aggregate sidecar into a separate
+  Markdown report through `--llm-report`
 - a failed LLM review for one file is recorded in sidecar JSON and does not
   stop LLM sidecar generation for other files, but it does make the command
   return exit code `2`

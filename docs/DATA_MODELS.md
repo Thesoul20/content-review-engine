@@ -201,6 +201,9 @@ does not change the nested `LLMReviewResult` schema.
 TASK-0069 now reuses the semantic-review prompt/output/provider pipeline for
 single-file `content-review review` and writes raw `LLMReviewResult` JSON to
 `--llm-output`, without changing the schema itself.
+TASK-0071 now also renders `LLMReviewResult` into a separate single-file
+Markdown report through `--llm-report`, again without changing the schema
+itself.
 
 | Field | Required | Description |
 |---|---|---|
@@ -239,9 +242,15 @@ ReviewResult JSON
 Single-file --llm-output JSON
   = raw LLMReviewResult
 
+Single-file --llm-report Markdown
+  = presentation-only report derived from LLMReviewResult
+
 Batch sidecar JSON
   = LLMSidecarResult
   -> success entries can include nested LLMReviewResult
+
+Batch --llm-report Markdown
+  = presentation-only report derived from LLMSidecarResult
 ```
 
 Current validated semantic-output conversion boundary:
@@ -270,7 +279,7 @@ Current conversion behavior:
 ## LLMSidecarResult
 
 `LLMSidecarResult` is the optional sidecar envelope still used by batch LLM
-sidecars and optional LLM Markdown report rendering helpers.
+sidecars and batch `--llm-report` Markdown rendering helpers.
 
 TASK-0069 no longer uses this envelope for single-file `--llm-output`; that
 path now writes raw `LLMReviewResult` JSON instead.

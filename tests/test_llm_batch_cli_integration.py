@@ -148,12 +148,12 @@ def test_batch_review_enable_llm_writes_batch_sidecar_without_changing_determini
     assert "test-secret-value" not in llm_output_path.read_text(encoding="utf-8")
 
 
-def test_batch_review_writes_markdown_sidecar_report_without_changing_deterministic_markdown(
+def test_batch_review_writes_llm_report_without_changing_deterministic_markdown(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     llm_output_path = tmp_path / "batch.llm.json"
-    llm_markdown_output_path = tmp_path / "batch.llm.md"
+    llm_report_path = tmp_path / "batch.llm.md"
 
     exit_code = main(
         [
@@ -167,8 +167,8 @@ def test_batch_review_writes_markdown_sidecar_report_without_changing_determinis
             "--enable-llm",
             "--llm-output",
             str(llm_output_path),
-            "--llm-markdown-output",
-            str(llm_markdown_output_path),
+            "--llm-report",
+            str(llm_report_path),
         ]
     )
 
@@ -177,9 +177,36 @@ def test_batch_review_writes_markdown_sidecar_report_without_changing_determinis
     assert exit_code == 0
     assert "# Batch Content Review Report" in captured.out
     assert "## LLM Review" not in captured.out
-    assert "Batch LLM Sidecar Review Report" in llm_markdown_output_path.read_text(
-        encoding="utf-8"
+    assert "Batch LLM Review Report" in llm_report_path.read_text(encoding="utf-8")
+
+
+def test_batch_review_enable_llm_report_only_writes_markdown_report(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    llm_report_path = tmp_path / "batch.llm.md"
+
+    exit_code = main(
+        [
+            "batch",
+            "tests/fixtures/batch/articles",
+            "--profile",
+            "tests/fixtures/batch/profile.yml",
+            "--recursive",
+            "--enable-llm",
+            "--llm-report",
+            str(llm_report_path),
+        ]
     )
+
+    captured = capsys.readouterr()
+    report = llm_report_path.read_text(encoding="utf-8")
+
+    assert exit_code == 0
+    assert captured.err == ""
+    assert "# Batch LLM Review Report" in report
+    assert "| Files Reviewed | 3 |" in report
+    assert not (tmp_path / "batch.llm.json").exists()
 
 
 def test_batch_review_partial_llm_failure_is_recorded_and_returns_non_zero(
@@ -188,6 +215,7 @@ def test_batch_review_partial_llm_failure_is_recorded_and_returns_non_zero(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     llm_output_path = tmp_path / "batch.llm.json"
+    llm_report_path = tmp_path / "batch.llm.md"
 
     def fake_review(self, request):  # type: ignore[no-untyped-def]
         del self
@@ -217,11 +245,14 @@ def test_batch_review_partial_llm_failure_is_recorded_and_returns_non_zero(
             "OPENAI_API_KEY",
             "--llm-output",
             str(llm_output_path),
+            "--llm-report",
+            str(llm_report_path),
         ]
     )
 
     captured = capsys.readouterr()
     payload = json.loads(llm_output_path.read_text(encoding="utf-8"))
+    report = llm_report_path.read_text(encoding="utf-8")
 
     assert exit_code == 2
     assert "Files discovered: 3" in captured.out
@@ -240,6 +271,8 @@ def test_batch_review_partial_llm_failure_is_recorded_and_returns_non_zero(
         "error_type": "LLMProviderError",
         "message": "mock provider failure",
     }
+    assert "| Files With LLM Errors | 1 |" in report
+    assert "forbidden.md | failed | 0 | LLMProviderError: mock provider failure |" in report
 
 
 def test_batch_review_provider_execution_failure_records_per_file_failures(
@@ -526,6 +559,41 @@ def test_batch_review_llm_output_write_failure_returns_non_zero(
 
     assert exit_code == 2
     assert "Error: Failed to write LLM sidecar:" in captured.err
+    assert "disk full" in captured.err
+
+
+def test_batch_review_llm_report_write_failure_returns_non_zero(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    llm_report_path = tmp_path / "batch.llm.md"
+    original_write_text = Path.write_text
+
+    def fail_write_text(self, data: str, encoding: str | None = None) -> int:
+        if self == llm_report_path:
+            raise OSError("disk full")
+        return original_write_text(self, data, encoding=encoding)
+
+    monkeypatch.setattr(Path, "write_text", fail_write_text)
+
+    exit_code = main(
+        [
+            "batch",
+            "tests/fixtures/batch/articles",
+            "--profile",
+            "tests/fixtures/batch/profile.yml",
+            "--recursive",
+            "--enable-llm",
+            "--llm-report",
+            str(llm_report_path),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert "Error: Failed to write LLM Markdown report:" in captured.err
     assert "disk full" in captured.err
 
 

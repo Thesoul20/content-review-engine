@@ -32,6 +32,10 @@ It also now includes a separate conversion helper that maps validated
 semantic-review output into `LLMReviewResult` without changing provider
 execution boundaries, sidecar metadata, or the deterministic review
 pipeline.
+It also now includes a separate LLM Markdown report rendering layer for
+single-file `LLMReviewResult` and batch `LLMSidecarResult`, plus CLI support
+for `content-review review --llm-report` and `content-review batch --llm-report`
+without changing deterministic output schemas or quality-gate behavior.
 
 ---
 
@@ -101,6 +105,28 @@ pipeline.
 - No active implementation task.
 
 ## Recent Completion
+
+- TASK-0071 is complete.
+- Added `src/content_review_engine/reports/llm_markdown.py` with separate
+  `render_llm_review_markdown(...)` and `render_llm_sidecar_markdown(...)`
+  renderers for single-file and batch LLM report output.
+- Single-file `content-review review --enable-llm` now supports `--llm-report`
+  with or without `--llm-output`, writing a stable Markdown report from the
+  in-memory `LLMReviewResult` while keeping deterministic stdout, JSON,
+  Markdown, and quality-gate behavior unchanged.
+- Batch `content-review batch --enable-llm` now supports `--llm-report` with
+  or without `--llm-output`, writing a stable batch Markdown report from the
+  aggregate `LLMSidecarResult` and still returning exit code `2` for partial
+  LLM failures after report emission.
+- Added `tests/test_llm_markdown_report.py` and updated
+  `tests/test_llm_single_file_cli_integration.py`,
+  `tests/test_llm_batch_cli_integration.py`, `tests/test_cli.py`, and
+  `tests/test_llm_provider_usage_docs.py` for report-only usage, combined
+  JSON-plus-report usage, Markdown escaping, stable ordering, partial failure
+  reporting, write failures, and no-network coverage.
+- Updated `docs/CLI.md`, `docs/LLM_PROVIDER_USAGE.md`,
+  `docs/DATA_MODELS.md`, `docs/ARCHITECTURE.md`, `docs/CI.md`, and
+  `CHANGELOG.md` to document the new `--llm-report` boundary.
 
 - TASK-0070 is complete.
 - Batch `content-review batch --enable-llm` now reuses the semantic-review

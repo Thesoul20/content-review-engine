@@ -8,6 +8,44 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0071
+
+### Added
+
+- Added `src/content_review_engine/reports/llm_markdown.py` with separate
+  stable renderers for single-file `LLMReviewResult` and batch
+  `LLMSidecarResult` Markdown reports.
+- Added `tests/test_llm_markdown_report.py` for single-file no-findings and
+  multi-finding rendering, severity counts, Markdown escaping, batch success,
+  batch partial failure, batch no-findings output, and stable ordering.
+
+### Changed
+
+- Updated `src/content_review_engine/cli.py` so `content-review review` and
+  `content-review batch` now accept `--llm-report`, require
+  `--enable-llm`, allow `--llm-report` with or without `--llm-output`, and
+  return clear write-failure errors without changing deterministic review
+  output or quality-gate behavior.
+- Updated `src/content_review_engine/reports/__init__.py` to export
+  `render_llm_review_markdown(...)` and `render_llm_sidecar_markdown(...)`.
+- Updated `tests/test_llm_single_file_cli_integration.py`,
+  `tests/test_llm_batch_cli_integration.py`, `tests/test_cli.py`, and
+  `tests/test_llm_provider_usage_docs.py` for report-only usage, combined
+  JSON-plus-report usage, partial-failure report generation, and Markdown
+  report write failures.
+- Updated `docs/CLI.md`, `docs/LLM_PROVIDER_USAGE.md`,
+  `docs/DATA_MODELS.md`, `docs/ARCHITECTURE.md`, `docs/CI.md`, and
+  `PROJECT_STATE.md` to document the `--llm-report` contract and the
+  unchanged deterministic boundaries.
+
+### Not Added
+
+- No `ReviewResult` or `BatchReviewResult` schema change.
+- No merge of LLM findings into deterministic findings or deterministic
+  Markdown output.
+- No LLM quality-gate participation, no new API or MCP surface, and no real
+  provider calls in default tests.
+
 ## TASK-0070
 
 ### Added

@@ -157,6 +157,106 @@ def test_single_file_review_sidecar_does_not_include_secret(
     assert "super-secret-value" not in llm_output_path.read_text(encoding="utf-8")
 
 
+def test_single_file_review_enable_llm_report_only_writes_markdown_report(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    llm_report_path = tmp_path / "review.llm.md"
+    monkeypatch.setenv("OPENAI_API_KEY", "test-secret-value")
+    monkeypatch.setattr(
+        "content_review_engine.cli.create_llm_reviewer",
+        lambda *args, **kwargs: _SemanticReviewer(
+            ValidatedLLMSemanticReviewOutput.model_validate(
+                {
+                    "schema_version": "llm-semantic-review-output.v1",
+                    "summary": "One semantic issue found.",
+                    "findings": [
+                        {
+                            "rule_id": "llm.semantic.overclaim",
+                            "severity": "warning",
+                            "line": 1,
+                            "column": 1,
+                            "message": "Possible overclaim.",
+                            "evidence": "绝对安全",
+                            "suggestion": "Use a softer claim.",
+                            "confidence": 0.84,
+                        }
+                    ],
+                }
+            )
+        ),
+    )
+
+    exit_code = main(
+        [
+            "review",
+            "tests/fixtures/markdown/clean_article.md",
+            "--profile",
+            "tests/fixtures/profiles/default.yml",
+            "--enable-llm",
+            "--llm-config",
+            "examples/llm/pydanticai/llm-provider.yml",
+            "--llm-api-key-env",
+            "OPENAI_API_KEY",
+            "--llm-report",
+            str(llm_report_path),
+        ]
+    )
+
+    captured = capsys.readouterr()
+    report = llm_report_path.read_text(encoding="utf-8")
+
+    assert exit_code == 0
+    assert captured.err == ""
+    assert "# LLM Review Report" in report
+    assert "| File | tests/fixtures/markdown/clean_article.md |" in report
+    assert "Possible overclaim." in report
+    assert not (tmp_path / "review.llm.json").exists()
+
+
+def test_single_file_review_enable_llm_output_and_report_can_be_used_together(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    llm_output_path = tmp_path / "review.llm.json"
+    llm_report_path = tmp_path / "review.llm.md"
+    monkeypatch.setenv("OPENAI_API_KEY", "test-secret-value")
+    monkeypatch.setattr(
+        "content_review_engine.cli.create_llm_reviewer",
+        lambda *args, **kwargs: _SemanticReviewer(
+            ValidatedLLMSemanticReviewOutput(summary="No issues.", findings=())
+        ),
+    )
+
+    exit_code = main(
+        [
+            "review",
+            "tests/fixtures/markdown/clean_article.md",
+            "--profile",
+            "tests/fixtures/profiles/default.yml",
+            "--enable-llm",
+            "--llm-config",
+            "examples/llm/pydanticai/llm-provider.yml",
+            "--llm-api-key-env",
+            "OPENAI_API_KEY",
+            "--llm-output",
+            str(llm_output_path),
+            "--llm-report",
+            str(llm_report_path),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert captured.err == ""
+    assert llm_output_path.exists()
+    assert llm_report_path.exists()
+    assert "# LLM Review Report" in llm_report_path.read_text(encoding="utf-8")
+
+
 def test_single_file_review_llm_provider_flags_require_provider_or_config(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
@@ -440,6 +540,52 @@ def test_single_file_review_sidecar_write_failure_returns_error_after_determinis
     assert exit_code == 2
     assert "Findings: 0" in captured.out
     assert "Error: Failed to write LLM review result:" in captured.err
+    assert "disk full" in captured.err
+
+
+def test_single_file_review_llm_report_write_failure_returns_error_after_deterministic_output(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    llm_report_path = tmp_path / "review.llm.md"
+    original_write_text = Path.write_text
+    monkeypatch.setenv("OPENAI_API_KEY", "test-secret-value")
+    monkeypatch.setattr(
+        "content_review_engine.cli.create_llm_reviewer",
+        lambda *args, **kwargs: _SemanticReviewer(
+            ValidatedLLMSemanticReviewOutput(summary="No issues.", findings=())
+        ),
+    )
+
+    def fail_write_text(self: Path, data: str, encoding: str | None = None) -> int:
+        if self == llm_report_path:
+            raise OSError("disk full")
+        return original_write_text(self, data, encoding=encoding)
+
+    monkeypatch.setattr(Path, "write_text", fail_write_text)
+
+    exit_code = main(
+        [
+            "review",
+            "tests/fixtures/markdown/clean_article.md",
+            "--profile",
+            "tests/fixtures/profiles/default.yml",
+            "--enable-llm",
+            "--llm-config",
+            "examples/llm/pydanticai/llm-provider.yml",
+            "--llm-api-key-env",
+            "OPENAI_API_KEY",
+            "--llm-report",
+            str(llm_report_path),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert "Findings: 0" in captured.out
+    assert "Error: Failed to write LLM Markdown report:" in captured.err
     assert "disk full" in captured.err
 
 
