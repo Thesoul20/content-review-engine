@@ -19,7 +19,7 @@ suppression comments, counts, and quality gates, see
 ```bash
 uv run content-review review <markdown_file> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--fail-on info|warning|error|critical] [--enable-llm --llm-output <file> [--llm-markdown-output <file>] [--llm-config <path>] [--llm-provider mock|pydantic-ai-testmodel] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>] [--llm-timeout-seconds <seconds>] [--llm-retry-attempts <count>] [--llm-retry-backoff-seconds <seconds>] [--llm-min-request-interval-seconds <seconds>] [--include-llm-report]]
 uv run content-review batch <input_dir> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--recursive] [--pattern "*.md"] [--fail-on info|warning|error|critical] [--enable-llm --llm-output-dir <dir> [--llm-markdown-output <file>] [--llm-config <path>] [--llm-provider mock|pydantic-ai-testmodel] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>] [--llm-timeout-seconds <seconds>] [--llm-retry-attempts <count>] [--llm-retry-backoff-seconds <seconds>] [--llm-min-request-interval-seconds <seconds>]]
-uv run content-review llm-check [--provider mock|pydantic-ai-testmodel] [--llm-config <path>] [--llm-provider mock|pydanticai] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>] [--llm-timeout-seconds <seconds>] [--llm-retry-attempts <count>] [--llm-retry-backoff-seconds <seconds>] [--llm-min-request-interval-seconds <seconds>] [--runtime]
+uv run content-review llm-check [--provider mock|pydantic-ai-testmodel] [--llm-config <path>] [--llm-provider mock|pydanticai] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>] [--llm-timeout-seconds <seconds>] [--llm-retry-attempts <count>] [--llm-retry-backoff-seconds <seconds>] [--llm-min-request-interval-seconds <seconds>] [--live|--runtime]
 uv run content-review profile validate <profile_file> [--format text|json]
 uv run content-review profile init --template <general-basic|general-publishing|health-content|marketing-copy|technical-blog|wechat-basic|wechat-article|wechat-strict> --output <profile_file> [--force]
 uv run content-review profile list [--format text|json]
@@ -44,12 +44,12 @@ Examples:
 
 ```bash
 uv run content-review llm-check
-uv run content-review llm-check --provider mock --runtime
-uv run content-review llm-check --provider pydantic-ai-testmodel --runtime
+uv run content-review llm-check --provider mock --live
+uv run content-review llm-check --provider pydantic-ai-testmodel --live
 uv run content-review llm-check --llm-config examples/llm/mock/llm-provider.yml
 uv run content-review llm-check --llm-config examples/llm/pydanticai/llm-provider.yml
-uv run content-review llm-check --llm-config examples/llm/pydanticai/llm-provider.yml --runtime
-uv run content-review llm-check --llm-provider pydanticai --llm-model openai:gpt-4o-mini --llm-api-key-env OPENAI_API_KEY --runtime
+uv run content-review llm-check --llm-config examples/llm/pydanticai/llm-provider.yml --live
+uv run content-review llm-check --llm-provider pydanticai --llm-model openai:gpt-4o-mini --llm-api-key-env OPENAI_API_KEY --live
 ```
 
 Behavior:
@@ -65,7 +65,8 @@ Behavior:
 - config-driven `pydanticai` then performs a local construction-only check that builds the runtime agent without executing a live provider call
 - `--llm-api-key-env` is a secret reference only; it passes the environment variable name and never passes or prints a plaintext API key
 - default behavior is config check plus secret check plus local construction check only
-- `--runtime` adds a synthetic minimal runtime smoke call
+- `--live` is the explicit opt-in live runtime smoke switch; `--runtime` is kept as a compatible alias
+- config-driven `pydanticai --live` uses a provider-specific minimal smoke prompt and does not run the normal content-review prompt
 - `llm-check` does not write sidecars
 - `llm-check` does not produce deterministic `ReviewResult` or `BatchReviewResult`
 - `llm-check` does not affect deterministic quality-gate behavior
@@ -84,7 +85,8 @@ Current text output stages:
 - `Secret: resolved` or `Secret: not required`
 - `Construction: ok`
 - `Live call: not run` by default
-- `Live call: ok` only when `--runtime` executes the synthetic runtime request
+- `Live call: ok` only when `--live` or `--runtime` executes the explicit smoke call
+- `Live call: failed` plus `Reason: ...` when the explicit smoke call fails after construction succeeds
 
 For real-provider setup and manual verification guidance, see
 [docs/LLM_PROVIDER_USAGE.md](./LLM_PROVIDER_USAGE.md).

@@ -1021,7 +1021,7 @@ def test_cli_batch_parser_accepts_sidecar_provider_argument() -> None:
     assert args.llm_provider == "pydantic-ai-testmodel"
 
 
-def test_cli_llm_check_parser_accepts_runtime_and_llm_config_arguments() -> None:
+def test_cli_llm_check_parser_accepts_live_and_llm_config_arguments() -> None:
     parser = build_parser()
 
     args = parser.parse_args(
@@ -1029,13 +1029,13 @@ def test_cli_llm_check_parser_accepts_runtime_and_llm_config_arguments() -> None
             "llm-check",
             "--llm-config",
             "examples/llm/pydanticai/llm-provider.yml",
-            "--runtime",
+            "--live",
         ]
     )
 
     assert args.command == "llm-check"
     assert args.llm_config == "examples/llm/pydanticai/llm-provider.yml"
-    assert args.runtime is True
+    assert args.live is True
     assert args.llm_retry_attempts is None
     assert args.llm_retry_backoff_seconds is None
     assert args.llm_min_request_interval_seconds is None
@@ -1055,7 +1055,7 @@ def test_cli_llm_check_parser_accepts_provider_argument() -> None:
 
     assert args.command == "llm-check"
     assert args.provider == "pydantic-ai-testmodel"
-    assert args.runtime is True
+    assert args.live is True
 
 
 def test_cli_review_llm_markdown_output_requires_enable_llm(
@@ -4662,7 +4662,7 @@ def test_cli_llm_check_mock_runtime_succeeds_without_network(
             "llm-check",
             "--llm-provider",
             "mock",
-            "--runtime",
+            "--live",
         ]
     )
 
@@ -4689,7 +4689,7 @@ def test_cli_llm_check_provider_mock_runtime_succeeds_without_network(
             "llm-check",
             "--provider",
             "mock",
-            "--runtime",
+            "--live",
         ]
     )
 
@@ -4719,7 +4719,7 @@ def test_cli_llm_check_provider_testmodel_runtime_succeeds_without_api_key_or_ne
             "llm-check",
             "--provider",
             "pydantic-ai-testmodel",
-            "--runtime",
+            "--live",
         ]
     )
 
@@ -4763,7 +4763,7 @@ def test_cli_llm_check_provider_rejects_reserved_real_provider_without_config_fa
             "openai",
             "--llm-config",
             "examples/llm/mock/llm-provider.yml",
-            "--runtime",
+            "--live",
         ]
     )
 
@@ -4946,7 +4946,7 @@ def test_cli_llm_check_uses_cli_override_precedence(
 
     captured_config: dict[str, object] = {}
 
-    def fake_run_llm_smoke_check(config, *, runtime):  # type: ignore[no-untyped-def]
+    def fake_run_llm_smoke_check(config, *, live):  # type: ignore[no-untyped-def]
         captured_config["provider"] = config.provider
         captured_config["model"] = config.model
         captured_config["api_key_env"] = config.api_key_env
@@ -4954,8 +4954,9 @@ def test_cli_llm_check_uses_cli_override_precedence(
         captured_config["retry_attempts"] = config.retry_attempts
         captured_config["retry_backoff_seconds"] = config.retry_backoff_seconds
         captured_config["min_request_interval_seconds"] = config.min_request_interval_seconds
-        captured_config["runtime"] = runtime
+        captured_config["live"] = live
         return LLMSmokeCheckResult(
+            success=True,
             provider=config.provider,
             model=config.model,
             config_status="ok",
@@ -5000,7 +5001,7 @@ def test_cli_llm_check_uses_cli_override_precedence(
         "retry_attempts": 5,
         "retry_backoff_seconds": 0.25,
         "min_request_interval_seconds": 4.5,
-        "runtime": False,
+        "live": False,
     }
 
 
@@ -5012,9 +5013,10 @@ def test_cli_llm_check_output_does_not_leak_secret_value_or_full_prompt(
 
     monkeypatch.setenv("OPENAI_API_KEY", "super-secret-value")
 
-    def fake_run_llm_smoke_check(config, *, runtime):  # type: ignore[no-untyped-def]
-        del config, runtime
+    def fake_run_llm_smoke_check(config, *, live):  # type: ignore[no-untyped-def]
+        del config, live
         return LLMSmokeCheckResult(
+            success=True,
             provider="pydanticai",
             model="openai:gpt-4o-mini",
             config_status="ok",
@@ -5036,7 +5038,7 @@ def test_cli_llm_check_output_does_not_leak_secret_value_or_full_prompt(
             "openai:gpt-4o-mini",
             "--llm-api-key-env",
             "OPENAI_API_KEY",
-            "--runtime",
+            "--live",
         ]
     )
 
@@ -5051,3 +5053,49 @@ def test_cli_llm_check_output_does_not_leak_secret_value_or_full_prompt(
     assert "Live call: ok" in captured.out
     assert "LLM smoke check synthetic request." not in captured.out
     assert captured.err == ""
+
+
+def test_cli_llm_check_live_failure_returns_stable_failed_status(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    from content_review_engine.llm.smoke_check import LLMSmokeCheckResult
+
+    def fake_run_llm_smoke_check(config, *, live):  # type: ignore[no-untyped-def]
+        del config, live
+        return LLMSmokeCheckResult(
+            success=False,
+            provider="pydanticai",
+            model="openai:gpt-4o-mini",
+            config_status="ok",
+            secret_status="resolved",
+            api_key_env="OPENAI_API_KEY",
+            redacted_secret="<redacted>",
+            construction_status="ok",
+            live_call_status="failed",
+            failure_message="PydanticAI runtime request timed out.",
+        )
+
+    monkeypatch.setattr("content_review_engine.cli.run_llm_smoke_check", fake_run_llm_smoke_check)
+
+    exit_code = main(
+        [
+            "llm-check",
+            "--llm-provider",
+            "pydanticai",
+            "--llm-model",
+            "openai:gpt-4o-mini",
+            "--llm-api-key-env",
+            "OPENAI_API_KEY",
+            "--live",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert captured.out == ""
+    assert "LLM check failed." in captured.err
+    assert "Construction: ok" in captured.err
+    assert "Live call: failed" in captured.err
+    assert "Reason: PydanticAI runtime request timed out." in captured.err

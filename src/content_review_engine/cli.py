@@ -362,9 +362,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Optional minimum spacing between consecutive real LLM runtime calls.",
     )
     llm_check_parser.add_argument(
+        "--live",
         "--runtime",
+        dest="live",
         action="store_true",
-        help="Execute an optional runtime smoke call after config and secret checks.",
+        help="Execute an explicit opt-in live runtime smoke call after config, secret, and construction checks.",
     )
 
     batch_parser = subparsers.add_parser(
@@ -1122,15 +1124,19 @@ def _run_llm_check_command(args: argparse.Namespace) -> int:
     if args.provider is not None:
         result = run_llm_smoke_check(
             config,
-            runtime=args.runtime,
+            live=args.live,
             reviewer_provider=args.provider,
         )
     else:
         result = run_llm_smoke_check(
             config,
-            runtime=args.runtime,
+            live=args.live,
         )
-    return _write_or_print_output(render_llm_smoke_check_result(result), None)
+    rendered_output = render_llm_smoke_check_result(result)
+    if result.success:
+        return _write_or_print_output(rendered_output, None)
+    print(rendered_output, file=sys.stderr)
+    return 2
 
 
 def main(argv: list[str] | None = None) -> int:

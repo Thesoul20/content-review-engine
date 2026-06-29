@@ -85,6 +85,33 @@ use.
 
 ## Recent Completion
 
+- TASK-0064 is complete.
+- Added an explicit opt-in live smoke-check path for `content-review llm-check`
+  through `--live`, while keeping `--runtime` as a compatible alias and
+  preserving the default `Live call: not run` behavior.
+- Updated `src/content_review_engine/llm/smoke_check.py` so config-driven
+  `llm-check` now orchestrates secret preflight, construction, and optional
+  provider-specific live execution with stable `Live call: ok` /
+  `Live call: failed` rendering and a non-sensitive failure reason.
+- Updated `src/content_review_engine/llm/pydanticai.py` so
+  `PydanticAIReviewer` now exposes `run_live_check()` using the already
+  resolved in-memory secret plus a minimal smoke prompt, separate from normal
+  review execution.
+- Updated `tests/test_llm_pydanticai_provider.py`,
+  `tests/test_llm_provider_factory.py`, `tests/test_llm_smoke_check.py`,
+  `tests/test_cli.py`, and `tests/test_llm_provider_usage_docs.py` for
+  explicit live success/failure coverage, no-network/no-real-key test
+  isolation, secret non-leakage, and construction/secret short-circuit
+  behavior.
+- Updated `docs/LLM_PROVIDER_USAGE.md`, `docs/CLI.md`,
+  `docs/ARCHITECTURE.md`, `docs/DATA_MODELS.md`, and `CHANGELOG.md` to
+  document the explicit live-check boundary and confirm that canonical result
+  schemas remain unchanged.
+- Kept default tests off the real network, kept plaintext API keys and `.env`
+  loading out of scope, kept factory-side secret resolution and live execution
+  out of scope, and did not change deterministic review behavior, sidecar
+  metadata, or reserved-provider availability.
+
 - TASK-0063 is complete.
 - Added real config-driven `pydanticai` provider construction support in
   `src/content_review_engine/llm/factory.py` so

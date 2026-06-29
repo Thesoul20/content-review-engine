@@ -153,6 +153,30 @@ def test_provider_factory_config_mode_with_secret_value_does_not_read_env_or_cal
     assert isinstance(reviewer, PydanticAIReviewer)
 
 
+def test_provider_factory_config_mode_does_not_execute_live_check_during_construction(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    called = {"live": False}
+
+    def fail_live_check(self) -> None:  # type: ignore[no-untyped-def]
+        called["live"] = True
+        raise AssertionError("Factory should not execute live check during construction.")
+
+    monkeypatch.setattr(PydanticAIReviewer, "run_live_check", fail_live_check)
+
+    reviewer = create_llm_reviewer(
+        LLMProviderConfig(
+            provider="pydanticai",
+            model="openai:gpt-4o-mini",
+            api_key_env="OPENAI_API_KEY",
+        ),
+        secret_value="test-secret-value",
+    )
+
+    assert isinstance(reviewer, PydanticAIReviewer)
+    assert called["live"] is False
+
+
 def test_provider_factory_name_mode_rejects_secret_value_argument() -> None:
     with pytest.raises(ValueError) as exc_info:
         create_llm_reviewer("mock", secret_value="test-secret-value")

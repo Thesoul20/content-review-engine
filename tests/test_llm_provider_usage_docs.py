@@ -66,6 +66,7 @@ def test_usage_docs_exist_and_cover_required_provider_flags_and_boundaries() -> 
     assert "unsupported provider names" in content
     assert "--llm-config" in content
     assert "llm-check" in content
+    assert "--live" in content
     assert "--runtime" in content
     assert "--llm-model" in content
     assert "--llm-api-key-env" in content
@@ -81,6 +82,7 @@ def test_usage_docs_exist_and_cover_required_provider_flags_and_boundaries() -> 
     assert "Secret: not required" in content
     assert "Construction: ok" in content
     assert "Live call: not run" in content
+    assert "Live call: failed" in content
     assert "llm_provider" in content
     assert "llm_provider_source" in content
     assert "Quality Gate behavior does not read LLM findings" in content
@@ -131,6 +133,7 @@ def test_docs_and_fixtures_do_not_require_real_network_or_real_api_key() -> None
     assert "Missing `api_key_env` fails before any real provider call." in usage_doc
     assert "Empty env vars also fail before any real provider call." in usage_doc
     assert "provider construction also stays local and does not access the network" in usage_doc
+    assert "Use `--live` only for explicit manual verification." in usage_doc
     assert "batch `--llm-provider` supports only `mock` and `pydantic-ai-testmodel`" in usage_doc
     assert "explicit sidecar writes `llm_provider_source: explicit`" in usage_doc
     assert "omitted `--llm-provider` writes `llm_provider_source: default` or `config`" in usage_doc

@@ -8,6 +8,42 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0064
+
+### Changed
+
+- Updated `src/content_review_engine/cli.py` so `content-review llm-check`
+  now exposes an explicit `--live` switch, keeps `--runtime` as a compatible
+  alias, renders stable failed live-check output to stderr, and still leaves
+  default `llm-check` behavior at `Live call: not run`.
+- Updated `src/content_review_engine/llm/smoke_check.py` so config-driven
+  `llm-check` now orchestrates secret preflight, construction, and optional
+  live execution with stable `Live call: ok` / `Live call: failed` states and
+  a non-sensitive failure reason.
+- Updated `src/content_review_engine/llm/pydanticai.py` so
+  `PydanticAIReviewer` now exposes `run_live_check()` using the already
+  resolved in-memory secret plus a minimal smoke prompt separate from normal
+  review execution.
+- Updated `src/content_review_engine/llm/__init__.py`,
+  `tests/test_llm_pydanticai_provider.py`,
+  `tests/test_llm_provider_factory.py`, `tests/test_llm_smoke_check.py`,
+  `tests/test_cli.py`, and `tests/test_llm_provider_usage_docs.py` for
+  explicit live success/failure coverage, factory no-live guarantees,
+  non-leaking failure output, and no-network/no-real-key default tests.
+- Updated `docs/LLM_PROVIDER_USAGE.md`, `docs/CLI.md`,
+  `docs/ARCHITECTURE.md`, `docs/DATA_MODELS.md`, and `PROJECT_STATE.md` to
+  document the explicit live-check boundary and confirm that canonical result
+  schemas remain unchanged.
+
+### Not Added
+
+- No default live provider call, no plaintext API-key CLI argument, no `.env`
+  loading, no provider-factory env reads, and no default-test network access
+  or required real API key.
+- No change to `ReviewResult`, `BatchReviewResult`, `LLMReviewResult`,
+  sidecar metadata, deterministic review behavior, or reserved real provider
+  availability.
+
 ## TASK-0063
 
 ### Changed

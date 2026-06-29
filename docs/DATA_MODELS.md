@@ -586,6 +586,7 @@ Current fields:
 
 | Field | Required | Description |
 |---|---|---|
+| `success` | Yes | Overall smoke-check outcome used by CLI exit-code handling |
 | `provider` | Yes | Concrete provider name reported by the smoke check |
 | `model` | No | Optional configured model name; rendered as `<not configured>` when absent |
 | `config_status` | Yes | Current config stage status |
@@ -593,7 +594,8 @@ Current fields:
 | `api_key_env` | No | Environment variable name reference shown only when secret resolution is required |
 | `redacted_secret` | No | Redacted secret display value produced through `redact_secret_value()` |
 | `construction_status` | Yes | Provider construction stage status |
-| `live_call_status` | Yes | Live-call stage status: `ok` or `not run` |
+| `live_call_status` | Yes | Live-call stage status: `ok`, `failed`, or `not run` |
+| `failure_message` | No | Stable non-sensitive failure reason for rendered CLI output |
 
 Notes:
 
@@ -604,10 +606,15 @@ Notes:
   `resolve_llm_provider_secret(config, env=None)` plus `redact_secret_value()`
 - config-driven `llm-check` then performs local provider construction through
   `create_llm_reviewer(config, secret_value=...)`
+- when `--live` is explicitly requested for config-driven `pydanticai`,
+  `PydanticAIReviewer.run_live_check()` sends a minimal smoke prompt and
+  records `Live call: ok` or `Live call: failed`
 - reviewer factory construction remains a separate boundary and does not
   resolve environment variables
 - default text rendering shows `Construction: ok` and `Live call: not run`
   when only local preflight and construction checks ran
+- none of these internal fields change `ReviewResult`, `BatchReviewResult`,
+  `LLMReviewResult`, or sidecar schemas
 
 ---
 

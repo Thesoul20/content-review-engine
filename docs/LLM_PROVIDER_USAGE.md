@@ -131,11 +131,11 @@ Examples:
 
 ```bash
 uv run content-review llm-check
-uv run content-review llm-check --provider mock --runtime
-uv run content-review llm-check --provider pydantic-ai-testmodel --runtime
+uv run content-review llm-check --provider mock --live
+uv run content-review llm-check --provider pydantic-ai-testmodel --live
 uv run content-review llm-check --llm-config examples/llm/mock/llm-provider.yml
 uv run content-review llm-check --llm-config examples/llm/pydanticai/llm-provider.yml
-uv run content-review llm-check --llm-config examples/llm/pydanticai/llm-provider.yml --runtime
+uv run content-review llm-check --llm-config examples/llm/pydanticai/llm-provider.yml --live
 uv run content-review llm-check --llm-provider pydanticai --llm-model openai:gpt-4o-mini --llm-api-key-env OPENAI_API_KEY
 ```
 
@@ -150,6 +150,7 @@ Default behavior:
 - providers that do not require a secret print `Secret: not required`
 - successful construction checks print `Construction: ok`
 - default output also prints `Live call: not run`
+- live failures print `Live call: failed` plus a stable `Reason: ...`
 - failures may name the missing env var reference, but they do not print the
   secret value
 
@@ -165,15 +166,20 @@ Default behavior:
 - unsupported provider names fail explicitly as unknown providers and do not
   fall back to config or `mock`
 
-`--runtime` behavior:
+`--live` behavior:
 
-- adds a synthetic minimal `LLMReviewRequest`
+- `--live` is the explicit opt-in live runtime smoke switch; `--runtime` is
+  kept as a compatible alias
+- for `mock` and `pydantic-ai-testmodel`, it still runs the existing local
+  synthetic `LLMReviewRequest`
+- for config-driven `pydanticai`, it runs a provider-specific minimal smoke
+  prompt: `Reply with exactly: ok`
 - does not read a real article or review profile
 - does not write sidecars or deterministic review output
 - may access the real provider for `pydanticai`
 - may incur provider cost for `pydanticai`
 
-Use `llm-check --runtime` only for explicit manual verification.
+Use `--live` only for explicit manual verification.
 
 ## PydanticAI Provider
 
@@ -254,7 +260,8 @@ Current `llm-check` behavior on top of that resolver:
 - the provider factory does not resolve the secret, does not read `.env`, and
   does not read `os.environ`
 - config-driven `pydanticai` then performs a local construction-only agent
-  build that does not execute a live model call
+  build that does not execute a live model call unless `--live` is explicitly
+  enabled
 - `llm-check` reuses `redact_secret_value()` for the displayed secret state
 - `llm-check` prints the env var name and `<redacted>`, never the full secret
 - `llm-check` does not read `.env` and does not fallback to a plaintext

@@ -14,6 +14,7 @@ from content_review_engine.llm.errors import (
     LLMProviderConfigError,
     LLMProviderError,
     LLMProviderNotImplementedError,
+    LLMProviderRuntimeError,
     LLMResponseValidationError,
 )
 from content_review_engine.llm.models import LLMReviewRequest, LLMReviewResult
@@ -34,6 +35,8 @@ PYDANTICAI_NOT_IMPLEMENTED_MESSAGE = (
     "Provider 'pydanticai' dependency and secret boundary is available, "
     "but review is not implemented yet."
 )
+PYDANTICAI_LIVE_CHECK_PROMPT = "Reply with exactly: ok"
+PYDANTICAI_LIVE_CHECK_SYSTEM_PROMPT = "Return a short plain-text readiness response."
 
 
 def raise_pydanticai_not_implemented() -> None:
@@ -92,6 +95,42 @@ def run_pydanticai_runtime_agent(
     return agent.run_sync(payload.user_prompt).output
 
 
+def build_pydanticai_live_check_agent(
+    *,
+    model: str,
+    secret: ResolvedLLMSecret,
+    base_url: str | None,
+    timeout_seconds: float | None,
+    agent_type: type[Agent] = Agent,
+) -> Agent:
+    openai_client = AsyncOpenAI(
+        base_url=base_url,
+        api_key=secret.api_key.get_secret_value(),
+        timeout=timeout_seconds,
+        max_retries=0,
+    )
+    provider = OpenAIProvider(
+        openai_client=openai_client,
+    )
+    runtime_model = OpenAIChatModel(
+        _normalize_model_name(model),
+        provider=provider,
+    )
+    return agent_type(
+        runtime_model,
+        output_type=str,
+        system_prompt=PYDANTICAI_LIVE_CHECK_SYSTEM_PROMPT,
+        defer_model_check=True,
+    )
+
+
+def run_pydanticai_live_check_agent(
+    agent: Agent,
+    prompt: str,
+) -> str:
+    return str(agent.run_sync(prompt).output).strip()
+
+
 class PydanticAIReviewer:
     """PydanticAI-backed reviewer using the project's stable mapping boundary."""
 
@@ -144,6 +183,26 @@ class PydanticAIReviewer:
 
     def run_construction_check(self) -> None:
         self.build_runtime_agent("LLM smoke check construction-only prompt.")
+
+    def run_live_check(self) -> None:
+        agent = build_pydanticai_live_check_agent(
+            model=_normalize_model_name(self.model),
+            secret=self.resolve_secret(),
+            base_url=self.base_url,
+            timeout_seconds=self.timeout_seconds,
+            agent_type=self._agent_type,
+        )
+        try:
+            response = run_pydanticai_live_check_agent(
+                agent,
+                PYDANTICAI_LIVE_CHECK_PROMPT,
+            )
+        except Exception as exc:
+            raise classify_pydanticai_runtime_error(exc) from exc
+        if response == "":
+            raise LLMProviderRuntimeError(
+                "PydanticAI live smoke check returned an empty response."
+            )
 
     def build_request_payload(
         self,
@@ -213,9 +272,13 @@ class PydanticAIReviewer:
 
 __all__ = [
     "PYDANTICAI_NOT_IMPLEMENTED_MESSAGE",
+    "PYDANTICAI_LIVE_CHECK_PROMPT",
+    "PYDANTICAI_LIVE_CHECK_SYSTEM_PROMPT",
     "PYDANTICAI_PROVIDER_NAME",
     "PydanticAIReviewer",
+    "build_pydanticai_live_check_agent",
     "build_pydanticai_runtime_agent",
     "raise_pydanticai_not_implemented",
+    "run_pydanticai_live_check_agent",
     "run_pydanticai_runtime_agent",
 ]

@@ -22,6 +22,7 @@ from content_review_engine.llm import (
     LLMResponseValidationError,
     LLMReviewRequest,
     LLMReviewer,
+    PYDANTICAI_LIVE_CHECK_PROMPT,
     PydanticAIReviewMapper,
     PydanticAIReviewer,
     ResolvedLLMSecret,
@@ -833,3 +834,77 @@ def test_pydanticai_construction_check_does_not_access_network(
     )
 
     reviewer.run_construction_check()
+
+
+def test_pydanticai_live_check_uses_pre_resolved_secret_without_env_lookup(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail_secret_resolver(*args, **kwargs):  # type: ignore[no-untyped-def]
+        raise AssertionError(f"Unexpected secret resolution: {args!r} {kwargs!r}")
+
+    captured: dict[str, object] = {}
+
+    def fake_build_live_agent(**kwargs):  # type: ignore[no-untyped-def]
+        captured.update(kwargs)
+        return object()
+
+    def fake_run_live_agent(agent, prompt):  # type: ignore[no-untyped-def]
+        captured["agent"] = agent
+        captured["prompt"] = prompt
+        return "ok"
+
+    monkeypatch.setattr(
+        "content_review_engine.llm.pydanticai.build_pydanticai_live_check_agent",
+        fake_build_live_agent,
+    )
+    monkeypatch.setattr(
+        "content_review_engine.llm.pydanticai.run_pydanticai_live_check_agent",
+        fake_run_live_agent,
+    )
+
+    reviewer = PydanticAIReviewer(
+        LLMProviderConfig(
+            provider="pydanticai",
+            model="openai:gpt-4o-mini",
+            api_key_env="CONTENT_REVIEW_TEST_LLM_API_KEY",
+            base_url="https://example.com/v1",
+            timeout_seconds=12.5,
+        ),
+        resolved_secret=reviewer_secret("CONTENT_REVIEW_TEST_LLM_API_KEY"),
+        secret_resolver=fail_secret_resolver,
+    )
+
+    reviewer.run_live_check()
+
+    assert captured["model"] == "gpt-4o-mini"
+    assert captured["base_url"] == "https://example.com/v1"
+    assert captured["timeout_seconds"] == 12.5
+    assert captured["prompt"] == PYDANTICAI_LIVE_CHECK_PROMPT
+    assert "test-secret-value" not in repr(captured["secret"])
+
+
+def test_pydanticai_live_check_rejects_empty_response(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    reviewer = PydanticAIReviewer(
+        LLMProviderConfig(
+            provider="pydanticai",
+            model="openai:gpt-4o-mini",
+            api_key_env="CONTENT_REVIEW_TEST_LLM_API_KEY",
+        ),
+        resolved_secret=reviewer_secret("CONTENT_REVIEW_TEST_LLM_API_KEY"),
+    )
+
+    monkeypatch.setattr(
+        "content_review_engine.llm.pydanticai.build_pydanticai_live_check_agent",
+        lambda **kwargs: object(),
+    )
+    monkeypatch.setattr(
+        "content_review_engine.llm.pydanticai.run_pydanticai_live_check_agent",
+        lambda agent, prompt: "",
+    )
+
+    with pytest.raises(LLMProviderRuntimeError) as exc_info:
+        reviewer.run_live_check()
+
+    assert str(exc_info.value) == "PydanticAI live smoke check returned an empty response."

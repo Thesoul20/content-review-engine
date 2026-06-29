@@ -42,6 +42,7 @@ def test_build_llm_smoke_check_request_uses_synthetic_minimal_content() -> None:
 def test_run_llm_smoke_check_mock_config_only_succeeds() -> None:
     result = run_llm_smoke_check(LLMProviderConfig(provider="mock"))
 
+    assert result.success is True
     assert result.provider == "mock"
     assert result.model is None
     assert result.config_status == "ok"
@@ -60,8 +61,9 @@ def test_run_llm_smoke_check_mock_runtime_succeeds_without_network(
 
     monkeypatch.setattr(socket, "create_connection", fail_create_connection)
 
-    result = run_llm_smoke_check(LLMProviderConfig(provider="mock"), runtime=True)
+    result = run_llm_smoke_check(LLMProviderConfig(provider="mock"), live=True)
 
+    assert result.success is True
     assert result.provider == "mock"
     assert result.secret_status == "not_required"
     assert result.construction_status == "ok"
@@ -87,10 +89,11 @@ def test_run_llm_smoke_check_provider_mode_uses_factory_name_and_testmodel_witho
 
     result = run_llm_smoke_check(
         LLMProviderConfig(provider="mock"),
-        runtime=True,
+        live=True,
         reviewer_provider="pydantic-ai-testmodel",
     )
 
+    assert result.success is True
     assert captured_provider == {"value": "pydantic-ai-testmodel"}
     assert result.provider == "pydantic-ai-testmodel"
     assert result.secret_status == "not_required"
@@ -129,12 +132,13 @@ def test_run_llm_smoke_check_pydanticai_secret_present_runs_construction_without
                 model="openai:gpt-4o-mini",
                 api_key_env="OPENAI_API_KEY",
             ),
-            runtime=False,
+            live=False,
             env={"OPENAI_API_KEY": "test-secret-value"},
         )
     finally:
         module.create_llm_reviewer = original_factory  # type: ignore[assignment]
 
+    assert result.success is True
     assert result.secret_status == "resolved"
     assert result.api_key_env == "OPENAI_API_KEY"
     assert result.redacted_secret == REDACTED_SECRET_TEXT
@@ -145,7 +149,7 @@ def test_run_llm_smoke_check_pydanticai_secret_present_runs_construction_without
     assert captured_secret_value == {"value": "test-secret-value"}
 
 
-def test_run_llm_smoke_check_pydanticai_runtime_success_with_fake_runtime() -> None:
+def test_run_llm_smoke_check_pydanticai_live_success_with_fake_runtime() -> None:
     reviewer = PydanticAIReviewer(
         LLMProviderConfig(
             provider="pydanticai",
@@ -153,7 +157,43 @@ def test_run_llm_smoke_check_pydanticai_runtime_success_with_fake_runtime() -> N
             api_key_env="OPENAI_API_KEY",
         ),
         resolved_secret=_reviewer_secret("OPENAI_API_KEY"),
-        runtime_runner=lambda _agent, _payload: {"findings": []},
+    )
+    reviewer.run_live_check = lambda: None  # type: ignore[method-assign]
+
+    from content_review_engine.llm import smoke_check as module
+
+    original_factory = module.create_llm_reviewer
+    module.create_llm_reviewer = (  # type: ignore[assignment]
+        lambda config, *, secret_value=None: reviewer
+    )
+    try:
+        result = run_llm_smoke_check(
+            reviewer.config,
+            live=True,
+            env={"OPENAI_API_KEY": "test-secret-value"},
+        )
+    finally:
+        module.create_llm_reviewer = original_factory  # type: ignore[assignment]
+
+    assert result.success is True
+    assert result.secret_status == "resolved"
+    assert result.api_key_env == "OPENAI_API_KEY"
+    assert result.redacted_secret == REDACTED_SECRET_TEXT
+    assert result.construction_status == "ok"
+    assert result.live_call_status == "ok"
+
+
+def test_run_llm_smoke_check_pydanticai_live_failure_returns_failed_result() -> None:
+    reviewer = PydanticAIReviewer(
+        LLMProviderConfig(
+            provider="pydanticai",
+            model="openai:gpt-4o-mini",
+            api_key_env="OPENAI_API_KEY",
+        ),
+        resolved_secret=_reviewer_secret("OPENAI_API_KEY"),
+    )
+    reviewer.run_live_check = lambda: (_ for _ in ()).throw(  # type: ignore[method-assign]
+        LLMProviderRuntimeError("PydanticAI runtime request timed out.")
     )
 
     from content_review_engine.llm import smoke_check as module
@@ -165,49 +205,78 @@ def test_run_llm_smoke_check_pydanticai_runtime_success_with_fake_runtime() -> N
     try:
         result = run_llm_smoke_check(
             reviewer.config,
-            runtime=True,
+            live=True,
             env={"OPENAI_API_KEY": "test-secret-value"},
         )
     finally:
         module.create_llm_reviewer = original_factory  # type: ignore[assignment]
 
+    assert result.success is False
     assert result.secret_status == "resolved"
-    assert result.api_key_env == "OPENAI_API_KEY"
-    assert result.redacted_secret == REDACTED_SECRET_TEXT
     assert result.construction_status == "ok"
-    assert result.live_call_status == "ok"
+    assert result.live_call_status == "failed"
+    assert result.failure_message == "PydanticAI runtime request timed out."
+    assert "test-secret-value" not in (result.failure_message or "")
 
 
-def test_run_llm_smoke_check_pydanticai_runtime_failure_with_fake_runtime() -> None:
-    reviewer = PydanticAIReviewer(
-        LLMProviderConfig(
-            provider="pydanticai",
-            model="openai:gpt-4o-mini",
-            api_key_env="OPENAI_API_KEY",
-        ),
-        resolved_secret=_reviewer_secret("OPENAI_API_KEY"),
-        runtime_runner=lambda _agent, _payload: (_ for _ in ()).throw(
-            TimeoutError("hidden runtime timeout")
-        ),
-    )
+def test_run_llm_smoke_check_construction_failure_does_not_continue_to_live() -> None:
+    call_order: list[str] = []
+
+    class GuardedReviewer:
+        def run_construction_check(self) -> None:
+            call_order.append("construction")
+            raise LLMProviderRuntimeError("construction failed")
+
+        def run_live_check(self) -> None:
+            call_order.append("live")
 
     from content_review_engine.llm import smoke_check as module
 
     original_factory = module.create_llm_reviewer
     module.create_llm_reviewer = (  # type: ignore[assignment]
-        lambda config, *, secret_value=None: reviewer
+        lambda config, *, secret_value=None: GuardedReviewer()
     )
     try:
         with pytest.raises(LLMProviderRuntimeError) as exc_info:
             run_llm_smoke_check(
-                reviewer.config,
-                runtime=True,
+                LLMProviderConfig(
+                    provider="pydanticai",
+                    model="openai:gpt-4o-mini",
+                    api_key_env="OPENAI_API_KEY",
+                ),
+                live=True,
                 env={"OPENAI_API_KEY": "test-secret-value"},
             )
     finally:
         module.create_llm_reviewer = original_factory  # type: ignore[assignment]
 
-    assert str(exc_info.value) == "PydanticAI runtime request timed out."
+    assert str(exc_info.value) == "construction failed"
+    assert call_order == ["construction"]
+
+
+def test_run_llm_smoke_check_secret_failure_does_not_continue_to_construction_or_live() -> None:
+    from content_review_engine.llm import smoke_check as module
+
+    reviewer_called = {"value": False}
+    original_factory = module.create_llm_reviewer
+    module.create_llm_reviewer = (  # type: ignore[assignment]
+        lambda config, *, secret_value=None: reviewer_called.__setitem__("value", True)
+    )
+    try:
+        with pytest.raises(MissingLLMProviderSecretEnvironmentVariableError):
+            run_llm_smoke_check(
+                LLMProviderConfig(
+                    provider="pydanticai",
+                    model="openai:gpt-4o-mini",
+                    api_key_env="OPENAI_API_KEY",
+                ),
+                live=True,
+                env={},
+            )
+    finally:
+        module.create_llm_reviewer = original_factory  # type: ignore[assignment]
+
+    assert reviewer_called["value"] is False
 
 
 def test_run_llm_smoke_check_pydanticai_rejects_missing_api_key_env() -> None:
@@ -254,7 +323,7 @@ def test_run_llm_smoke_check_pydanticai_rejects_empty_env_var() -> None:
 
 def test_render_llm_smoke_check_result_does_not_include_full_synthetic_request() -> None:
     rendered = render_llm_smoke_check_result(
-        run_llm_smoke_check(LLMProviderConfig(provider="mock"), runtime=True)
+        run_llm_smoke_check(LLMProviderConfig(provider="mock"), live=True)
     )
 
     assert "LLM check passed." in rendered
@@ -286,4 +355,40 @@ def test_render_llm_smoke_check_result_shows_redacted_secret_only() -> None:
     assert "Secret: resolved" in rendered
     assert "Construction: ok" in rendered
     assert "Live call: not run" in rendered
+    assert "test-secret-value" not in rendered
+
+
+def test_render_llm_smoke_check_failed_result_hides_secret_and_shows_reason() -> None:
+    reviewer = PydanticAIReviewer(
+        LLMProviderConfig(
+            provider="pydanticai",
+            model="openai:gpt-4o-mini",
+            api_key_env="OPENAI_API_KEY",
+        ),
+        resolved_secret=_reviewer_secret("OPENAI_API_KEY"),
+    )
+    reviewer.run_live_check = lambda: (_ for _ in ()).throw(  # type: ignore[method-assign]
+        LLMProviderRuntimeError("PydanticAI runtime request timed out.")
+    )
+
+    from content_review_engine.llm import smoke_check as module
+
+    original_factory = module.create_llm_reviewer
+    module.create_llm_reviewer = (  # type: ignore[assignment]
+        lambda config, *, secret_value=None: reviewer
+    )
+    try:
+        rendered = render_llm_smoke_check_result(
+            run_llm_smoke_check(
+                reviewer.config,
+                live=True,
+                env={"OPENAI_API_KEY": "test-secret-value"},
+            )
+        )
+    finally:
+        module.create_llm_reviewer = original_factory  # type: ignore[assignment]
+
+    assert "LLM check failed." in rendered
+    assert "Live call: failed" in rendered
+    assert "Reason: PydanticAI runtime request timed out." in rendered
     assert "test-secret-value" not in rendered

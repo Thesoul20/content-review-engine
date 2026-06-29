@@ -62,11 +62,15 @@ from content_review_engine.llm.models import (
     LLMReviewSummary,
 )
 from content_review_engine.llm.pydanticai import (
+    PYDANTICAI_LIVE_CHECK_PROMPT,
+    PYDANTICAI_LIVE_CHECK_SYSTEM_PROMPT,
     PYDANTICAI_NOT_IMPLEMENTED_MESSAGE,
     PYDANTICAI_PROVIDER_NAME,
     PydanticAIReviewer,
+    build_pydanticai_live_check_agent,
     build_pydanticai_runtime_agent,
     raise_pydanticai_not_implemented,
+    run_pydanticai_live_check_agent,
 )
 from content_review_engine.llm.pydantic_ai_provider import (
     PYDANTIC_AI_TESTMODEL_MODEL_NAME,
@@ -175,6 +179,8 @@ __all__ = [
     "LLMReviewRunner",
     "MockLLMReviewer",
     "PYDANTICAI_NOT_IMPLEMENTED_MESSAGE",
+    "PYDANTICAI_LIVE_CHECK_PROMPT",
+    "PYDANTICAI_LIVE_CHECK_SYSTEM_PROMPT",
     "PYDANTICAI_PROVIDER_NAME",
     "PYDANTICAI_ALLOWED_SEVERITIES",
     "PYDANTICAI_PROMPT_VERSION",
@@ -196,6 +202,7 @@ __all__ = [
     "build_pydanticai_review_prompt",
     "build_pydanticai_review_request",
     "build_pydanticai_system_prompt",
+    "build_pydanticai_live_check_agent",
     "build_pydanticai_runtime_agent",
     "build_llm_sidecar_error",
     "build_llm_sidecar_file_failed",
@@ -230,6 +237,7 @@ __all__ = [
     "resolve_llm_provider_secret",
     "render_llm_smoke_check_result",
     "raise_pydanticai_not_implemented",
+    "run_pydanticai_live_check_agent",
     "run_pydantic_ai_testmodel_agent",
     "run_llm_smoke_check",
     "validate_llm_provider_config",

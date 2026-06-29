@@ -379,11 +379,13 @@ content-review llm-check
   ↓
 LLMProviderConfig load + CLI override merge
   ↓
+Optional secret resolution
+  ↓
 Provider Factory
   ↓
-Optional secret resolution
-  ↓ optional only when --runtime
-Synthetic minimal LLMReviewRequest
+PydanticAIReviewer.run_construction_check()
+  ↓ optional only when --live/--runtime
+PydanticAIReviewer.run_live_check()
   ↓
 Provider runtime smoke call
 ```

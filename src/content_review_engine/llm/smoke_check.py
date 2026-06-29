@@ -15,7 +15,7 @@ from content_review_engine.llm.secrets import (
 
 LLMSmokeCheckStatus = Literal["ok", "skipped"]
 LLMSmokeCheckSecretStatus = Literal["resolved", "not_required"]
-LLMSmokeCheckLiveCallStatus = Literal["not run", "ok"]
+LLMSmokeCheckLiveCallStatus = Literal["not run", "ok", "failed"]
 
 _SMOKE_CHECK_CONTENT = "LLM smoke check synthetic request."
 _UNSET_MODEL_TEXT = "<not configured>"
@@ -23,6 +23,7 @@ _UNSET_MODEL_TEXT = "<not configured>"
 
 @dataclass(frozen=True)
 class LLMSmokeCheckResult:
+    success: bool
     provider: str
     model: str | None
     config_status: LLMSmokeCheckStatus
@@ -31,6 +32,7 @@ class LLMSmokeCheckResult:
     redacted_secret: str | None
     construction_status: LLMSmokeCheckStatus
     live_call_status: LLMSmokeCheckLiveCallStatus
+    failure_message: str | None = None
 
 
 def build_llm_smoke_check_request() -> LLMReviewRequest:
@@ -46,7 +48,7 @@ def build_llm_smoke_check_request() -> LLMReviewRequest:
 def run_llm_smoke_check(
     config: LLMProviderConfig,
     *,
-    runtime: bool = False,
+    live: bool = False,
     reviewer_provider: str | None = None,
     env: Mapping[str, str] | None = None,
 ) -> LLMSmokeCheckResult:
@@ -76,11 +78,21 @@ def run_llm_smoke_check(
         reviewer.run_construction_check()
 
     live_call_status: LLMSmokeCheckLiveCallStatus = "not run"
-    if runtime:
-        reviewer.review(build_llm_smoke_check_request())
-        live_call_status = "ok"
+    failure_message: str | None = None
+    if live:
+        try:
+            if reviewer_provider is None and hasattr(reviewer, "run_live_check"):
+                reviewer.run_live_check()
+            else:
+                reviewer.review(build_llm_smoke_check_request())
+        except Exception as exc:
+            live_call_status = "failed"
+            failure_message = str(exc)
+        else:
+            live_call_status = "ok"
 
     return LLMSmokeCheckResult(
+        success=failure_message is None,
         provider=provider_name,
         model=config.model,
         config_status="ok",
@@ -89,12 +101,13 @@ def run_llm_smoke_check(
         redacted_secret=redacted_secret,
         construction_status=construction_status,
         live_call_status=live_call_status,
+        failure_message=failure_message,
     )
 
 
 def render_llm_smoke_check_result(result: LLMSmokeCheckResult) -> str:
     lines = [
-        "LLM check passed.",
+        "LLM check passed." if result.success else "LLM check failed.",
         "",
         f"Provider: {result.provider}",
         f"Model: {result.model or _UNSET_MODEL_TEXT}",
@@ -112,6 +125,13 @@ def render_llm_smoke_check_result(result: LLMSmokeCheckResult) -> str:
         lines.append("Secret: not required")
     lines.append(f"Construction: {result.construction_status}")
     lines.append(f"Live call: {result.live_call_status}")
+    if result.failure_message is not None:
+        lines.extend(
+            [
+                "",
+                f"Reason: {result.failure_message}",
+            ]
+        )
     return "\n".join(lines)
 
 
