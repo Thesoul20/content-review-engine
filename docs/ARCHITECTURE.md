@@ -232,23 +232,23 @@ Current status:
 - `content-review llm-check --provider` now uses that name-driven factory path
   for safe local smoke checks, while the existing config-driven `llm-check`
   path remains available for `mock` and `pydanticai`
-- single-file sidecar review now has two explicit paths:
-  omitted `--llm-provider` keeps the existing config-driven boundary, while
-  explicit `--llm-provider mock|pydantic-ai-testmodel` uses the name-driven
-  `create_llm_reviewer()` boundary
+- single-file `content-review review --enable-llm` now has a dedicated TASK-0069
+  path that builds `LLMReviewRequest`, resolves secrets through
+  `resolve_llm_provider_secret(config, env=None)`, calls
+  `create_llm_reviewer(config, secret_value=...)`, then reuses
+  `run_semantic_review(request)` plus
+  `convert_validated_semantic_output_to_llm_review_result()`
 - batch sidecar review now follows that same split:
   omitted `--llm-provider` keeps the existing config-driven boundary, while
   explicit `--llm-provider mock|pydantic-ai-testmodel` uses the name-driven
   `create_llm_reviewer()` boundary
-- single-file and batch sidecar envelopes now also record `llm_provider` plus
-  `llm_provider_source` at the top level, so sidecar consumers can tell which
-  provider ran and whether the selection was `explicit`, `default`, or
-  `config`
+- batch sidecar envelopes still record `llm_provider` plus
+  `llm_provider_source`; single-file `--llm-output` now writes raw
+  `LLMReviewResult` JSON instead of an envelope
 - the CLI can optionally write a separate LLM sidecar Markdown report for
   single-file or batch sidecar output through `--llm-markdown-output`
-- the single-file Markdown report can now optionally append a separate
-  `LLMReviewResult` section when `--format markdown`, `--enable-llm`, and
-  `--include-llm-report` are all enabled
+- single-file deterministic Markdown output no longer appends LLM findings;
+  `--include-llm-report` is not supported for the TASK-0069 path
 - no LLM output is merged into the current `ReviewResult`
 - no LLM output is merged into deterministic severity counts, rule counts, or
   quality-gate evaluation

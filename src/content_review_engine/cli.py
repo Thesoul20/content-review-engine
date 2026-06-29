@@ -42,12 +42,15 @@ from content_review_engine.llm import (
     build_llm_sidecar_file_failed,
     build_llm_sidecar_file_success,
     build_llm_sidecar_result,
+    llm_review_result_to_json,
     create_llm_reviewer,
     llm_sidecar_result_to_json,
     load_llm_provider_config_file,
     load_llm_provider_config,
     merge_llm_provider_config,
     render_llm_smoke_check_result,
+    resolve_llm_provider_secret,
+    run_single_file_llm_review,
     run_llm_smoke_check,
 )
 from content_review_engine.parser import read_markdown
@@ -731,8 +734,24 @@ def _validate_review_llm_args(args: argparse.Namespace) -> None:
 
     if args.llm_output is None:
         raise ValueError("--enable-llm requires --llm-output")
-    if args.include_llm_report and args.format != "markdown":
-        raise ValueError("--include-llm-report requires --format markdown")
+    if args.include_llm_report:
+        raise ValueError("--include-llm-report is not supported for single-file LLM review")
+    if (
+        args.llm_provider is None
+        and args.llm_config is None
+        and (
+            args.llm_model is not None
+            or args.llm_api_key_env is not None
+            or args.llm_base_url is not None
+            or args.llm_timeout_seconds is not None
+            or args.llm_retry_attempts is not None
+            or args.llm_retry_backoff_seconds is not None
+            or args.llm_min_request_interval_seconds is not None
+        )
+    ):
+        raise ValueError(
+            "LLM provider config flags require --llm-provider or --llm-config."
+        )
 
 
 def _validate_batch_llm_args(args: argparse.Namespace) -> None:
@@ -778,9 +797,17 @@ def _build_llm_reviewer(args: argparse.Namespace):
 
 
 def _build_single_review_llm_reviewer(args: argparse.Namespace):
-    if args.llm_provider is not None:
+    if args.llm_provider in {"mock", "pydantic-ai-testmodel"}:
         return create_llm_reviewer(args.llm_provider)
-    return _build_llm_reviewer(args)
+    config = _build_llm_provider_config(args)
+    if config.provider == "pydanticai" and config.model is None:
+        raise ValueError(
+            "LLM provider 'pydanticai' requires --llm-model or llm-config model."
+        )
+    secret_value = None
+    if config.provider == "pydanticai":
+        secret_value = resolve_llm_provider_secret(config)
+    return create_llm_reviewer(config, secret_value=secret_value)
 
 
 def _build_batch_review_llm_reviewer(args: argparse.Namespace):
@@ -828,8 +855,29 @@ def _run_llm_review(
         markdown_path=markdown_path,
         profile_name=profile_name,
     )
-    runner = LLMReviewRunner(reviewer=reviewer)
-    return runner.run(request)
+    return run_single_file_llm_review(
+        request,
+        reviewer=reviewer,
+        provider=getattr(reviewer, "config", None).provider
+        if getattr(reviewer, "config", None) is not None
+        else getattr(reviewer, "provider", None),
+        model=getattr(reviewer, "model", None),
+    )
+
+
+def _write_llm_review_result(
+    *,
+    review_result: LLMReviewResult,
+    output_path: str,
+) -> None:
+    llm_path = Path(output_path)
+    try:
+        llm_path.write_text(
+            llm_review_result_to_json(review_result),
+            encoding="utf-8",
+        )
+    except OSError as exc:
+        raise ValueError(f"Failed to write LLM review result: {llm_path}: {exc}") from exc
 
 
 def _write_llm_sidecar(
@@ -968,9 +1016,6 @@ def _write_batch_llm_sidecars(
 def _run_review_command(args: argparse.Namespace) -> int:
     _validate_review_llm_args(args)
     llm_reviewer = _build_single_review_llm_reviewer(args) if args.enable_llm else None
-    llm_provider_metadata = (
-        _build_llm_sidecar_provider_metadata(args) if args.enable_llm else None
-    )
     markdown_text = read_markdown(args.markdown_file)
     profile = load_profile(args.profile)
     review_result = review_document(
@@ -979,37 +1024,37 @@ def _run_review_command(args: argparse.Namespace) -> int:
         document_path=args.markdown_file,
         profile_path=args.profile,
     )
-    llm_result = None
-    llm_sidecar_file = None
-    if args.enable_llm:
-        llm_sidecar_file = _run_llm_sidecar_for_file(
-            markdown_text=markdown_text,
-            markdown_path=args.markdown_file,
-            profile_name=profile.name,
-            reviewer=llm_reviewer,
-        )
-        llm_result = llm_sidecar_file.review
     rendered_output = _render_output(
         review_result,
         output_format=args.format,
         fail_on=args.fail_on,
-        llm_result=llm_result if args.include_llm_report else None,
+        llm_result=None,
     )
     output_exit_code = _write_or_print_output(rendered_output, args.output)
     if output_exit_code != 0:
         return output_exit_code
     if args.enable_llm:
-        llm_provider, llm_provider_source = llm_provider_metadata
-        llm_sidecar_result = build_llm_sidecar_result(
-            [llm_sidecar_file],
-            llm_provider=llm_provider,
-            llm_provider_source=llm_provider_source,
+        llm_result = _run_llm_review(
+            markdown_text=markdown_text,
+            markdown_path=args.markdown_file,
+            profile_name=profile.name,
+            reviewer=llm_reviewer,
         )
-        _write_llm_sidecar(
-            sidecar_result=llm_sidecar_result,
+        _write_llm_review_result(
+            review_result=llm_result,
             output_path=args.llm_output,
         )
         if args.llm_markdown_output is not None:
+            llm_sidecar_result = build_llm_sidecar_result(
+                [
+                    build_llm_sidecar_file_success(
+                        path=args.markdown_file,
+                        review=llm_result,
+                    )
+                ],
+                llm_provider=llm_result.provider or _build_llm_provider_config(args).provider,
+                llm_provider_source="config" if args.llm_config is not None else "explicit",
+            )
             _write_llm_markdown_report(
                 sidecar_result=llm_sidecar_result,
                 output_path=args.llm_markdown_output,

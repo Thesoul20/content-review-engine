@@ -8,6 +8,44 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0069
+
+### Added
+
+- Added `run_single_file_llm_review(...)` in
+  `src/content_review_engine/llm/runner.py` to build the single-file semantic
+  review path around `run_semantic_review(request)` and
+  `convert_validated_semantic_output_to_llm_review_result(...)`.
+- Added `tests/test_llm_single_file_cli_integration.py` for single-file raw
+  sidecar output, missing-config errors, env-missing/env-empty failures,
+  provider/parse/validation failures, sidecar write failures, and no-network
+  fake-reviewer coverage.
+
+### Changed
+
+- Updated `src/content_review_engine/cli.py` so single-file
+  `content-review review --enable-llm` now resolves secrets outside the
+  provider factory, reuses the semantic-review pipeline, writes raw
+  `LLMReviewResult` JSON to `--llm-output`, and keeps deterministic stdout and
+  deterministic report schemas unchanged.
+- Updated `src/content_review_engine/llm/__init__.py` and
+  `tests/test_llm_runner.py` / `tests/test_cli.py` to expose and verify the
+  new single-file runner boundary plus the unsupported
+  `--include-llm-report` behavior for single-file review.
+- Updated `docs/CLI.md`, `docs/LLM_PROVIDER_USAGE.md`,
+  `docs/DATA_MODELS.md`, `docs/ARCHITECTURE.md`, and `PROJECT_STATE.md` to
+  document that single-file `--llm-output` now writes raw `LLMReviewResult`
+  JSON while batch sidecars still use `LLMSidecarResult`.
+
+### Not Added
+
+- No `content-review batch` integration changes.
+- No deterministic `ReviewResult` or `BatchReviewResult` schema changes.
+- No LLM findings merged into deterministic stdout, deterministic JSON,
+  deterministic Markdown reports, or quality-gate behavior.
+- No plaintext API key CLI arguments, `.env` loading, factory-side env
+  resolution, default-test real network access, or required real API keys.
+
 ## TASK-0068
 
 ### Added

@@ -130,7 +130,7 @@ from content_review_engine.llm.pydanticai_mapping import (
     validate_pydanticai_review_response,
 )
 from content_review_engine.llm.provider import LLMReviewer
-from content_review_engine.llm.runner import LLMReviewRunner
+from content_review_engine.llm.runner import LLMReviewRunner, run_single_file_llm_review
 from content_review_engine.llm.secrets import (
     REDACTED_SECRET_TEXT,
     ResolvedLLMSecret,
@@ -219,6 +219,7 @@ __all__ = [
     "LLM_SEMANTIC_OUTPUT_SCHEMA_METADATA_KEY",
     "LLMReviewer",
     "LLMReviewRunner",
+    "run_single_file_llm_review",
     "MockLLMReviewer",
     "PYDANTICAI_NOT_IMPLEMENTED_MESSAGE",
     "PYDANTICAI_LIVE_CHECK_PROMPT",

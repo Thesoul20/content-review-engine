@@ -17,7 +17,7 @@ suppression comments, counts, and quality gates, see
 ## Current Command
 
 ```bash
-uv run content-review review <markdown_file> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--fail-on info|warning|error|critical] [--enable-llm --llm-output <file> [--llm-markdown-output <file>] [--llm-config <path>] [--llm-provider mock|pydantic-ai-testmodel] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>] [--llm-timeout-seconds <seconds>] [--llm-retry-attempts <count>] [--llm-retry-backoff-seconds <seconds>] [--llm-min-request-interval-seconds <seconds>] [--include-llm-report]]
+uv run content-review review <markdown_file> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--fail-on info|warning|error|critical] [--enable-llm --llm-output <file> [--llm-markdown-output <file>] [--llm-config <path>] [--llm-provider mock|pydanticai|pydantic-ai-testmodel] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>] [--llm-timeout-seconds <seconds>] [--llm-retry-attempts <count>] [--llm-retry-backoff-seconds <seconds>] [--llm-min-request-interval-seconds <seconds>]]
 uv run content-review batch <input_dir> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--recursive] [--pattern "*.md"] [--fail-on info|warning|error|critical] [--enable-llm --llm-output-dir <dir> [--llm-markdown-output <file>] [--llm-config <path>] [--llm-provider mock|pydantic-ai-testmodel] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>] [--llm-timeout-seconds <seconds>] [--llm-retry-attempts <count>] [--llm-retry-backoff-seconds <seconds>] [--llm-min-request-interval-seconds <seconds>]]
 uv run content-review llm-check [--provider mock|pydantic-ai-testmodel] [--llm-config <path>] [--llm-provider mock|pydanticai] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>] [--llm-timeout-seconds <seconds>] [--llm-retry-attempts <count>] [--llm-retry-backoff-seconds <seconds>] [--llm-min-request-interval-seconds <seconds>] [--live|--runtime]
 uv run content-review profile validate <profile_file> [--format text|json]
@@ -93,136 +93,63 @@ For real-provider setup and manual verification guidance, see
 
 ## Experimental LLM Sidecar Review
 
-Single-file `review` now supports an explicit experimental LLM sidecar flow:
+Single-file `review` now supports an explicit experimental LLM semantic review
+flow:
 
 ```bash
 uv run content-review review article.md --profile profile.yaml --enable-llm --llm-output article.llm.json
 uv run content-review review article.md --profile profile.yaml --enable-llm --llm-provider mock --llm-output article.llm.json
-uv run content-review review article.md --profile profile.yaml --enable-llm --llm-provider pydantic-ai-testmodel --llm-output article.llm.json
-uv run content-review review article.md --profile profile.yaml --enable-llm --llm-config examples/llm/mock/llm-provider.yml --llm-output article.llm.json
-uv run content-review review article.md --profile profile.yaml --enable-llm --llm-output article.llm.json --llm-markdown-output article.llm.md
-uv run content-review review article.md --profile profile.yaml --format markdown --enable-llm --llm-output article.llm.json --include-llm-report
+uv run content-review review article.md --profile profile.yaml --enable-llm --llm-provider pydanticai --llm-model openai:gpt-4o-mini --llm-api-key-env OPENAI_API_KEY --llm-output article.llm.json
 uv run content-review review article.md --profile profile.yaml --enable-llm --llm-config examples/llm/pydanticai/llm-provider.yml --llm-output article.llm.json
+uv run content-review review article.md --profile profile.yaml --enable-llm --llm-output article.llm.json --llm-markdown-output article.llm.md
 ```
 
 Single-file `review` constraints:
 
 - this path is opt-in and disabled by default
-- only the single-file `review` command supports it
-- explicit single-file `--llm-provider` supports only `mock` and `pydantic-ai-testmodel`
+- only the single-file `review` command supports it; `batch` is unchanged in TASK-0069
 - `--enable-llm` requires `--llm-output`
 - `--llm-output` without `--enable-llm` fails
 - `--llm-markdown-output` without `--enable-llm` fails
-- `--include-llm-report` without `--enable-llm` fails
+- `--include-llm-report` is not supported for single-file LLM review
 - `--llm-provider` without `--enable-llm` fails
-- `--include-llm-report` requires `--format markdown`
-- `--include-llm-report` fails for `--format json`
-- `--include-llm-report` fails for `--format text`
-- `--llm-provider`, `--llm-model`, `--llm-api-key-env`, `--llm-base-url`, and
-  `--llm-timeout-seconds`, `--llm-retry-attempts`,
-  `--llm-retry-backoff-seconds`, `--llm-min-request-interval-seconds`, and
-  `--llm-config` can still be parsed without `--enable-llm`, but they do not
-  affect the deterministic review path
 - `--llm-config` loads a YAML `LLMProviderConfig` file
 - explicit CLI flags override the same field from `--llm-config`
 - parser defaults do not override config-file values
-- when omitted, single-file sidecar keeps the existing config-driven default behavior
-- explicit `--llm-provider` uses `create_llm_reviewer()` directly
+- if LLM provider config flags are passed, either `--llm-provider` or `--llm-config` must also be passed
 - explicit `--llm-provider mock` requires no API key and does not access the network
 - explicit `--llm-provider pydantic-ai-testmodel` requires no API key and does not access the network
-- reserved real explicit `--llm-provider` values such as `openai`,
-  `anthropic`, `gemini`, `deepseek`, `qwen`, and `local` fail explicitly as
-  reserved but not implemented
-- unsupported explicit `--llm-provider` values fail explicitly as unknown
-  providers and do not fall back
-- real `pydanticai` single-file sidecar usage remains available through `--llm-config` plus the shared config-driven provider path
-- `--llm-model` is required for config-driven `pydanticai`
-- `--llm-model`, `--llm-api-key-env`, `--llm-base-url`, and
-  `--llm-timeout-seconds`, `--llm-retry-attempts`, and
-  `--llm-retry-backoff-seconds`, and
-  `--llm-min-request-interval-seconds` are stored in `LLMProviderConfig`
-- `--llm-config` supports only `provider`, `model`, `api_key_env`,
-  `base_url`, `timeout_seconds`, `retry_attempts`,
-  `retry_backoff_seconds`, and `min_request_interval_seconds`
-- config files reject unknown fields and secret-like fields such as
-  `api_key`, `secret`, `token`, or `password`
-- the `pydanticai` path reuses the tested request/prompt/response mapping
-  layer from the provider adapter
-- `--llm-api-key-env` stores the environment variable name in config; when
-  `pydanticai` is selected, the CLI resolves that env var only to verify the
-  secret exists and never prints its value
-- the shared secret resolver reads `LLMProviderConfig.api_key_env` from either
-  an explicit env mapping or the current process environment
-- the shared secret resolver does not read `.env`, does not read repository
-  files, and does not access the network
-- if `--llm-provider pydanticai` omits `--llm-api-key-env`, points to an
-  unset env var, or points to an empty env var, the command exits with a
-  structured secret error
-- `--llm-base-url` is optional and, when provided, is passed to the
-  OpenAI-compatible runtime provider used by `pydanticai`
-- `--llm-timeout-seconds` is optional, must be greater than `0`, is ignored by
-  deterministic review when LLM is not enabled, and is passed only to the LLM
-  provider runtime boundary
-- `--llm-retry-attempts` is optional, must be an integer greater than or equal
-  to `0`, is ignored by deterministic review when LLM is not enabled, and
-  means extra retry attempts after the initial provider call
-- `--llm-retry-backoff-seconds` is optional, must be greater than or equal to
-  `0`, is ignored by deterministic review when LLM is not enabled, and is used
-  as the fixed delay before each retryable provider retry
-- `--llm-min-request-interval-seconds` is optional, must be greater than or
-  equal to `0`, is ignored by deterministic review when LLM is not enabled,
-  and sets an instance-local minimum spacing between consecutive real
-  `pydanticai` runtime call start times
-- the CLI does not support a plaintext `--llm-api-key` argument
-- the CLI does not add any new plaintext `--api-key` argument for real
-  providers
-- the LLM result is written as a separate UTF-8 JSON sidecar file in
-  `LLMSidecarResult` format
-- `--llm-markdown-output` optionally writes a separate UTF-8 Markdown sidecar
-  report rendered from the same `LLMSidecarResult`
-- `--include-llm-report` only affects single-file Markdown report rendering and
-  does not replace the required `--llm-output` sidecar JSON
+- explicit `--llm-provider pydanticai` is supported for single-file semantic review
+- `pydanticai` requires `--llm-model` and a secret reference through `--llm-api-key-env`
+- `--llm-api-key-env` is a secret reference only; there is no plaintext `--llm-api-key` flag
+- the shared secret resolver does not read `.env`
+- the provider factory does not read environment variables
+- if `api_key_env` is missing, unset, or empty, the command exits with a secret-resolution error before any real provider call
+- the single-file LLM runner builds `LLMReviewRequest`, calls `run_semantic_review(request)`, then calls `convert_validated_semantic_output_to_llm_review_result(...)`
+- deterministic stdout, deterministic JSON output, deterministic Markdown output, `ReviewResult`, and quality-gate behavior stay unchanged
+- provider execution failures, parse failures, validation failures, and sidecar write failures return exit code `2`
 
 Single-file sidecar shape:
 
-- top-level `schema_version` is `llm-sidecar-result.v2`
-- top-level `llm_provider` records the provider name used for this sidecar run
-- top-level `llm_provider_source` records how that provider was selected:
-  `explicit`, `default`, or `config`
-- top-level `summary` includes `file_count`, `succeeded_count`,
-  `failed_count`, `skipped_count`, and `finding_count`
-- `files[0].status` is `success` or `failed` in the current implementation
-- successful entries include nested `review` with the original
-  `LLMReviewResult`
-- failed entries include `error.error_type` and `error.message`
-- LLM sidecar failure does not change deterministic review output or
-  quality-gate evaluation
-- the optional sidecar Markdown report shows the same summary, per-file
-  status, structured errors, and successful-file findings without changing
-  the main deterministic Markdown report
-- explicit sidecar writes `llm_provider_source: explicit`
-- omitted `--llm-provider` writes `llm_provider_source: default` or `config`,
-  depending on whether the provider came from built-in defaults or
-  `--llm-config`
+- `--llm-output` writes raw `LLMReviewResult` JSON
+- the top-level `schema_version` is `llm-review-result.v1`
+- the sidecar does not include secrets, prompt text, or raw provider output
+- the sidecar is separate from deterministic stdout and separate from deterministic JSON / Markdown reports
+- `--llm-markdown-output` remains a separate optional human-readable sidecar report derived from the same `LLMReviewResult`
 
 Current behavior guarantees:
 
 - default CLI behavior is unchanged when LLM flags are omitted
 - the main deterministic review output remains the canonical `ReviewResult`
 - `--format json` does not add an `llm_review` field
-- `--format markdown` does not add an LLM section unless
-  `--enable-llm` and `--include-llm-report` are both enabled
-- when enabled, the optional LLM Markdown section is appended after the
-  deterministic report and does not change deterministic counts or finding
-  order
+- `--format markdown` does not append an LLM section for single-file review
 - quality-gate evaluation still reads only deterministic findings
-- batch review behavior is unchanged by default when LLM flags are omitted
+- ordinary tests for this path use fake/stub reviewers and must not access the real network or require a real API key
 
 Provider notes:
 
-- `mock` keeps the deterministic sidecar behavior from TASK-0037 and remains
-  the default single-file sidecar behavior when no explicit reviewer provider
-  name is selected
+- `mock` remains the default single-file sidecar behavior when no explicit
+  provider is selected
 - `pydantic-ai-testmodel` is available only through explicit single-file
   `--llm-provider` reviewer selection and runs through `create_llm_reviewer()`
 - direct future real-provider names such as `openai`, `anthropic`, `gemini`,

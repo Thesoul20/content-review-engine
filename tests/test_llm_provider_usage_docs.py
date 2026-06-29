@@ -99,14 +99,15 @@ def test_usage_docs_exist_and_cover_required_provider_flags_and_boundaries() -> 
     assert "ValidatedLLMSemanticReviewOutput" in content
     assert "convert_validated_semantic_output_to_llm_review_result" in content
     assert "Validated LLM semantic output to LLMReviewResult conversion" in content
+    assert "Single-file CLI LLM integration" in content
+    assert "--llm-output` writes raw `LLMReviewResult` JSON" in content
     assert "matched_text" in content
     assert "confidence: null stays null" in content
-    assert "does not write sidecars" in content
     assert "does not execute a real provider call" in content
-    assert "does not integrate into `content-review review` or `content-review batch` yet" in content
-    assert "llm_provider" in content
-    assert "llm_provider_source" in content
-    assert "Quality Gate behavior does not read LLM findings" in content
+    assert "`run_semantic_review()` is now reused by the single-file `content-review review`" in content
+    assert "still not wired into `content-review batch`" in content
+    assert "deterministic JSON and Markdown reports do not include LLM findings" in content
+    assert "Batch sidecars still use `LLMSidecarResult` envelopes" in content
     assert "Real `pydanticai` provider calls must not run in default `pytest` or CI." in content
     assert "LLMProviderTimeoutError" in content
     assert "LLMProviderAuthError" in content
@@ -161,8 +162,9 @@ def test_docs_and_fixtures_do_not_require_real_network_or_real_api_key() -> None
     assert "The conversion helper does not call a provider, does not read `os.environ`, and does not access the network." in usage_doc
     assert "provider execution reuses the shared prompt contract" in usage_doc
     assert "provider execution reuses `parse_llm_semantic_review_output()`" in usage_doc
-    assert "batch `--llm-provider` supports only `mock` and `pydantic-ai-testmodel`" in usage_doc
-    assert "explicit sidecar writes `llm_provider_source: explicit`" in usage_doc
-    assert "omitted `--llm-provider` writes `llm_provider_source: default` or `config`" in usage_doc
+    assert "Single-file `content-review review --enable-llm --llm-output ...` now writes" in usage_doc
+    assert "raw `LLMReviewResult` JSON" in usage_doc
+    assert "`--include-llm-report` is not supported for single-file review" in usage_doc
+    assert "Batch sidecars still use `LLMSidecarResult` envelopes" in usage_doc
     assert "default `pytest` or CI" in usage_doc
     assert "YOUR_OPENAI_API_KEY_HERE" in env_example

@@ -7,9 +7,10 @@ the deterministic review pipeline.
 
 - Deterministic review remains the canonical `ReviewResult` and
   `BatchReviewResult` output.
-- LLM review writes separate `LLMSidecarResult` JSON and optional Markdown
-  sidecar reports.
-- Sidecar envelopes now record `llm_provider` and `llm_provider_source`.
+- Single-file `content-review review --enable-llm --llm-output ...` now writes
+  separate raw `LLMReviewResult` JSON.
+- Batch sidecars still use `LLMSidecarResult` envelopes and are unchanged by
+  TASK-0069.
 - LLM findings do not change deterministic JSON, deterministic Markdown
   reports, or `--fail-on` quality-gate behavior.
 
@@ -29,7 +30,8 @@ Purpose:
 Current boundaries:
 
 - this contract does not execute a real provider call
-- this contract does not integrate into `content-review review` or `content-review batch` yet
+- this contract does not itself call the CLI adapter; single-file CLI
+  integration now happens later through the dedicated LLM runner
 - prompt construction remains separate from output parsing, output validation,
   and `LLMReviewResult` generation
 - Prompt construction does not read `.env`, does not read `os.environ`, and does not access the network.
@@ -145,10 +147,10 @@ Current guarantees:
   errors
 - `run_semantic_review()` returns `ValidatedLLMSemanticReviewOutput`, not
   `LLMReviewResult`
-- `run_semantic_review()` does not integrate into `content-review review` or
-  `content-review batch`
-- `run_semantic_review()` does not write sidecars or change deterministic
-  quality-gate behavior
+- `run_semantic_review()` is now reused by the single-file `content-review review`
+  LLM adapter path
+- `run_semantic_review()` still does not change deterministic quality-gate
+  behavior and is still not wired into `content-review batch`
 - provider execution does not inject the API secret into the prompt, the
   validated output, or stable error messages
 - default tests for this path use fake/stub runtime calls and must not access
@@ -199,10 +201,43 @@ Current guarantees:
 - the conversion helper does not output secrets
 - `run_semantic_review()` still returns `ValidatedLLMSemanticReviewOutput`
   and does not directly return `LLMReviewResult`
-- this conversion layer still does not integrate into `content-review review`
-  or `content-review batch`
-- this conversion layer still does not write sidecars or change deterministic
-  Quality Gate behavior
+- this conversion layer is now reused by the single-file `content-review review`
+  LLM sidecar path
+- this conversion layer still does not change deterministic Quality Gate
+  behavior and is still not wired into `content-review batch`
+
+## Single-file CLI LLM integration
+
+Single-file `content-review review` now has a dedicated LLM runner path:
+
+```text
+CLI flags
+  ↓
+LLMProviderConfig
+  ↓
+resolve_llm_provider_secret(config, env=None)
+  ↓
+create_llm_reviewer(config, secret_value=...)
+  ↓
+run_semantic_review(request)
+  ↓
+convert_validated_semantic_output_to_llm_review_result()
+  ↓
+LLMReviewResult JSON sidecar
+```
+
+Current guarantees:
+
+- `--enable-llm` is required before any single-file LLM call happens
+- `--llm-output` writes raw `LLMReviewResult` JSON, not `LLMSidecarResult`
+- the sidecar JSON does not include secrets, prompt text, or raw provider output
+- deterministic stdout does not include LLM findings
+- deterministic JSON and Markdown reports do not include LLM findings
+- `--include-llm-report` is not supported for single-file review
+- `--llm-provider pydanticai` requires `--llm-model` and `--llm-api-key-env`
+- missing, unset, or empty env vars fail before any real provider call
+- provider execution failures, parse failures, validation failures, and sidecar write failures return exit code `2`
+- ordinary tests for this path use fake/stub reviewers and must not access the real network or require a real API key
 
 ## Provider Classes
 
@@ -460,26 +495,31 @@ Current `llm-check` behavior on top of that resolver:
 
 ## Single-file Sidecar Provider Selection
 
-Use explicit single-file `--llm-provider` only with the existing sidecar path:
+Use explicit single-file `--llm-provider` only with the single-file
+`--enable-llm --llm-output ...` path:
 
 ```bash
 uv run content-review review article.md --profile profile.yml --enable-llm --llm-output article.llm.json --llm-provider mock
+uv run content-review review article.md --profile profile.yml --enable-llm --llm-output article.llm.json --llm-provider pydanticai --llm-model openai:gpt-4o-mini --llm-api-key-env OPENAI_API_KEY
 uv run content-review review article.md --profile profile.yml --enable-llm --llm-output article.llm.json --llm-provider pydantic-ai-testmodel
 ```
 
 Behavior:
 
-- explicit single-file `--llm-provider` supports only `mock` and `pydantic-ai-testmodel`
-- explicit single-file `--llm-provider` calls `create_llm_reviewer()` directly
+- explicit single-file `--llm-provider mock` and
+  `--llm-provider pydantic-ai-testmodel` use the safe local reviewer path
+- explicit single-file `--llm-provider pydanticai` uses config-driven
+  provider construction plus secret resolution and semantic review execution
 - reserved real provider names fail clearly as reserved but not implemented
 - unsupported explicit provider names fail clearly as unknown providers and do
   not fall back
 - `--llm-provider` without the sidecar path fails clearly
-- omitting explicit `--llm-provider` keeps the existing single-file sidecar behavior unchanged
-- explicit single-file `--llm-provider` does not require an API key, does not read `.env`, and does not access the network for the supported providers above
-- explicit sidecar writes `llm_provider_source: explicit`
-- omitted `--llm-provider` writes `llm_provider_source: default` or `config`
-  and still records the concrete `llm_provider` name in the sidecar envelope
+- omitting explicit `--llm-provider` keeps the existing single-file default
+  provider behavior unchanged
+- explicit single-file local test providers do not require an API key, do not
+  read `.env`, and do not access the network
+- explicit single-file `pydanticai` requires `--llm-model` and
+  `--llm-api-key-env`
 
 ## Batch Sidecar Provider Selection
 
@@ -625,12 +665,15 @@ What to verify:
 
 ## Sidecar JSON Output
 
-Single-file and batch LLM sidecars use `LLMSidecarResult`.
+Single-file and batch LLM sidecars now differ:
+
+- single-file `--llm-output` writes raw `LLMReviewResult`
+- batch sidecars still use `LLMSidecarResult`
 
 Check:
 
-- top-level `schema_version` is `llm-sidecar-result.v2`
-- top-level `llm_provider` and `llm_provider_source` are present
+- single-file top-level `schema_version` is `llm-review-result.v1`
+- batch top-level `schema_version` is `llm-sidecar-result.v2`
 - `summary.file_count`, `summary.succeeded_count`, `summary.failed_count`,
   `summary.skipped_count`, and `summary.finding_count` are present
 - each `files[]` entry has `path`, `status`, and either `review` or `error`

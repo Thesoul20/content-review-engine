@@ -102,6 +102,27 @@ pipeline.
 
 ## Recent Completion
 
+- TASK-0069 is complete.
+- Single-file `content-review review --enable-llm` now builds
+  `LLMReviewRequest`, reuses `resolve_llm_provider_secret(...)`,
+  `create_llm_reviewer(config, secret_value=...)`,
+  `PydanticAIReviewer.run_semantic_review()`, and
+  `convert_validated_semantic_output_to_llm_review_result(...)`.
+- `--llm-output` for single-file review now writes raw `LLMReviewResult` JSON
+  instead of an `LLMSidecarResult` envelope, while deterministic stdout,
+  deterministic JSON / Markdown output, and quality-gate behavior remain
+  unchanged.
+- Single-file LLM failures now surface as command failures with exit code `2`
+  for missing config, missing or empty env vars, provider failures, parse or
+  validation failures, and sidecar write failures.
+- Added `tests/test_llm_single_file_cli_integration.py` and updated
+  `tests/test_cli.py`, `tests/test_llm_runner.py`, and
+  `tests/test_llm_provider_usage_docs.py` for raw sidecar output, secret-safe
+  behavior, fake-reviewer integration, and no-network/no-real-key coverage.
+- Updated `docs/CLI.md`, `docs/LLM_PROVIDER_USAGE.md`,
+  `docs/DATA_MODELS.md`, `docs/ARCHITECTURE.md`, and `CHANGELOG.md` to
+  document the TASK-0069 single-file CLI LLM integration boundary.
+
 - TASK-0068 is complete.
 - Added `src/content_review_engine/llm/result_conversion.py` with
   `convert_validated_semantic_output_to_llm_review_result(...)` as a separate

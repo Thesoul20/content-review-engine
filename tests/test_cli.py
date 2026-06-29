@@ -232,27 +232,10 @@ def test_cli_review_enable_llm_writes_mock_sidecar_without_changing_main_json(
     assert review_payload["schema_version"] == "review-result.v1"
     assert "llm_review" not in review_payload
     assert "llm_provider" not in review_payload
-    assert llm_payload["schema_version"] == "llm-sidecar-result.v2"
-    assert llm_payload["llm_provider"] == "mock"
-    assert llm_payload["llm_provider_source"] == "default"
-    assert llm_payload["summary"] == {
-        "file_count": 1,
-        "succeeded_count": 1,
-        "failed_count": 0,
-        "skipped_count": 0,
-        "finding_count": 0,
+    assert llm_payload == {
+        "schema_version": "llm-review-result.v1",
+        "findings": [],
     }
-    assert llm_payload["files"] == [
-        {
-            "path": markdown_path,
-            "status": "success",
-            "finding_count": 0,
-            "review": {
-                "schema_version": "llm-review-result.v1",
-                "findings": [],
-            },
-        }
-    ]
 
 
 def test_cli_review_markdown_enable_llm_without_include_report_keeps_report_unchanged(
@@ -282,70 +265,40 @@ def test_cli_review_markdown_enable_llm_without_include_report_keeps_report_unch
 
     assert exit_code == 0
     assert "## LLM Review" not in captured.out
-    assert llm_payload["schema_version"] == "llm-sidecar-result.v2"
-    assert llm_payload["llm_provider"] == "mock"
-    assert llm_payload["llm_provider_source"] == "default"
-    assert llm_payload["files"][0]["status"] == "success"
-    assert llm_payload["files"][0]["review"] == {
+    assert llm_payload == {
         "schema_version": "llm-review-result.v1",
         "findings": [],
     }
     assert captured.err == ""
 
 
-def test_cli_review_markdown_include_llm_report_appends_llm_section(
+def test_cli_review_include_llm_report_is_not_supported(
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    markdown_path = "tests/fixtures/markdown/clean_article.md"
-    profile_path = "tests/fixtures/profiles/default.yml"
-    llm_output_path = tmp_path / "review.llm.json"
-
-    from content_review_engine.llm import LLMReviewFinding, LLMReviewResult
-
-    def fake_review(self, request):  # type: ignore[no-untyped-def]
-        del self, request
-        return LLMReviewResult(
-            findings=(
-                LLMReviewFinding(
-                    rule_id="llm_semantic_risk",
-                    severity="warning",
-                    message="Possible unsupported claim.",
-                    suggestion="Add evidence.",
-                ),
-            )
-        )
-
-    monkeypatch.setattr("content_review_engine.llm.mock.MockLLMReviewer.review", fake_review)
-
     exit_code = main(
         [
             "review",
-            markdown_path,
+            "tests/fixtures/markdown/clean_article.md",
             "--profile",
-            profile_path,
+            "tests/fixtures/profiles/default.yml",
             "--format",
             "markdown",
             "--enable-llm",
             "--llm-output",
-            str(llm_output_path),
+            str(tmp_path / "review.llm.json"),
             "--include-llm-report",
         ]
     )
 
     captured = capsys.readouterr()
-    llm_payload = json.loads(llm_output_path.read_text(encoding="utf-8"))
 
-    assert exit_code == 0
-    assert "## LLM Review" in captured.out
-    assert "| Total Findings | 1 |" in captured.out
-    assert "llm_semantic_risk" in captured.out
-    assert "Possible unsupported claim." in captured.out
-    assert "Add evidence." in captured.out
-    assert llm_payload["files"][0]["status"] == "success"
-    assert llm_payload["files"][0]["review"]["findings"][0]["rule_id"] == "llm_semantic_risk"
-    assert captured.err == ""
+    assert exit_code == 2
+    assert captured.out == ""
+    assert (
+        "Error: --include-llm-report is not supported for single-file LLM review"
+        in captured.err
+    )
 
 
 def test_cli_review_include_llm_report_requires_enable_llm(
@@ -399,7 +352,10 @@ def test_cli_review_include_llm_report_requires_markdown_format_json_fails(
 
     assert exit_code == 2
     assert captured.out == ""
-    assert "Error: --include-llm-report requires --format markdown" in captured.err
+    assert (
+        "Error: --include-llm-report is not supported for single-file LLM review"
+        in captured.err
+    )
 
 
 def test_cli_review_include_llm_report_requires_markdown_format_text_fails(
@@ -428,61 +384,13 @@ def test_cli_review_include_llm_report_requires_markdown_format_text_fails(
 
     assert exit_code == 2
     assert captured.out == ""
-    assert "Error: --include-llm-report requires --format markdown" in captured.err
-
-
-def test_cli_review_quality_gate_ignores_llm_findings_when_report_is_included(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-    capsys: pytest.CaptureFixture[str],
-) -> None:
-    markdown_path = "tests/fixtures/markdown/clean_article.md"
-    profile_path = "tests/fixtures/profiles/default.yml"
-    llm_output_path = tmp_path / "review.llm.json"
-
-    from content_review_engine.llm import LLMReviewFinding, LLMReviewResult
-
-    def fake_review(self, request):  # type: ignore[no-untyped-def]
-        del self, request
-        return LLMReviewResult(
-            findings=(
-                LLMReviewFinding(
-                    rule_id="llm_critical_issue",
-                    severity="critical",
-                    message="Critical semantic issue.",
-                ),
-            )
-        )
-
-    monkeypatch.setattr("content_review_engine.llm.mock.MockLLMReviewer.review", fake_review)
-
-    exit_code = main(
-        [
-            "review",
-            markdown_path,
-            "--profile",
-            profile_path,
-            "--format",
-            "markdown",
-            "--fail-on",
-            "warning",
-            "--enable-llm",
-            "--llm-output",
-            str(llm_output_path),
-            "--include-llm-report",
-        ]
+    assert (
+        "Error: --include-llm-report is not supported for single-file LLM review"
+        in captured.err
     )
 
-    captured = capsys.readouterr()
 
-    assert exit_code == 0
-    assert "| Quality Gate | Passed |" in captured.out
-    assert "| Matched Gate Findings | 0 |" in captured.out
-    assert "llm_critical_issue" in captured.out
-    assert captured.err == ""
-
-
-def test_cli_review_llm_failure_writes_failed_sidecar_and_keeps_deterministic_exit_code(
+def test_cli_review_llm_failure_returns_error_without_writing_sidecar(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
@@ -514,29 +422,11 @@ def test_cli_review_llm_failure_writes_failed_sidecar_and_keeps_deterministic_ex
     )
 
     captured = capsys.readouterr()
-    llm_payload = json.loads(llm_output_path.read_text(encoding="utf-8"))
 
-    assert exit_code == 0
+    assert exit_code == 2
     assert "Findings: 0" in captured.out
-    assert captured.err == ""
-    assert llm_payload["summary"] == {
-        "file_count": 1,
-        "succeeded_count": 0,
-        "failed_count": 1,
-        "skipped_count": 0,
-        "finding_count": 0,
-    }
-    assert llm_payload["files"] == [
-        {
-            "path": markdown_path,
-            "status": "failed",
-            "finding_count": 0,
-            "error": {
-                "error_type": "LLMProviderError",
-                "message": "provider temporarily unavailable",
-            },
-        }
-    ]
+    assert "Error: provider temporarily unavailable" in captured.err
+    assert not llm_output_path.exists()
 
 
 def test_cli_review_enable_llm_builds_request_from_current_input(
@@ -1115,7 +1005,7 @@ def test_cli_review_rejects_reserved_real_llm_provider(
     assert not (tmp_path / "review.llm.json").exists()
 
 
-def test_cli_review_rejects_pydanticai_as_explicit_single_file_sidecar_provider_without_fallback(
+def test_cli_review_pydanticai_requires_model_when_selected_explicitly(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
@@ -1138,7 +1028,7 @@ def test_cli_review_rejects_pydanticai_as_explicit_single_file_sidecar_provider_
     assert exit_code == 2
     assert captured.out == ""
     assert (
-        "Error: Unknown LLM provider 'pydanticai'. Supported providers: 'mock', 'pydantic-ai-testmodel'."
+        "Error: LLM provider 'pydanticai' requires --llm-model or llm-config model."
         in captured.err
     )
     assert not (tmp_path / "review.llm.json").exists()
@@ -1171,8 +1061,10 @@ def test_cli_review_mock_provider_still_works_without_llm_model(
 
     assert exit_code == 0
     assert captured.err == ""
-    assert llm_payload["llm_provider"] == "mock"
-    assert llm_payload["llm_provider_source"] == "explicit"
+    assert llm_payload == {
+        "schema_version": "llm-review-result.v1",
+        "findings": [],
+    }
 
 
 def test_cli_review_explicit_provider_uses_create_llm_reviewer_name_path(
@@ -1251,11 +1143,9 @@ def test_cli_review_pydantic_ai_testmodel_provider_writes_sidecar_without_api_ke
 
     assert exit_code == 0
     assert captured.err == ""
-    assert llm_payload["llm_provider"] == "pydantic-ai-testmodel"
-    assert llm_payload["llm_provider_source"] == "explicit"
-    assert llm_payload["files"][0]["status"] == "success"
-    assert llm_payload["files"][0]["review"]["provider"] == "pydanticai-testmodel"
-    assert llm_payload["files"][0]["review"]["model"] == "test"
+    assert llm_payload["schema_version"] == "llm-review-result.v1"
+    assert llm_payload["provider"] == "pydanticai-testmodel"
+    assert llm_payload["model"] == "test"
 
 
 def test_cli_review_llm_config_file_can_drive_pydanticai_sidecar_json_and_markdown_report(
@@ -1268,30 +1158,36 @@ def test_cli_review_llm_config_file_can_drive_pydanticai_sidecar_json_and_markdo
     review_output_path = tmp_path / "review.json"
     llm_output_path = tmp_path / "review.llm.json"
     llm_markdown_output_path = tmp_path / "review.llm.md"
+    from content_review_engine.llm import ValidatedLLMSemanticReviewOutput
 
     monkeypatch.setenv("CONTENT_REVIEW_TEST_LLM_API_KEY", "test-secret-value")
-    captured_agent_kwargs: dict[str, object] = {}
-    monkeypatch.setattr(
-        "content_review_engine.llm.pydanticai.build_pydanticai_runtime_agent",
-        lambda **kwargs: captured_agent_kwargs.update(kwargs) or object(),
-    )
-    monkeypatch.setattr(
-        "content_review_engine.llm.pydanticai.run_pydanticai_runtime_agent",
-        lambda _agent, _payload: {
-            "findings": [
-                {
-                    "rule_id": "llm_semantic_risk",
-                    "severity": "warning",
-                    "message": "Possible unsupported claim.",
-                    "suggestion": "Add evidence.",
-                }
-            ],
-            "summary": {
-                "overall_risk": "medium",
+    captured_values: dict[str, object] = {}
+
+    def fake_run_semantic_review(self, request):  # type: ignore[no-untyped-def]
+        del request
+        captured_values["timeout_seconds"] = self.timeout_seconds
+        return ValidatedLLMSemanticReviewOutput.model_validate(
+            {
+                "schema_version": "llm-semantic-review-output.v1",
                 "summary": "One issue was detected.",
-                "recommended_action": "Revise before publishing.",
-            },
-        },
+                "findings": [
+                    {
+                        "rule_id": "llm.semantic.overclaim",
+                        "severity": "warning",
+                        "line": 2,
+                        "column": 1,
+                        "message": "Possible unsupported claim.",
+                        "evidence": "绝对安全",
+                        "suggestion": "Add evidence.",
+                        "confidence": 0.91,
+                    }
+                ],
+            }
+        )
+
+    monkeypatch.setattr(
+        "content_review_engine.llm.pydanticai.PydanticAIReviewer.run_semantic_review",
+        fake_run_semantic_review,
     )
 
     exit_code = main(
@@ -1330,24 +1226,15 @@ def test_cli_review_llm_config_file_can_drive_pydanticai_sidecar_json_and_markdo
     assert captured.err == ""
     assert review_payload["schema_version"] == "review-result.v1"
     assert "llm_review" not in review_payload
-    assert llm_payload["llm_provider"] == "pydanticai"
-    assert llm_payload["llm_provider_source"] == "config"
-    assert llm_payload["summary"] == {
-        "file_count": 1,
-        "succeeded_count": 1,
-        "failed_count": 0,
-        "skipped_count": 0,
-        "finding_count": 1,
-    }
-    assert llm_payload["files"][0]["status"] == "success"
-    assert llm_payload["files"][0]["review"]["provider"] == "pydanticai"
-    assert llm_payload["files"][0]["review"]["model"] == "openai:gpt-4o-mini"
-    assert llm_payload["files"][0]["review"]["findings"][0]["rule_id"] == "llm_semantic_risk"
+    assert llm_payload["provider"] == "pydanticai"
+    assert llm_payload["model"] == "openai:gpt-4o-mini"
+    assert llm_payload["summary"]["summary"] == "One issue was detected."
+    assert llm_payload["findings"][0]["rule_id"] == "llm.semantic.overclaim"
     assert markdown_report.startswith("# LLM Sidecar Review Report\n")
-    assert "llm_semantic_risk" in markdown_report
+    assert "llm.semantic.overclaim" in markdown_report
     assert "Possible unsupported claim." in markdown_report
     assert "test-secret-value" not in markdown_report
-    assert captured_agent_kwargs["timeout_seconds"] == 21.0
+    assert captured_values["timeout_seconds"] == 21.0
 
 
 def test_cli_review_pydanticai_config_path_passes_retry_config(
@@ -1357,16 +1244,23 @@ def test_cli_review_pydanticai_config_path_passes_retry_config(
 ) -> None:
     monkeypatch.setenv("CONTENT_REVIEW_TEST_LLM_API_KEY", "test-secret-value")
     llm_output_path = tmp_path / "review.llm.json"
+    from content_review_engine.llm import ValidatedLLMSemanticReviewOutput
 
     captured = {"retry_attempts": None, "retry_backoff_seconds": None}
 
-    def fake_review(self, request):  # type: ignore[no-untyped-def]
+    def fake_run_semantic_review(self, request):  # type: ignore[no-untyped-def]
         del request
         captured["retry_attempts"] = self.retry_attempts
         captured["retry_backoff_seconds"] = self.retry_backoff_seconds
-        return LLMReviewResult()
+        return ValidatedLLMSemanticReviewOutput(
+            summary="No issues.",
+            findings=(),
+        )
 
-    monkeypatch.setattr("content_review_engine.llm.pydanticai.PydanticAIReviewer.review", fake_review)
+    monkeypatch.setattr(
+        "content_review_engine.llm.pydanticai.PydanticAIReviewer.run_semantic_review",
+        fake_run_semantic_review,
+    )
 
     exit_code = main(
         [
@@ -1403,15 +1297,22 @@ def test_cli_review_pydanticai_config_path_passes_min_request_interval_config(
 ) -> None:
     monkeypatch.setenv("CONTENT_REVIEW_TEST_LLM_API_KEY", "test-secret-value")
     llm_output_path = tmp_path / "review.llm.json"
+    from content_review_engine.llm import ValidatedLLMSemanticReviewOutput
 
     captured = {"min_request_interval_seconds": None}
 
-    def fake_review(self, request):  # type: ignore[no-untyped-def]
+    def fake_run_semantic_review(self, request):  # type: ignore[no-untyped-def]
         del request
         captured["min_request_interval_seconds"] = self.min_request_interval_seconds
-        return LLMReviewResult()
+        return ValidatedLLMSemanticReviewOutput(
+            summary="No issues.",
+            findings=(),
+        )
 
-    monkeypatch.setattr("content_review_engine.llm.pydanticai.PydanticAIReviewer.review", fake_review)
+    monkeypatch.setattr(
+        "content_review_engine.llm.pydanticai.PydanticAIReviewer.run_semantic_review",
+        fake_run_semantic_review,
+    )
 
     exit_code = main(
         [
@@ -1517,10 +1418,10 @@ def test_cli_review_llm_config_file_can_drive_mock_sidecar(
 
     assert exit_code == 0
     assert captured.err == ""
-    assert payload["llm_provider"] == "mock"
-    assert payload["llm_provider_source"] == "config"
-    assert payload["files"][0]["status"] == "success"
-    assert "error" not in payload["files"][0]
+    assert payload == {
+        "schema_version": "llm-review-result.v1",
+        "findings": [],
+    }
 
 
 def test_cli_review_llm_config_file_can_drive_pydanticai_fake_runtime(
@@ -1530,6 +1431,8 @@ def test_cli_review_llm_config_file_can_drive_pydanticai_fake_runtime(
 ) -> None:
     llm_output_path = tmp_path / "review.llm.json"
     captured_values: dict[str, object] = {}
+    from content_review_engine.llm import ValidatedLLMSemanticReviewOutput
+    monkeypatch.setenv("OPENAI_API_KEY", "test-secret-value")
 
     class DummyReviewer:
         def __init__(self, config) -> None:  # type: ignore[no-untyped-def]
@@ -1543,13 +1446,15 @@ def test_cli_review_llm_config_file_can_drive_pydanticai_fake_runtime(
                 config.min_request_interval_seconds
             )
 
-        def review(self, request):  # type: ignore[no-untyped-def]
+        model = "openai:gpt-4o-mini"
+
+        def run_semantic_review(self, request):  # type: ignore[no-untyped-def]
             del request
-            return LLMReviewResult(provider="pydanticai", model="openai:gpt-4o-mini")
+            return ValidatedLLMSemanticReviewOutput(summary="No issues.", findings=())
 
     monkeypatch.setattr(
         "content_review_engine.cli.create_llm_reviewer",
-        lambda config: DummyReviewer(config),
+        lambda config, *, secret_value=None: DummyReviewer(config),
     )
 
     exit_code = main(
@@ -1588,6 +1493,8 @@ def test_cli_review_explicit_arguments_override_llm_config_file(
 ) -> None:
     llm_output_path = tmp_path / "review.llm.json"
     captured_values: dict[str, object] = {}
+    from content_review_engine.llm import ValidatedLLMSemanticReviewOutput
+    monkeypatch.setenv("OVERRIDE_OPENAI_API_KEY", "test-secret-value")
 
     class DummyReviewer:
         def __init__(self, config) -> None:  # type: ignore[no-untyped-def]
@@ -1601,13 +1508,15 @@ def test_cli_review_explicit_arguments_override_llm_config_file(
                 config.min_request_interval_seconds
             )
 
-        def review(self, request):  # type: ignore[no-untyped-def]
+        model = "openai:gpt-4.1-mini"
+
+        def run_semantic_review(self, request):  # type: ignore[no-untyped-def]
             del request
-            return LLMReviewResult(provider="pydanticai", model="openai:gpt-4.1-mini")
+            return ValidatedLLMSemanticReviewOutput(summary="No issues.", findings=())
 
     monkeypatch.setattr(
         "content_review_engine.cli.create_llm_reviewer",
-        lambda config: DummyReviewer(config),
+        lambda config, *, secret_value=None: DummyReviewer(config),
     )
 
     exit_code = main(
@@ -1658,6 +1567,8 @@ def test_cli_review_parser_defaults_do_not_override_llm_config_file(
 ) -> None:
     llm_output_path = tmp_path / "review.llm.json"
     captured_values: dict[str, object] = {}
+    from content_review_engine.llm import ValidatedLLMSemanticReviewOutput
+    monkeypatch.setenv("OPENAI_API_KEY", "test-secret-value")
 
     class DummyReviewer:
         def __init__(self, config) -> None:  # type: ignore[no-untyped-def]
@@ -1667,13 +1578,15 @@ def test_cli_review_parser_defaults_do_not_override_llm_config_file(
                 config.min_request_interval_seconds
             )
 
-        def review(self, request):  # type: ignore[no-untyped-def]
+        model = "openai:gpt-4o-mini"
+
+        def run_semantic_review(self, request):  # type: ignore[no-untyped-def]
             del request
-            return LLMReviewResult(provider="pydanticai", model="openai:gpt-4o-mini")
+            return ValidatedLLMSemanticReviewOutput(summary="No issues.", findings=())
 
     monkeypatch.setattr(
         "content_review_engine.cli.create_llm_reviewer",
-        lambda config: DummyReviewer(config),
+        lambda config, *, secret_value=None: DummyReviewer(config),
     )
 
     exit_code = main(
@@ -4343,6 +4256,8 @@ def test_cli_review_llm_retry_exhausted_does_not_change_quality_gate_exit_code(
             "--fail-on",
             "warning",
             "--enable-llm",
+            "--llm-provider",
+            "mock",
             "--llm-retry-attempts",
             "2",
             "--llm-retry-backoff-seconds",
@@ -4353,15 +4268,11 @@ def test_cli_review_llm_retry_exhausted_does_not_change_quality_gate_exit_code(
     )
 
     captured = capsys.readouterr()
-    llm_payload = json.loads(llm_output_path.read_text(encoding="utf-8"))
 
-    assert exit_code == 1
+    assert exit_code == 2
     assert "Findings: 1" in captured.out
-    assert captured.err == ""
-    assert llm_payload["files"][0]["error"] == {
-        "error_type": "LLMProviderRetryExhaustedError",
-        "message": "PydanticAI runtime retry attempts exhausted after 2 attempts due to LLMProviderTimeoutError.",
-    }
+    assert "PydanticAI runtime retry attempts exhausted after 2 attempts" in captured.err
+    assert not llm_output_path.exists()
 
 
 def test_cli_batch_llm_markdown_output_does_not_change_deterministic_markdown_output(

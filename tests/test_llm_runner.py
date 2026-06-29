@@ -8,6 +8,8 @@ from content_review_engine.llm import (
     LLMReviewRunner,
     LLMReviewSummary,
     MockLLMReviewer,
+    ValidatedLLMSemanticReviewOutput,
+    run_single_file_llm_review,
 )
 
 
@@ -28,6 +30,36 @@ class FailingReviewer:
     def review(self, request: LLMReviewRequest) -> LLMReviewResult:
         del request
         raise self.error
+
+
+class SemanticReviewer:
+    def __init__(self) -> None:
+        self.model = "openai:gpt-4o-mini"
+        self.calls: list[LLMReviewRequest] = []
+
+    def run_semantic_review(
+        self,
+        request: LLMReviewRequest,
+    ) -> ValidatedLLMSemanticReviewOutput:
+        self.calls.append(request)
+        return ValidatedLLMSemanticReviewOutput.model_validate(
+            {
+                "schema_version": "llm-semantic-review-output.v1",
+                "summary": "One issue.",
+                "findings": [
+                    {
+                        "rule_id": "llm.semantic.overclaim",
+                        "severity": "warning",
+                        "line": 3,
+                        "column": 2,
+                        "message": "Possible overclaim.",
+                        "evidence": "always safe",
+                        "suggestion": "Use more cautious wording.",
+                        "confidence": 0.81,
+                    }
+                ],
+            }
+        )
 
 
 def test_llm_review_runner_calls_reviewer_and_returns_result() -> None:
@@ -103,3 +135,25 @@ def test_llm_review_runner_propagates_provider_errors() -> None:
         runner.run(LLMReviewRequest(content="Failure request."))
 
     assert exc_info.value is expected_error
+
+
+def test_run_single_file_llm_review_uses_semantic_pipeline_when_available() -> None:
+    reviewer = SemanticReviewer()
+    request = LLMReviewRequest(
+        content="This article says the method is always safe.",
+        profile_name="semantic-risk",
+        content_path="articles/example.md",
+        review_goal="semantic_review",
+    )
+
+    result = run_single_file_llm_review(
+        request,
+        reviewer=reviewer,  # type: ignore[arg-type]
+        provider="pydanticai",
+    )
+
+    assert reviewer.calls == [request]
+    assert result.provider == "pydanticai"
+    assert result.model == "openai:gpt-4o-mini"
+    assert result.findings[0].rule_id == "llm.semantic.overclaim"
+    assert result.findings[0].matched_text == "always safe"

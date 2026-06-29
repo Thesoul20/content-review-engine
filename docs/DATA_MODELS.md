@@ -198,6 +198,9 @@ TASK-0055 adds only a reviewer-provider factory boundary. It does not change
 the `LLMReviewRequest` or `LLMReviewResult` schema.
 TASK-0059 adds provider metadata only to the `LLMSidecarResult` envelope and
 does not change the nested `LLMReviewResult` schema.
+TASK-0069 now reuses the semantic-review prompt/output/provider pipeline for
+single-file `content-review review` and writes raw `LLMReviewResult` JSON to
+`--llm-output`, without changing the schema itself.
 
 | Field | Required | Description |
 |---|---|---|
@@ -233,8 +236,11 @@ Current CLI sidecar boundary:
 ReviewResult JSON
   = canonical deterministic review output
 
-LLMSidecarResult JSON
-  = separate optional sidecar file
+Single-file --llm-output JSON
+  = raw LLMReviewResult
+
+Batch sidecar JSON
+  = LLMSidecarResult
   -> success entries can include nested LLMReviewResult
 ```
 
@@ -263,8 +269,11 @@ Current conversion behavior:
 
 ## LLMSidecarResult
 
-`LLMSidecarResult` is the optional sidecar envelope written by `review` and
-`batch` when the experimental LLM sidecar path is enabled.
+`LLMSidecarResult` is the optional sidecar envelope still used by batch LLM
+sidecars and optional LLM Markdown report rendering helpers.
+
+TASK-0069 no longer uses this envelope for single-file `--llm-output`; that
+path now writes raw `LLMReviewResult` JSON instead.
 
 The stable schema version is `llm-sidecar-result.v2`.
 
