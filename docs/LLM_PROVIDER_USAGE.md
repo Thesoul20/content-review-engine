@@ -11,6 +11,8 @@ the deterministic review pipeline.
   separate raw `LLMReviewResult` JSON.
 - Batch sidecars still use `LLMSidecarResult` envelopes and are unchanged by
   TASK-0069.
+- `--report-index` can summarize deterministic output plus optional LLM output,
+  but it remains a separate Markdown guide and not a schema-bearing result.
 - LLM findings do not change deterministic JSON, deterministic Markdown
   reports, or `--fail-on` quality-gate behavior.
 
@@ -231,11 +233,17 @@ Current guarantees:
 - `--llm-output` writes raw `LLMReviewResult` JSON, not `LLMSidecarResult`
 - `--llm-report` writes a separate Markdown report rendered from the same
   `LLMReviewResult`
+- `--report-index` may be written with or without LLM enabled, but it never
+  enables LLM review by itself
+- `--report-index` does not replace `--llm-output` or `--llm-report`
 - `--llm-output` and `--llm-report` can be used together
 - `--llm-report` can also be used without `--llm-output`
 - the sidecar JSON does not include secrets, prompt text, or raw provider output
 - deterministic stdout does not include LLM findings
 - deterministic JSON and Markdown reports do not include LLM findings
+- the report index states explicitly that quality gate still uses deterministic
+  review only
+- quality gate still uses deterministic review only
 - `--include-llm-report` is not supported for single-file review
 - `--llm-provider pydanticai` requires `--llm-model` and `--llm-api-key-env`
 - missing, unset, or empty env vars fail before any real provider call
@@ -258,6 +266,23 @@ Current config-driven runtime provider:
 - `pydanticai`: existing adapter-backed runtime path, requires an API key
   through an environment variable, can call an external OpenAI-compatible
   endpoint, and should be used only for explicit manual verification.
+
+## Report Index Boundary
+
+`content-review review` and `content-review batch` now also support
+`--report-index`.
+
+Current guarantees:
+
+- report index rendering is presentation-only Markdown
+- report index does not change deterministic JSON output
+- report index does not change raw `LLMReviewResult` JSON
+- report index does not change aggregate `LLMSidecarResult` JSON
+- report index does not merge LLM findings into deterministic findings
+- report index does not make LLM findings participate in quality gate
+- when LLM is disabled, the index renders a stable `LLM not enabled` summary
+- when batch LLM review has partial failures, the index records an LLM file
+  status summary plus a compact LLM error summary
 
 Current reserved real providers:
 

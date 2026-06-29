@@ -555,6 +555,57 @@ def test_cli_review_llm_report_requires_enable_llm(
     assert "Error: --llm-report requires --enable-llm" in captured.err
 
 
+def test_cli_review_report_index_without_llm_writes_markdown_index(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    report_index_path = tmp_path / "review.index.md"
+
+    exit_code = main(
+        [
+            "review",
+            "tests/fixtures/markdown/clean_article.md",
+            "--profile",
+            "tests/fixtures/profiles/default.yml",
+            "--report-index",
+            str(report_index_path),
+        ]
+    )
+
+    captured = capsys.readouterr()
+    report = report_index_path.read_text(encoding="utf-8")
+
+    assert exit_code == 0
+    assert "Review completed." in captured.out
+    assert captured.err == ""
+    assert "# Review Output Index" in report
+    assert "| LLM Review | LLM not enabled |" in report
+    assert "| Report Index | " in report
+
+
+def test_cli_review_enable_llm_report_index_only_does_not_satisfy_llm_output_requirement(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = main(
+        [
+            "review",
+            "tests/fixtures/markdown/clean_article.md",
+            "--profile",
+            "tests/fixtures/profiles/default.yml",
+            "--enable-llm",
+            "--report-index",
+            str(tmp_path / "review.index.md"),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert captured.out == ""
+    assert "Error: --enable-llm requires --llm-output or --llm-report" in captured.err
+
+
 def test_cli_review_llm_provider_without_enable_llm_returns_clear_error(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
@@ -860,6 +911,23 @@ def test_cli_review_parser_accepts_llm_retry_arguments() -> None:
 
     assert args.llm_retry_attempts == 3
     assert args.llm_retry_backoff_seconds == 2.5
+
+
+def test_cli_review_parser_accepts_report_index_argument() -> None:
+    parser = build_parser()
+
+    args = parser.parse_args(
+        [
+            "review",
+            "article.md",
+            "--profile",
+            "profile.yml",
+            "--report-index",
+            "review.index.md",
+        ]
+    )
+
+    assert args.report_index == "review.index.md"
 
 
 def test_cli_review_parser_accepts_llm_min_request_interval_arguments() -> None:
@@ -3186,6 +3254,23 @@ def test_cli_batch_parser_accepts_llm_output_argument() -> None:
     assert args.llm_output == "batch.llm.json"
 
 
+def test_cli_batch_parser_accepts_report_index_argument() -> None:
+    parser = build_parser()
+
+    args = parser.parse_args(
+        [
+            "batch",
+            "articles",
+            "--profile",
+            "profile.yml",
+            "--report-index",
+            "batch.index.md",
+        ]
+    )
+
+    assert args.report_index == "batch.index.md"
+
+
 def test_cli_batch_enable_llm_requires_output_or_report(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
@@ -3199,6 +3284,59 @@ def test_cli_batch_enable_llm_requires_output_or_report(
             "--profile",
             profile_path,
             "--enable-llm",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert captured.out == ""
+    assert "Error: --enable-llm requires --llm-output or --llm-report" in captured.err
+
+
+def test_cli_batch_report_index_without_llm_writes_markdown_index(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    report_index_path = tmp_path / "batch.index.md"
+
+    exit_code = main(
+        [
+            "batch",
+            "tests/fixtures/batch/articles",
+            "--profile",
+            "tests/fixtures/batch/profile.yml",
+            "--recursive",
+            "--report-index",
+            str(report_index_path),
+        ]
+    )
+
+    captured = capsys.readouterr()
+    report = report_index_path.read_text(encoding="utf-8")
+
+    assert exit_code == 0
+    assert "Batch review completed." in captured.out
+    assert captured.err == ""
+    assert "# Review Output Index" in report
+    assert "| Mode | batch |" in report
+    assert "| LLM Review | LLM not enabled |" in report
+
+
+def test_cli_batch_enable_llm_report_index_only_does_not_satisfy_llm_output_requirement(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = main(
+        [
+            "batch",
+            "tests/fixtures/batch/articles",
+            "--profile",
+            "tests/fixtures/batch/profile.yml",
+            "--recursive",
+            "--enable-llm",
+            "--report-index",
+            str(tmp_path / "batch.index.md"),
         ]
     )
 

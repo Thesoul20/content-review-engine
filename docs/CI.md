@@ -100,6 +100,14 @@ uv run content-review batch articles --profile profiles/examples/wechat-strict.y
 When the quality gate fails with exit code `1`, the command still writes the
 Markdown report first when the output path is writable.
 
+If you also want a compact artifact that explains deterministic output, LLM
+sidecars, and quality-gate interpretation boundaries, write a separate report
+index:
+
+```bash
+uv run content-review batch articles --profile profiles/examples/wechat-strict.yaml --recursive --fail-on error --format markdown --output artifacts/content-review-report.md --report-index artifacts/content-review-index.md
+```
+
 The example uses `articles` as a placeholder content directory. Change it to
 match your repository layout, for example:
 
@@ -143,7 +151,8 @@ Workflow example:
 If you also enable the experimental LLM sidecar path, LLM finding content and
 LLM sidecar failures still do not affect the deterministic quality-gate exit
 code. The same rule applies if you also write an independent LLM sidecar
-Markdown report through `--llm-report`. The same boundary applies to
+Markdown report through `--llm-report`, or a hybrid navigation index through
+`--report-index`. The same boundary applies to
 LLM provider config such as `--llm-config`, `--llm-provider`, `--llm-model`, or
 `--llm-api-key-env`, or `--llm-timeout-seconds`,
 `--llm-retry-attempts`, `--llm-retry-backoff-seconds`, or
@@ -166,6 +175,8 @@ CI boundary for providers:
 - if CI needs LLM-sidecar wiring coverage, use `--llm-provider mock`
 - if CI needs reusable LLM-sidecar wiring coverage, it can also use
   `--llm-config examples/llm/mock/llm-provider.yml`
+- if CI writes `--report-index`, treat it as a human-readable artifact only
+  and keep gating decisions on deterministic review
 - if CI needs non-review provider wiring checks, it can use
   `content-review llm-check --llm-config examples/llm/mock/llm-provider.yml`
 - if you parse retry flags in CI, keep using `mock`; do not depend on real

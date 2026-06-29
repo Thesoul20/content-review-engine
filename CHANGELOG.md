@@ -8,6 +8,44 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0072
+
+### Added
+
+- Added `src/content_review_engine/reports/report_index.py` with separate
+  stable renderers for single-file and batch hybrid review output indexes.
+- Added `tests/test_report_index.py` for deterministic-only rendering,
+  hybrid rendering, batch partial failures, output-file rows, canonical
+  status, quality-gate source, Markdown escaping, and stable ordering.
+
+### Changed
+
+- Updated `src/content_review_engine/cli.py` so `content-review review` and
+  `content-review batch` now accept `--report-index`, write a separate
+  Markdown output index, keep LLM disabled unless `--enable-llm` is passed,
+  and return clear report-index write-failure errors.
+- Updated `src/content_review_engine/reports/__init__.py` to export
+  `render_single_file_report_index(...)` and
+  `render_batch_report_index(...)`.
+- Updated `tests/test_cli.py`,
+  `tests/test_llm_single_file_cli_integration.py`,
+  `tests/test_llm_batch_cli_integration.py`, and
+  `tests/test_llm_provider_usage_docs.py` for deterministic-only index
+  usage, hybrid index usage, partial-failure index coverage, and friendly
+  write-failure behavior.
+- Updated `docs/CLI.md`, `docs/LLM_PROVIDER_USAGE.md`,
+  `docs/DATA_MODELS.md`, `docs/ARCHITECTURE.md`, `docs/CI.md`, and
+  `PROJECT_STATE.md` to document the report-index boundary and the unchanged
+  deterministic quality-gate behavior.
+
+### Not Added
+
+- No `ReviewResult`, `BatchReviewResult`, `LLMReviewResult`, or
+  `LLMSidecarResult` schema change.
+- No merge of LLM findings into deterministic findings, no LLM quality-gate
+  participation, no deterministic report-format change, and no full combined
+  report output.
+
 ## TASK-0071
 
 ### Added

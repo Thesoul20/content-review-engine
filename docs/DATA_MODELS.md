@@ -251,7 +251,19 @@ Batch sidecar JSON
 
 Batch --llm-report Markdown
   = presentation-only report derived from LLMSidecarResult
+
+Single-file or batch --report-index Markdown
+  = presentation-only output index derived from deterministic review results
+    plus optional LLM sidecar/report metadata
 ```
+
+Current report-index guarantees:
+
+- `--report-index` does not add fields to `ReviewResult`
+- `--report-index` does not add fields to `BatchReviewResult`
+- `--report-index` does not add fields to `LLMReviewResult`
+- `--report-index` does not add fields to `LLMSidecarResult`
+- report index is a renderer-layer Markdown artifact only
 
 Current validated semantic-output conversion boundary:
 

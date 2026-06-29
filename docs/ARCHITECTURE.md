@@ -120,6 +120,9 @@ The CLI currently supports reviewing one Markdown file with one YAML profile, re
 It prints simple human-readable summaries, supports JSON output, and can export Markdown review reports for both single-file and batch review.
 It also supports a CLI quality gate through `--fail-on`, using canonical severity ordering in the core package to choose automation-friendly exit codes.
 It does not yet support HTML, watch mode, or report persistence beyond the optional Markdown output file.
+It now also includes a separate report-index renderer that produces one
+navigation-oriented Markdown index from deterministic review results plus
+optional LLM sidecar summary data, without changing any result schema.
 
 Current deterministic rules:
 
@@ -247,11 +250,16 @@ Current status:
   `LLMReviewResult` JSON instead of an envelope
 - the CLI can optionally write a separate LLM Markdown report through
   `--llm-report`
+- the CLI can also optionally write a separate hybrid report index through
+  `--report-index`
 - single-file deterministic Markdown output no longer appends LLM findings;
   `--include-llm-report` is not supported for the TASK-0069 path
 - no LLM output is merged into the current `ReviewResult`
 - no LLM output is merged into deterministic severity counts, rule counts, or
   quality-gate evaluation
+- the report index is presentation-only and does not merge or rewrite
+  deterministic JSON, deterministic Markdown, raw `LLMReviewResult`, or
+  aggregate `LLMSidecarResult`
 - batch review now supports one aggregate `LLMSidecarResult` JSON sidecar at
   `--llm-output` with per-file entries, plus an optional separate batch LLM
   sidecar Markdown report

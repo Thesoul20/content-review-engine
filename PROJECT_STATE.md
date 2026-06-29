@@ -36,6 +36,11 @@ It also now includes a separate LLM Markdown report rendering layer for
 single-file `LLMReviewResult` and batch `LLMSidecarResult`, plus CLI support
 for `content-review review --llm-report` and `content-review batch --llm-report`
 without changing deterministic output schemas or quality-gate behavior.
+It also now includes a separate hybrid report-index rendering layer for
+single-file and batch review, plus CLI support for `--report-index` that
+summarizes deterministic output, optional LLM sidecars, optional LLM
+Markdown reports, and interpretation boundaries without changing any result
+schema or quality-gate behavior.
 
 ---
 
@@ -102,9 +107,32 @@ without changing deterministic output schemas or quality-gate behavior.
 
 ## In Progress
 
-- No active implementation task.
+- TASK-0072: Add hybrid review report index.
 
 ## Recent Completion
+
+- TASK-0072 is complete.
+- Added `src/content_review_engine/reports/report_index.py` with separate
+  `render_single_file_report_index(...)` and
+  `render_batch_report_index(...)` renderers that produce stable Markdown
+  output indexes from deterministic review results plus optional LLM sidecar
+  summary data.
+- `content-review review` and `content-review batch` now support
+  `--report-index` without changing deterministic stdout, deterministic JSON,
+  deterministic Markdown reports, LLM JSON sidecars, LLM Markdown reports,
+  or quality-gate behavior.
+- Single-file report indexes now show summary, output files, interpretation,
+  deterministic summary, and LLM summary; batch report indexes now also show
+  LLM file status summary and compact LLM error summary for partial failures.
+- Added `tests/test_report_index.py` and updated `tests/test_cli.py`,
+  `tests/test_llm_single_file_cli_integration.py`,
+  `tests/test_llm_batch_cli_integration.py`, and
+  `tests/test_llm_provider_usage_docs.py` for deterministic-only usage,
+  hybrid usage, canonical status, output-file rows, Markdown escaping, stable
+  ordering, partial failures, write failures, and no-network coverage.
+- Updated `docs/CLI.md`, `docs/LLM_PROVIDER_USAGE.md`,
+  `docs/DATA_MODELS.md`, `docs/ARCHITECTURE.md`, `docs/CI.md`, and
+  `CHANGELOG.md` to document the report-index boundary.
 
 - TASK-0071 is complete.
 - Added `src/content_review_engine/reports/llm_markdown.py` with separate

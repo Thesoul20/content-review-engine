@@ -51,10 +51,12 @@ from content_review_engine.llm import (
 )
 from content_review_engine.parser import read_markdown
 from content_review_engine.reports import (
+    render_batch_report_index,
     render_batch_markdown_report,
     render_llm_review_markdown,
     render_llm_sidecar_markdown,
     render_markdown_report,
+    render_single_file_report_index,
 )
 from content_review_engine.review import review_document, review_markdown_directory
 from content_review_engine.rules import UnknownRuleError
@@ -157,6 +159,10 @@ def build_parser() -> argparse.ArgumentParser:
     review_parser.add_argument(
         "--output",
         help="Write the rendered review output to a file.",
+    )
+    review_parser.add_argument(
+        "--report-index",
+        help="Write a Markdown review output index to a file.",
     )
     review_parser.add_argument(
         "--fail-on",
@@ -385,6 +391,10 @@ def build_parser() -> argparse.ArgumentParser:
     batch_parser.add_argument(
         "--output",
         help="Write the rendered batch output to a file.",
+    )
+    batch_parser.add_argument(
+        "--report-index",
+        help="Write a Markdown batch review output index to a file.",
     )
     batch_parser.add_argument(
         "--recursive",
@@ -928,6 +938,20 @@ def _write_llm_sidecar_markdown_report(
         ) from exc
 
 
+def _write_report_index(
+    *,
+    markdown_text: str,
+    output_path: str,
+) -> None:
+    report_index_path = Path(output_path)
+    try:
+        report_index_path.write_text(markdown_text, encoding="utf-8")
+    except OSError as exc:
+        raise ValueError(
+            f"Failed to write report index: {report_index_path}: {exc}"
+        ) from exc
+
+
 def _build_batch_llm_review_items(
     *,
     batch_result: BatchReviewResult,
@@ -977,6 +1001,7 @@ def _run_review_command(args: argparse.Namespace) -> int:
     output_exit_code = _write_or_print_output(rendered_output, args.output)
     if output_exit_code != 0:
         return output_exit_code
+    llm_result: LLMReviewResult | None = None
     if args.enable_llm:
         llm_result = _run_llm_review(
             markdown_text=markdown_text,
@@ -995,6 +1020,20 @@ def _run_review_command(args: argparse.Namespace) -> int:
                 output_path=args.llm_report,
                 file_path=args.markdown_file,
             )
+    if args.report_index is not None:
+        _write_report_index(
+            markdown_text=render_single_file_report_index(
+                review_result,
+                deterministic_output_path=args.output,
+                deterministic_output_format=args.format,
+                report_index_path=args.report_index,
+                llm_enabled=args.enable_llm,
+                llm_result=llm_result,
+                llm_output_path=args.llm_output,
+                llm_report_path=args.llm_report,
+            ),
+            output_path=args.report_index,
+        )
     return _quality_gate_exit_code(
         review_result.summary.severity_counts,
         args.fail_on,
@@ -1023,6 +1062,7 @@ def _run_batch_command(args: argparse.Namespace) -> int:
     output_exit_code = _write_or_print_output(rendered_output, args.output)
     if output_exit_code != 0:
         return output_exit_code
+    manifest_result: LLMSidecarResult | None = None
     if args.enable_llm:
         llm_provider, llm_provider_source = llm_provider_metadata
         batch_items = _build_batch_llm_review_items(
@@ -1049,8 +1089,24 @@ def _run_batch_command(args: argparse.Namespace) -> int:
                 sidecar_result=manifest_result,
                 output_path=args.llm_report,
             )
-        if manifest_result.summary.failed_count > 0:
-            return 2
+    if args.report_index is not None:
+        _write_report_index(
+            markdown_text=render_batch_report_index(
+                batch_result,
+                input_dir=args.input_dir,
+                profile_path=args.profile,
+                deterministic_output_path=args.output,
+                deterministic_output_format=args.format,
+                report_index_path=args.report_index,
+                llm_enabled=args.enable_llm,
+                llm_result=manifest_result,
+                llm_output_path=args.llm_output,
+                llm_report_path=args.llm_report,
+            ),
+            output_path=args.report_index,
+        )
+    if manifest_result is not None and manifest_result.summary.failed_count > 0:
+        return 2
     return _quality_gate_exit_code(
         batch_result.summary.severity_counts,
         args.fail_on,
