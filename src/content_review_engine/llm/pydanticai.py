@@ -16,8 +16,18 @@ from content_review_engine.llm.errors import (
     LLMProviderNotImplementedError,
     LLMProviderRuntimeError,
     LLMResponseValidationError,
+    LLMSemanticReviewExecutionError,
 )
-from content_review_engine.llm.models import LLMReviewRequest, LLMReviewResult
+from content_review_engine.llm.models import (
+    LLMReviewRequest,
+    LLMReviewResult,
+    ValidatedLLMSemanticReviewOutput,
+)
+from content_review_engine.llm.output_validation import parse_llm_semantic_review_output
+from content_review_engine.llm.prompt_contract import (
+    LLMSemanticReviewPromptContract,
+    build_llm_semantic_review_prompt_contract,
+)
 from content_review_engine.llm.pydanticai_mapping import (
     PydanticAIReviewMapper,
     PydanticAIReviewRequestPayload,
@@ -131,6 +141,43 @@ def run_pydanticai_live_check_agent(
     return str(agent.run_sync(prompt).output).strip()
 
 
+def build_pydanticai_semantic_review_agent(
+    *,
+    model: str,
+    system_prompt: str,
+    secret: ResolvedLLMSecret,
+    base_url: str | None,
+    timeout_seconds: float | None,
+    agent_type: type[Agent] = Agent,
+) -> Agent:
+    openai_client = AsyncOpenAI(
+        base_url=base_url,
+        api_key=secret.api_key.get_secret_value(),
+        timeout=timeout_seconds,
+        max_retries=0,
+    )
+    provider = OpenAIProvider(
+        openai_client=openai_client,
+    )
+    runtime_model = OpenAIChatModel(
+        _normalize_model_name(model),
+        provider=provider,
+    )
+    return agent_type(
+        runtime_model,
+        output_type=str,
+        system_prompt=system_prompt,
+        defer_model_check=True,
+    )
+
+
+def run_pydanticai_semantic_review_agent(
+    agent: Agent,
+    prompt: str,
+) -> Any:
+    return agent.run_sync(prompt).output
+
+
 class PydanticAIReviewer:
     """PydanticAI-backed reviewer using the project's stable mapping boundary."""
 
@@ -142,6 +189,13 @@ class PydanticAIReviewer:
         secret_resolver: Callable[[LLMProviderConfig], ResolvedLLMSecret] = resolve_llm_api_key,
         agent_builder: Callable[..., Agent] | None = None,
         runtime_runner: Callable[[Agent, PydanticAIReviewRequestPayload], Any] | None = None,
+        semantic_prompt_builder: Callable[
+            [LLMReviewRequest],
+            LLMSemanticReviewPromptContract,
+        ]
+        | None = None,
+        semantic_agent_builder: Callable[..., Agent] | None = None,
+        semantic_runtime_runner: Callable[[Agent, str], Any] | None = None,
         sleep_func: Callable[[float], None] | None = None,
         monotonic_func: Callable[[], float] | None = None,
     ) -> None:
@@ -157,6 +211,15 @@ class PydanticAIReviewer:
         self._secret_resolver = secret_resolver
         self._agent_builder = agent_builder or build_pydanticai_runtime_agent
         self._runtime_runner = runtime_runner or run_pydanticai_runtime_agent
+        self._semantic_prompt_builder = (
+            semantic_prompt_builder or build_llm_semantic_review_prompt_contract
+        )
+        self._semantic_agent_builder = (
+            semantic_agent_builder or build_pydanticai_semantic_review_agent
+        )
+        self._semantic_runtime_runner = (
+            semantic_runtime_runner or run_pydanticai_semantic_review_agent
+        )
         self._sleep_func = sleep_func or time.sleep
         self._monotonic_func = monotonic_func or time.monotonic
         self._last_request_started_at: float | None = None
@@ -209,6 +272,41 @@ class PydanticAIReviewer:
         request: LLMReviewRequest,
     ) -> PydanticAIReviewRequestPayload:
         return self.mapping.build_request(request)
+
+    def build_semantic_review_prompt_contract(
+        self,
+        request: LLMReviewRequest,
+    ) -> LLMSemanticReviewPromptContract:
+        return self._semantic_prompt_builder(request)
+
+    def build_semantic_review_agent(self, system_prompt: str) -> Agent:
+        return self._semantic_agent_builder(
+            model=_normalize_model_name(self.model),
+            system_prompt=system_prompt,
+            secret=self.resolve_secret(),
+            base_url=self.base_url,
+            timeout_seconds=self.timeout_seconds,
+            agent_type=self._agent_type,
+        )
+
+    def _extract_semantic_review_raw_output(self, response: Any) -> str:
+        if isinstance(response, str):
+            return response
+
+        if isinstance(response, dict):
+            for key in ("output", "data", "content"):
+                value = response.get(key)
+                if isinstance(value, str):
+                    return value
+
+        for attribute_name in ("output", "data", "content"):
+            value = getattr(response, attribute_name, None)
+            if isinstance(value, str):
+                return value
+
+        raise LLMSemanticReviewExecutionError(
+            "PydanticAI semantic review did not return text output."
+        )
 
     def _apply_request_pacing(self) -> None:
         if self.min_request_interval_seconds <= 0:
@@ -269,6 +367,21 @@ class PydanticAIReviewer:
         response = self._run_with_retries(agent=agent, payload=payload)
         return self.mapping.response_to_result(response, request)
 
+    def run_semantic_review(
+        self,
+        request: LLMReviewRequest,
+    ) -> ValidatedLLMSemanticReviewOutput:
+        prompt_contract = self.build_semantic_review_prompt_contract(request)
+        agent = self.build_semantic_review_agent(prompt_contract.system_prompt)
+        try:
+            self._apply_request_pacing()
+            raw_response = self._semantic_runtime_runner(agent, prompt_contract.user_prompt)
+        except Exception as exc:
+            raise classify_pydanticai_runtime_error(exc) from exc
+
+        raw_output = self._extract_semantic_review_raw_output(raw_response)
+        return parse_llm_semantic_review_output(raw_output)
+
 
 __all__ = [
     "PYDANTICAI_NOT_IMPLEMENTED_MESSAGE",
@@ -278,7 +391,9 @@ __all__ = [
     "PydanticAIReviewer",
     "build_pydanticai_live_check_agent",
     "build_pydanticai_runtime_agent",
+    "build_pydanticai_semantic_review_agent",
     "raise_pydanticai_not_implemented",
     "run_pydanticai_live_check_agent",
     "run_pydanticai_runtime_agent",
+    "run_pydanticai_semantic_review_agent",
 ]

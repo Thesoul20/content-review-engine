@@ -114,6 +114,46 @@ Current guarantees:
 - the validated output is not the same thing as `LLMReviewResult`
 - parse and validation errors do not include the full raw output or secret-like values
 
+## PydanticAI semantic review execution
+
+`PydanticAIReviewer` now also exposes `run_semantic_review(request)`.
+
+Execution flow:
+
+```text
+LLMReviewRequest
+  ↓
+build_llm_semantic_review_prompt_contract()
+  ↓
+PydanticAIReviewer.run_semantic_review()
+  ↓
+raw model output
+  ↓
+parse_llm_semantic_review_output()
+  ↓
+ValidatedLLMSemanticReviewOutput
+```
+
+Current guarantees:
+
+- provider execution reuses the shared prompt contract and does not build a
+  second prompt format inside the provider
+- provider execution reuses `parse_llm_semantic_review_output()` and does not
+  duplicate JSON parsing or schema validation inside the provider
+- success accepts either pure JSON or a single fenced `json` block
+- provider execution errors remain separate from output parse and validation
+  errors
+- `run_semantic_review()` returns `ValidatedLLMSemanticReviewOutput`, not
+  `LLMReviewResult`
+- `run_semantic_review()` does not integrate into `content-review review` or
+  `content-review batch`
+- `run_semantic_review()` does not write sidecars or change deterministic
+  quality-gate behavior
+- provider execution does not inject the API secret into the prompt, the
+  validated output, or stable error messages
+- default tests for this path use fake/stub runtime calls and must not access
+  the real network or require a real API key
+
 ## Provider Classes
 
 Current test providers:

@@ -567,6 +567,9 @@ Parsing and validation notes:
 - parse errors and validation errors do not leak secret-like values
 - this validated output is not converted into `LLMReviewResult` by the current
   task
+- `PydanticAIReviewer.run_semantic_review()` now returns this validated model
+  directly after provider execution, while still keeping it separate from
+  `LLMReviewResult`, `ReviewResult`, and `BatchReviewResult`
 
 ---
 

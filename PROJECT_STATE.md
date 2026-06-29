@@ -23,6 +23,11 @@ It also now includes a separate semantic-review output parser and validator
 that accept pure JSON or one fenced JSON block, validate the
 `llm-semantic-review-output.v1` contract, and stay outside provider
 execution, sidecar generation, and the deterministic review pipeline.
+The real `PydanticAIReviewer` now also has a separate semantic-review
+execution path that reuses that prompt contract and output validator,
+returns `ValidatedLLMSemanticReviewOutput`, and still stays outside
+`content-review review`, `content-review batch`, sidecar generation, and the
+deterministic review pipeline.
 
 ---
 
@@ -92,6 +97,32 @@ execution, sidecar generation, and the deterministic review pipeline.
 - No active implementation task.
 
 ## Recent Completion
+
+- TASK-0067 is complete.
+- Updated `src/content_review_engine/llm/pydanticai.py` so
+  `PydanticAIReviewer.run_semantic_review()` now builds the shared
+  `llm-semantic-review-prompt.v1` contract from `LLMReviewRequest`, executes
+  a provider-specific raw text call, reuses
+  `parse_llm_semantic_review_output()`, and returns
+  `ValidatedLLMSemanticReviewOutput`.
+- Updated `src/content_review_engine/llm/errors.py` and
+  `src/content_review_engine/llm/__init__.py` to expose a stable
+  `LLMSemanticReviewExecutionError` for non-text provider output while
+  preserving separate parse, validation, and runtime failure behavior.
+- Updated `tests/test_llm_pydanticai_provider.py` and
+  `tests/test_llm_provider_usage_docs.py` for plain/fenced JSON success,
+  parse failure, validation failure, provider execution failure,
+  construction/live separation, no-env/no-network isolation, and secret
+  non-leakage in prompt and error coverage.
+- Updated `docs/LLM_PROVIDER_USAGE.md`, `docs/DATA_MODELS.md`,
+  `docs/ARCHITECTURE.md`, and `CHANGELOG.md` to document the new provider
+  execution boundary and confirm that it still does not create
+  `LLMReviewResult`, write sidecars, or integrate into the deterministic
+  review pipeline.
+- Kept `content-review review`, `content-review batch`, sidecar metadata,
+  `LLMReviewResult` conversion, deterministic review behavior, `llm-check`
+  construction/live behavior, `.env` loading, and default-test real network
+  access out of scope.
 
 - TASK-0066 is complete.
 - Added `src/content_review_engine/llm/output_validation.py` with a separate

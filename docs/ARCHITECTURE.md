@@ -369,6 +369,26 @@ Current output-validation guarantees:
 This keeps prompt design, output validation, provider execution, and future
 result conversion as separate layers.
 
+Current PydanticAI semantic-review execution boundary:
+
+```text
+LLMReviewRequest
+  ↓
+build_llm_semantic_review_prompt_contract()
+  ↓
+PydanticAIReviewer.run_semantic_review()
+  ↓
+raw text output
+  ↓
+parse_llm_semantic_review_output()
+  ↓
+ValidatedLLMSemanticReviewOutput
+```
+
+This provider path now reuses the shared prompt builder and shared output
+validator, but it still does not integrate into `content-review review`,
+`content-review batch`, sidecar generation, or deterministic result merging.
+
 Current single-file Markdown report boundary:
 
 ```text

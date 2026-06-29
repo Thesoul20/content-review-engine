@@ -94,6 +94,10 @@ def test_usage_docs_exist_and_cover_required_provider_flags_and_boundaries() -> 
     assert "single fenced `json` block" in content
     assert "do not auto-fix malformed JSON" in content
     assert "do not coerce string confidence values" in content
+    assert "PydanticAI semantic review execution" in content
+    assert "run_semantic_review(request)" in content
+    assert "ValidatedLLMSemanticReviewOutput" in content
+    assert "does not write sidecars" in content
     assert "does not execute a real provider call" in content
     assert "does not integrate into `content-review review` or `content-review batch` yet" in content
     assert "llm_provider" in content
@@ -150,6 +154,8 @@ def test_docs_and_fixtures_do_not_require_real_network_or_real_api_key() -> None
     assert "Prompt construction does not read `.env`, does not read `os.environ`, and does not access the network." in usage_doc
     assert "prompt construction remains separate from output parsing, output validation," in usage_doc
     assert "the validated output is not the same thing as `LLMReviewResult`" in usage_doc
+    assert "provider execution reuses the shared prompt contract" in usage_doc
+    assert "provider execution reuses `parse_llm_semantic_review_output()`" in usage_doc
     assert "batch `--llm-provider` supports only `mock` and `pydantic-ai-testmodel`" in usage_doc
     assert "explicit sidecar writes `llm_provider_source: explicit`" in usage_doc
     assert "omitted `--llm-provider` writes `llm_provider_source: default` or `config`" in usage_doc

@@ -8,6 +8,37 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0067
+
+### Changed
+
+- Updated `src/content_review_engine/llm/pydanticai.py` so
+  `PydanticAIReviewer` now exposes `run_semantic_review(request)` that builds
+  the shared semantic-review prompt contract, executes a raw text runtime
+  call, reuses `parse_llm_semantic_review_output()`, and returns
+  `ValidatedLLMSemanticReviewOutput`.
+- Updated `src/content_review_engine/llm/errors.py` and
+  `src/content_review_engine/llm/__init__.py` to expose
+  `LLMSemanticReviewExecutionError` for non-text provider output while
+  preserving separate runtime, parse, and validation failures.
+- Updated `tests/test_llm_pydanticai_provider.py` and
+  `tests/test_llm_provider_usage_docs.py` for shared prompt-builder usage,
+  shared output-validator usage, plain/fenced JSON success, parse failure,
+  validation failure, provider execution failure, construction/live
+  separation, no-env/no-network isolation, and secret non-leakage coverage.
+- Updated `docs/LLM_PROVIDER_USAGE.md`, `docs/DATA_MODELS.md`,
+  `docs/ARCHITECTURE.md`, and `PROJECT_STATE.md` to document the new
+  provider-execution boundary that returns validated semantic output without
+  producing `LLMReviewResult` or entering the deterministic review pipeline.
+
+### Not Added
+
+- No `content-review review` or `content-review batch` integration, no new LLM
+  CLI switches, no `LLMReviewResult` conversion, no sidecar metadata change,
+  no deterministic review change, no `.env` or `os.environ` reads inside this
+  semantic-review execution path when tests use pre-resolved secrets, and no
+  default-test real network access or required real API key.
+
 ## TASK-0066
 
 ### Added

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib
+import os
 import socket
 import sys
 from typing import Any
@@ -20,6 +21,9 @@ from content_review_engine.llm import (
     LLMProviderTimeoutError,
     LLMProviderSecretError,
     LLMResponseValidationError,
+    LLMSemanticReviewExecutionError,
+    LLMSemanticReviewOutputParseError,
+    LLMSemanticReviewOutputValidationError,
     LLMReviewRequest,
     LLMReviewer,
     PYDANTICAI_LIVE_CHECK_PROMPT,
@@ -718,6 +722,241 @@ def test_pydanticai_review_does_not_make_network_calls_with_fake_runtime(
         raise AssertionError(f"Unexpected network call: {args!r} {kwargs!r}")
 
     monkeypatch.setattr(socket, "create_connection", fail_create_connection)
+
+    reviewer = PydanticAIReviewer(
+        LLMProviderConfig(
+            provider="pydanticai",
+            model="gpt-4o-mini",
+            api_key_env="OPENAI_API_KEY",
+        ),
+        secret_resolver=lambda config: reviewer_secret(config.api_key_env or "missing"),
+        agent_builder=lambda **_kwargs: object(),
+        runtime_runner=lambda _agent, _payload: {"findings": []},
+    )
+
+    result = reviewer.review(_build_request())
+
+    assert result.findings == ()
+
+
+def test_pydanticai_semantic_review_uses_prompt_contract_and_output_validation() -> None:
+    captured: dict[str, Any] = {}
+
+    def fake_semantic_agent_builder(**kwargs):  # type: ignore[no-untyped-def]
+        captured.update(kwargs)
+        return object()
+
+    def fake_semantic_runtime_runner(agent, prompt):  # type: ignore[no-untyped-def]
+        assert agent is not None
+        captured["user_prompt"] = prompt
+        return '{"schema_version":"llm-semantic-review-output.v1","summary":"发现一处风险。","findings":[{"rule_id":"llm.semantic.overclaim","severity":"warning","line":2,"column":1,"message":"表述过于绝对。","evidence":"always safe","suggestion":"改为更审慎的说法。","confidence":0.81}]}'
+
+    reviewer = PydanticAIReviewer(
+        LLMProviderConfig(
+            provider="pydanticai",
+            model="gpt-4o-mini",
+            api_key_env="CONTENT_REVIEW_TEST_LLM_API_KEY",
+            base_url="https://example.com/v1",
+        ),
+        resolved_secret=reviewer_secret("CONTENT_REVIEW_TEST_LLM_API_KEY"),
+        semantic_agent_builder=fake_semantic_agent_builder,
+        semantic_runtime_runner=fake_semantic_runtime_runner,
+    )
+
+    result = reviewer.run_semantic_review(_build_request())
+
+    assert result.summary == "发现一处风险。"
+    assert result.findings[0].rule_id == "llm.semantic.overclaim"
+    assert captured["model"] == "gpt-4o-mini"
+    assert captured["base_url"] == "https://example.com/v1"
+    assert captured["timeout_seconds"] is None
+    assert "Return JSON only." in captured["system_prompt"]
+    assert "articles/example.md" in captured["user_prompt"]
+    assert "test-secret-value" not in captured["system_prompt"]
+    assert "test-secret-value" not in captured["user_prompt"]
+
+
+def test_pydanticai_semantic_review_accepts_fenced_json_output() -> None:
+    reviewer = PydanticAIReviewer(
+        LLMProviderConfig(
+            provider="pydanticai",
+            model="gpt-4o-mini",
+            api_key_env="CONTENT_REVIEW_TEST_LLM_API_KEY",
+        ),
+        resolved_secret=reviewer_secret("CONTENT_REVIEW_TEST_LLM_API_KEY"),
+        semantic_agent_builder=lambda **_kwargs: object(),
+        semantic_runtime_runner=lambda _agent, _prompt: """```json
+{"schema_version":"llm-semantic-review-output.v1","summary":"无明显风险。","findings":[]}
+```""",
+    )
+
+    result = reviewer.run_semantic_review(_build_request())
+
+    assert result.summary == "无明显风险。"
+    assert result.findings == ()
+
+
+def test_pydanticai_semantic_review_parse_failure_preserves_parse_error() -> None:
+    reviewer = PydanticAIReviewer(
+        LLMProviderConfig(
+            provider="pydanticai",
+            model="gpt-4o-mini",
+            api_key_env="CONTENT_REVIEW_TEST_LLM_API_KEY",
+        ),
+        resolved_secret=reviewer_secret("CONTENT_REVIEW_TEST_LLM_API_KEY"),
+        semantic_agent_builder=lambda **_kwargs: object(),
+        semantic_runtime_runner=lambda _agent, _prompt: "not json sk-test-secret-1234567890",
+    )
+
+    with pytest.raises(LLMSemanticReviewOutputParseError) as exc_info:
+        reviewer.run_semantic_review(_build_request())
+
+    message = str(exc_info.value)
+    assert message == "raw_output: invalid JSON at line 1 column 1"
+    assert "test-secret-value" not in message
+    assert "sk-test-secret-1234567890" not in message
+
+
+def test_pydanticai_semantic_review_validation_failure_preserves_validation_error() -> None:
+    reviewer = PydanticAIReviewer(
+        LLMProviderConfig(
+            provider="pydanticai",
+            model="gpt-4o-mini",
+            api_key_env="CONTENT_REVIEW_TEST_LLM_API_KEY",
+        ),
+        resolved_secret=reviewer_secret("CONTENT_REVIEW_TEST_LLM_API_KEY"),
+        semantic_agent_builder=lambda **_kwargs: object(),
+        semantic_runtime_runner=lambda _agent, _prompt: '{"schema_version":"llm-semantic-review-output.v1","summary":"x","findings":[{"rule_id":"llm.semantic.overclaim","severity":"medium","message":"bad","evidence":"snippet","suggestion":"fix"}]}',
+    )
+
+    with pytest.raises(LLMSemanticReviewOutputValidationError) as exc_info:
+        reviewer.run_semantic_review(_build_request())
+
+    message = str(exc_info.value)
+    assert message == "findings[0].severity: must be one of: info, warning, error, critical"
+    assert "test-secret-value" not in message
+
+
+def test_pydanticai_semantic_review_provider_execution_failure_raises_runtime_error() -> None:
+    reviewer = PydanticAIReviewer(
+        LLMProviderConfig(
+            provider="pydanticai",
+            model="gpt-4o-mini",
+            api_key_env="CONTENT_REVIEW_TEST_LLM_API_KEY",
+        ),
+        resolved_secret=reviewer_secret("CONTENT_REVIEW_TEST_LLM_API_KEY"),
+        semantic_agent_builder=lambda **_kwargs: object(),
+        semantic_runtime_runner=lambda _agent, _prompt: (_ for _ in ()).throw(
+            RuntimeError("test-secret-value should stay hidden")
+        ),
+    )
+
+    with pytest.raises(LLMProviderRuntimeError) as exc_info:
+        reviewer.run_semantic_review(_build_request())
+
+    message = str(exc_info.value)
+    assert message == "PydanticAI runtime call failed unexpectedly."
+    assert "test-secret-value" not in message
+    assert _build_request().content not in message
+
+
+def test_pydanticai_semantic_review_rejects_non_text_runtime_output() -> None:
+    class FakeResult:
+        status = "ok"
+
+    reviewer = PydanticAIReviewer(
+        LLMProviderConfig(
+            provider="pydanticai",
+            model="gpt-4o-mini",
+            api_key_env="CONTENT_REVIEW_TEST_LLM_API_KEY",
+        ),
+        resolved_secret=reviewer_secret("CONTENT_REVIEW_TEST_LLM_API_KEY"),
+        semantic_agent_builder=lambda **_kwargs: object(),
+        semantic_runtime_runner=lambda _agent, _prompt: FakeResult(),
+    )
+
+    with pytest.raises(LLMSemanticReviewExecutionError) as exc_info:
+        reviewer.run_semantic_review(_build_request())
+
+    assert str(exc_info.value) == "PydanticAI semantic review did not return text output."
+
+
+def test_pydanticai_semantic_review_does_not_read_environment_variables_when_secret_is_pre_resolved(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail_getenv(*args: object, **kwargs: object) -> str:
+        raise AssertionError("semantic review should not read environment variables")
+
+    monkeypatch.setattr(os, "getenv", fail_getenv)
+
+    reviewer = PydanticAIReviewer(
+        LLMProviderConfig(
+            provider="pydanticai",
+            model="gpt-4o-mini",
+            api_key_env="CONTENT_REVIEW_TEST_LLM_API_KEY",
+        ),
+        resolved_secret=reviewer_secret("CONTENT_REVIEW_TEST_LLM_API_KEY"),
+        semantic_agent_builder=lambda **_kwargs: object(),
+        semantic_runtime_runner=lambda _agent, _prompt: '{"schema_version":"llm-semantic-review-output.v1","summary":"ok","findings":[]}',
+    )
+
+    result = reviewer.run_semantic_review(_build_request())
+
+    assert result.summary == "ok"
+
+
+def test_pydanticai_semantic_review_does_not_make_network_calls_with_fake_runtime(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail_create_connection(*args, **kwargs):  # type: ignore[no-untyped-def]
+        raise AssertionError(f"Unexpected network call: {args!r} {kwargs!r}")
+
+    monkeypatch.setattr(socket, "create_connection", fail_create_connection)
+
+    reviewer = PydanticAIReviewer(
+        LLMProviderConfig(
+            provider="pydanticai",
+            model="gpt-4o-mini",
+            api_key_env="CONTENT_REVIEW_TEST_LLM_API_KEY",
+        ),
+        resolved_secret=reviewer_secret("CONTENT_REVIEW_TEST_LLM_API_KEY"),
+        semantic_agent_builder=lambda **_kwargs: object(),
+        semantic_runtime_runner=lambda _agent, _prompt: '{"schema_version":"llm-semantic-review-output.v1","summary":"ok","findings":[]}',
+    )
+
+    result = reviewer.run_semantic_review(_build_request())
+
+    assert result.findings == ()
+
+
+def test_pydanticai_semantic_review_is_separate_from_construction_and_live_checks() -> None:
+    state = {"construction": 0, "semantic": 0}
+
+    def fake_agent_builder(**_kwargs):  # type: ignore[no-untyped-def]
+        state["construction"] += 1
+        return object()
+
+    def fake_semantic_agent_builder(**_kwargs):  # type: ignore[no-untyped-def]
+        state["semantic"] += 1
+        return object()
+
+    reviewer = PydanticAIReviewer(
+        LLMProviderConfig(
+            provider="pydanticai",
+            model="gpt-4o-mini",
+            api_key_env="CONTENT_REVIEW_TEST_LLM_API_KEY",
+        ),
+        resolved_secret=reviewer_secret("CONTENT_REVIEW_TEST_LLM_API_KEY"),
+        agent_builder=fake_agent_builder,
+        semantic_agent_builder=fake_semantic_agent_builder,
+        semantic_runtime_runner=lambda _agent, _prompt: '{"schema_version":"llm-semantic-review-output.v1","summary":"ok","findings":[]}',
+    )
+
+    reviewer.run_construction_check()
+    assert state == {"construction": 1, "semantic": 0}
+
+    reviewer.run_semantic_review(_build_request())
+    assert state == {"construction": 1, "semantic": 1}
 
     reviewer = PydanticAIReviewer(
         LLMProviderConfig(
