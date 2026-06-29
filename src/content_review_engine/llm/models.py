@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from pydantic import field_validator
 from pydantic import model_validator
 
@@ -222,6 +222,27 @@ class LLMReviewRequest(BaseModel):
         return normalized_metadata
 
 
+class ValidatedLLMSemanticFinding(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    rule_id: str
+    severity: Literal["info", "warning", "error", "critical"]
+    line: int | None = None
+    column: int | None = None
+    message: str
+    evidence: str
+    suggestion: str
+    confidence: float | None = None
+
+
+class ValidatedLLMSemanticReviewOutput(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    schema_version: str = LLM_SEMANTIC_REVIEW_OUTPUT_SCHEMA_VERSION
+    summary: str
+    findings: tuple[ValidatedLLMSemanticFinding, ...] = Field(default_factory=tuple)
+
+
 __all__ = [
     "LLM_OVERALL_RISK_VALUES",
     "LLM_REVIEW_RESULT_SCHEMA_VERSION",
@@ -239,4 +260,6 @@ __all__ = [
     "LLMReviewRequest",
     "LLMReviewResult",
     "LLMReviewSummary",
+    "ValidatedLLMSemanticFinding",
+    "ValidatedLLMSemanticReviewOutput",
 ]

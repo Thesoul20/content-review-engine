@@ -336,8 +336,38 @@ Current prompt-contract guarantees:
 - prompt construction redacts metadata values for sensitive keys before they
   enter the prompt text
 
-This keeps prompt design, provider execution, and future output validation as
-three separate layers.
+Current output-validation boundary:
+
+```text
+raw LLM output text
+  ↓
+extract_llm_semantic_review_json()
+  ↓
+parse_llm_semantic_review_output()
+  ↓
+validate_llm_semantic_review_output()
+  ↓
+ValidatedLLMSemanticReviewOutput
+```
+
+Current output-validation guarantees:
+
+- output parsing and validation are separate from provider construction and
+  provider execution
+- the parser accepts only pure JSON or a single fenced `json` block
+- the parser does not auto-repair malformed JSON
+- the validator enforces the `llm-semantic-review-output.v1` contract
+- the validator returns a validated semantic-review output model, not
+  `LLMReviewResult`
+- the parser and validator do not read `.env`
+- the parser and validator do not read `os.environ`
+- the parser and validator do not resolve secrets
+- the parser and validator do not access the network
+- the parser and validator do not integrate into `content-review review` or
+  `content-review batch` yet
+
+This keeps prompt design, output validation, provider execution, and future
+result conversion as separate layers.
 
 Current single-file Markdown report boundary:
 

@@ -30,7 +30,8 @@ Current boundaries:
 
 - this contract does not execute a real provider call
 - this contract does not integrate into `content-review review` or `content-review batch` yet
-- This task does not add output parsing, output validation, or `LLMReviewResult` generation.
+- prompt construction remains separate from output parsing, output validation,
+  and `LLMReviewResult` generation
 - Prompt construction does not read `.env`, does not read `os.environ`, and does not access the network.
 
 Current prompt output contract:
@@ -67,6 +68,51 @@ Prompt rules:
 The prompt contract currently asks the model to focus on semantic risk areas
 such as exaggeration, misleading wording, unsupported claims, risky advice,
 ambiguity, inappropriate tone, and cases that need human review.
+
+## LLM semantic review output validation
+
+The repository now also includes an internal semantic-review output validation
+layer in `src/content_review_engine/llm/output_validation.py`.
+
+Purpose:
+
+- parse raw model output without calling a provider
+- accept either pure JSON or a single fenced `json` block
+- validate `schema_version`, `summary`, and `findings`
+- validate each finding field with stable path-based error messages
+
+Current helpers:
+
+- `extract_llm_semantic_review_json(raw_output)`
+- `parse_llm_semantic_review_output(raw_output)`
+- `validate_llm_semantic_review_output(data)`
+
+Current validation rules:
+
+- `schema_version` must be `llm-semantic-review-output.v1`
+- `summary` must be a non-empty string
+- `findings` must be an array and may be empty
+- `findings[].rule_id` must start with `llm.`
+- `findings[].severity` must be one of `info`, `warning`, `error`, `critical`
+- `findings[].line` and `findings[].column` must be integers greater than or
+  equal to `1`, or `null`
+- `findings[].message`, `findings[].evidence`, and
+  `findings[].suggestion` must be non-empty strings
+- `findings[].confidence` must be a number in the inclusive range `0..1`, or
+  `null`
+
+Current guarantees:
+
+- the parser and validator do not call a provider
+- the parser and validator do not read `.env`
+- the parser and validator do not read `os.environ`
+- the parser and validator do not resolve secrets
+- the parser and validator do not access the network
+- the parser and validator do not auto-fix malformed JSON
+- the parser and validator do not auto-fill missing fields
+- the parser and validator do not coerce string confidence values
+- the validated output is not the same thing as `LLMReviewResult`
+- parse and validation errors do not include the full raw output or secret-like values
 
 ## Provider Classes
 

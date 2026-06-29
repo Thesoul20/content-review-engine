@@ -69,6 +69,14 @@ class LLMResponseValidationError(LLMReviewError):
     """Raised when provider output cannot be validated as an LLM review result."""
 
 
+class LLMSemanticReviewOutputParseError(LLMReviewError):
+    """Raised when raw semantic-review output cannot be extracted or parsed."""
+
+
+class LLMSemanticReviewOutputValidationError(LLMReviewError):
+    """Raised when parsed semantic-review output violates the validation contract."""
+
+
 __all__ = [
     "LLMProviderAuthError",
     "LLMProviderConfigError",
@@ -84,6 +92,8 @@ __all__ = [
     "MissingLLMProviderSecretReferenceError",
     "MissingLLMProviderSecretEnvironmentVariableError",
     "EmptyLLMProviderSecretEnvironmentVariableError",
+    "LLMSemanticReviewOutputParseError",
+    "LLMSemanticReviewOutputValidationError",
     "LLMResponseValidationError",
     "LLMReviewError",
     "UnsupportedLLMProviderError",

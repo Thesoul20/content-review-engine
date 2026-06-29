@@ -19,6 +19,10 @@ The LLM layer now also has provider smoke-check infrastructure plus a separate
 semantic-review prompt contract builder that produces stable system/user
 prompt text without calling a provider, reading secrets, or changing the
 deterministic review pipeline.
+It also now includes a separate semantic-review output parser and validator
+that accept pure JSON or one fenced JSON block, validate the
+`llm-semantic-review-output.v1` contract, and stay outside provider
+execution, sidecar generation, and the deterministic review pipeline.
 
 ---
 
@@ -88,6 +92,29 @@ deterministic review pipeline.
 - No active implementation task.
 
 ## Recent Completion
+
+- TASK-0066 is complete.
+- Added `src/content_review_engine/llm/output_validation.py` with a separate
+  raw-output extraction, JSON parsing, and semantic-review contract validation
+  layer for `llm-semantic-review-output.v1`.
+- Updated `src/content_review_engine/llm/models.py` with
+  `ValidatedLLMSemanticFinding` and `ValidatedLLMSemanticReviewOutput` as
+  dedicated validated prompt-output models distinct from `LLMReviewResult`.
+- Updated `src/content_review_engine/llm/errors.py` and
+  `src/content_review_engine/llm/__init__.py` to expose stable parse and
+  validation errors plus public helpers for semantic-review output parsing.
+- Added `tests/test_llm_output_validation.py` and updated
+  `tests/test_llm_provider_usage_docs.py` for pure/fenced JSON success cases,
+  empty findings, field-path errors, no-env/no-network guarantees, and
+  secret-safe error-message coverage.
+- Updated `docs/LLM_PROVIDER_USAGE.md`, `docs/DATA_MODELS.md`,
+  `docs/ARCHITECTURE.md`, and `CHANGELOG.md` to document the independent
+  output-validation layer and confirm that it does not construct providers,
+  call a model, or generate `LLMReviewResult`.
+- Kept real provider execution, provider wiring, `content-review review`
+  integration, `content-review batch` integration, `LLMReviewResult`
+  conversion, sidecar metadata, and deterministic review behavior out of
+  scope.
 
 - TASK-0065 is complete.
 - Added `src/content_review_engine/llm/prompt_contract.py` with a stable

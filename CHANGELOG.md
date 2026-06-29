@@ -8,6 +8,40 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0066
+
+### Added
+
+- Added `src/content_review_engine/llm/output_validation.py` with a separate
+  semantic-review output extraction, JSON parsing, and contract validation
+  layer for `llm-semantic-review-output.v1`.
+- Added `tests/test_llm_output_validation.py` for pure JSON, fenced JSON,
+  empty findings, finding-field validation, stable field-path errors,
+  malformed JSON handling, non-leaking error messages, and no-env /
+  no-network guarantees.
+
+### Changed
+
+- Updated `src/content_review_engine/llm/models.py` with
+  `ValidatedLLMSemanticFinding` and `ValidatedLLMSemanticReviewOutput` as
+  dedicated validated output models distinct from `LLMReviewResult`.
+- Updated `src/content_review_engine/llm/errors.py` and
+  `src/content_review_engine/llm/__init__.py` to expose stable parse and
+  validation errors plus public parsing/validation helpers.
+- Updated `tests/test_llm_provider_usage_docs.py`,
+  `docs/LLM_PROVIDER_USAGE.md`, `docs/DATA_MODELS.md`,
+  `docs/ARCHITECTURE.md`, and `PROJECT_STATE.md` to document the output
+  validation layer and its separation from provider execution and
+  `LLMReviewResult` generation.
+
+### Not Added
+
+- No real provider call, no network access, no `.env` or `os.environ` reads,
+  no provider execution wiring, and no `LLMReviewResult` generation from this
+  validated output layer.
+- No change to `ReviewResult`, `BatchReviewResult`, `LLMReviewResult`,
+  sidecar metadata, deterministic review behavior, or `llm-check` behavior.
+
 ## TASK-0065
 
 ### Added

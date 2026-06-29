@@ -501,7 +501,7 @@ Prompt output contract:
 Contract notes:
 
 - `schema_version` is fixed in the prompt contract
-- `summary` is required by the prompt contract even though no validator exists yet
+- `summary` is required by the prompt contract and by the current output validator
 - `findings` must always be an array and must be `[]` when there are no issues
 - each finding `rule_id` must start with `llm.`
 - `severity` must be one of `info`, `warning`, `error`, or `critical`
@@ -512,12 +512,61 @@ Contract notes:
 - `suggestion` must be actionable
 - `confidence`, if present, must remain within `0.0 <= x <= 1.0`
 - this is a prompt output contract, not an already validated internal model
-- output parsing and output validation are intentionally deferred to a later
-  task
 - prompt construction does not read `.env`, does not read `os.environ`, and
   does not access the network
 - prompt construction redacts metadata values for sensitive keys such as
   `api_key`, `token`, `secret`, and `password`
+
+---
+
+## Validated LLM Semantic Review Output
+
+The semantic-review output parser and validator source of truth is
+`src/content_review_engine/llm/output_validation.py`.
+
+The validated output models live in `src/content_review_engine/llm/models.py`.
+
+These models are for prompt-output validation only.
+They are not the same thing as `LLMReviewResult` and are not merged into the
+canonical deterministic result schemas.
+
+### ValidatedLLMSemanticFinding
+
+| Field | Required | Description |
+|---|---|---|
+| `rule_id` | Yes | Must be a non-empty string starting with `llm.` |
+| `severity` | Yes | Must be one of `info`, `warning`, `error`, `critical` |
+| `line` | No | Optional 1-based line number |
+| `column` | No | Optional 1-based column number |
+| `message` | Yes | Non-empty semantic issue message |
+| `evidence` | Yes | Non-empty quoted source snippet |
+| `suggestion` | Yes | Non-empty actionable revision guidance |
+| `confidence` | No | Optional confidence score constrained to `0.0 <= x <= 1.0` |
+
+Validation notes:
+
+- `line` and `column` must be integers greater than or equal to `1`, or `null`
+- string values are trimmed and must not be empty
+- `confidence` may be `null`, but string values such as `"0.82"` are rejected
+
+### ValidatedLLMSemanticReviewOutput
+
+| Field | Required | Description |
+|---|---|---|
+| `schema_version` | Yes | Must be `llm-semantic-review-output.v1` |
+| `summary` | Yes | Non-empty review summary |
+| `findings` | Yes | Tuple of validated findings, default empty |
+
+Parsing and validation notes:
+
+- raw output may be either pure JSON or a single fenced `json` block
+- the parser does not auto-fix malformed or truncated JSON
+- the validator does not auto-fill missing fields
+- parse errors and validation errors include stable field paths but do not
+  include the full raw output
+- parse errors and validation errors do not leak secret-like values
+- this validated output is not converted into `LLMReviewResult` by the current
+  task
 
 ---
 
