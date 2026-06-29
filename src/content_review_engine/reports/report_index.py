@@ -1,6 +1,11 @@
 from __future__ import annotations
 
 from content_review_engine.core.models import BatchReviewResult, REVIEW_SUMMARY_SEVERITIES, ReviewResult
+from content_review_engine.llm.manual_review import (
+    build_batch_llm_manual_review_items,
+    build_llm_execution_review_items,
+    build_llm_manual_review_items,
+)
 from content_review_engine.llm.models import LLMSidecarFile, LLMSidecarResult, LLMReviewResult
 from content_review_engine.llm.policy import render_llm_finding_policy_note
 
@@ -169,6 +174,25 @@ def _append_single_file_llm_summary(
     _append_table(lines, "## LLM Review Summary", rows)
 
 
+def _append_manual_review_workflow(
+    lines: list[str],
+    *,
+    checklist_item_count: int,
+    execution_item_count: int = 0,
+) -> None:
+    items = [
+        "Manual review checklist items are presentation-only workflow metadata for human follow-up.",
+        "Checklist status and decision values are not persisted to JSON sidecars or any review-state file.",
+        "Manual review checklist items do not change deterministic counts, fail-on, or quality-gate behavior.",
+        f"Current manual review checklist items: {checklist_item_count}.",
+    ]
+    if execution_item_count > 0:
+        items.append(
+            f"Current LLM execution review checklist items: {execution_item_count}; treat them as rerun candidates and verify coverage manually."
+        )
+    _append_bullets(lines, "## Manual Review Workflow", items)
+
+
 def render_single_file_report_index(
     result: ReviewResult,
     *,
@@ -232,6 +256,8 @@ def render_single_file_report_index(
             "Use LLM output for semantic review suggestions and follow-up inspection.",
         ],
     )
+    checklist_item_count = 0 if llm_result is None else len(build_llm_manual_review_items(llm_result))
+    _append_manual_review_workflow(lines, checklist_item_count=checklist_item_count)
     _append_deterministic_summary(lines, result)
     _append_single_file_llm_summary(lines, llm_enabled=llm_enabled, llm_result=llm_result)
     return "\n".join(lines).rstrip()
@@ -462,6 +488,13 @@ def render_batch_report_index(
             "Use deterministic output for CI gating and rule-based compliance checks.",
             "Use LLM output for semantic suggestions and per-file follow-up review.",
         ],
+    )
+    checklist_item_count = 0 if llm_result is None else len(build_batch_llm_manual_review_items(llm_result))
+    execution_item_count = 0 if llm_result is None else len(build_llm_execution_review_items(llm_result))
+    _append_manual_review_workflow(
+        lines,
+        checklist_item_count=checklist_item_count,
+        execution_item_count=execution_item_count,
     )
     _append_batch_deterministic_summary(lines, result)
     _append_batch_llm_summary(lines, llm_enabled=llm_enabled, llm_result=llm_result)

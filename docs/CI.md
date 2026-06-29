@@ -171,6 +171,10 @@ When LLM output artifacts are written in CI, treat every LLM finding as
 `source = llm`, `advisory = yes`, and `quality gate participation = no`.
 Advisory LLM severities such as `critical` or `error` remain display-only and
 do not change deterministic gate semantics.
+The same rule applies to the LLM Markdown `Manual Review Checklist` and the
+batch `LLM Execution Review Checklist`: their default `needs_review`,
+`pending`, `needs_rerun`, and `rerun_llm_review` values are presentation-only
+workflow hints and do not change exit code `0`, `1`, or `2`.
 
 CI boundary for providers:
 

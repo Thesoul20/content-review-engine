@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+from content_review_engine.llm.manual_review import (
+    build_batch_llm_manual_review_items,
+    build_llm_execution_review_items,
+    build_llm_manual_review_items,
+)
 from content_review_engine.llm.models import LLMSidecarFile, LLMSidecarResult, LLMReviewFinding, LLMReviewResult
 from content_review_engine.llm.policy import (
     LLM_FINDING_SEVERITY_ORDER,
@@ -152,6 +157,35 @@ def _append_detailed_findings(lines: list[str], findings: tuple[LLMReviewFinding
         lines.append("")
 
 
+def _append_manual_review_checklist(lines: list[str], result: LLMReviewResult) -> None:
+    items = build_llm_manual_review_items(result)
+    lines.extend(["## Manual Review Checklist", ""])
+    if not items:
+        lines.extend(["No manual review checklist items.", ""])
+        return
+
+    lines.extend(
+        [
+            "| ID | Priority | Status | Decision | Quality Gate | Rule | Location | Message | Notes |",
+            "| --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+        ]
+    )
+    for item in items:
+        lines.append(
+            "| "
+            f"{item.checklist_id} | "
+            f"{item.priority} | "
+            f"{item.status} | "
+            f"{item.decision} | "
+            f"{item.quality_gate} | "
+            f"{_escape_cell(item.rule_id)} | "
+            f"{_escape_cell(item.location)} | "
+            f"{_escape_cell(item.message)} | "
+            f"{_escape_cell(item.notes)} |"
+        )
+    lines.append("")
+
+
 def render_llm_review_markdown(
     result: LLMReviewResult,
     *,
@@ -186,6 +220,7 @@ def render_llm_review_markdown(
     _append_policy_table(lines)
     _append_severity_counts(lines, result.findings)
     _append_findings_table(lines, result.findings)
+    _append_manual_review_checklist(lines, result)
     _append_detailed_findings(lines, result.findings)
     return "\n".join(lines).rstrip()
 
@@ -280,12 +315,70 @@ def _append_batch_file_details(lines: list[str], result: LLMSidecarResult) -> No
         _append_detailed_findings(lines, file.review.findings)
 
 
+def _append_batch_manual_review_checklist(lines: list[str], result: LLMSidecarResult) -> None:
+    items = build_batch_llm_manual_review_items(result)
+    lines.extend(["## Manual Review Checklist", ""])
+    if not items:
+        lines.extend(["No manual review checklist items.", ""])
+        return
+
+    lines.extend(
+        [
+            "| ID | File | Priority | Status | Decision | Quality Gate | Rule | Location | Message | Notes |",
+            "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+        ]
+    )
+    for item in items:
+        lines.append(
+            "| "
+            f"{item.checklist_id} | "
+            f"{_escape_cell(item.file_path)} | "
+            f"{item.priority} | "
+            f"{item.status} | "
+            f"{item.decision} | "
+            f"{item.quality_gate} | "
+            f"{_escape_cell(item.rule_id)} | "
+            f"{_escape_cell(item.location)} | "
+            f"{_escape_cell(item.message)} | "
+            f"{_escape_cell(item.notes)} |"
+        )
+    lines.append("")
+
+
+def _append_execution_review_checklist(lines: list[str], result: LLMSidecarResult) -> None:
+    items = build_llm_execution_review_items(result)
+    if not items:
+        return
+
+    lines.extend(["## LLM Execution Review Checklist", ""])
+    lines.extend(
+        [
+            "| ID | File | Status | Suggested Action | Error Type | Error Message | Notes |",
+            "| --- | --- | --- | --- | --- | --- | --- |",
+        ]
+    )
+    for item in items:
+        lines.append(
+            "| "
+            f"{item.checklist_id} | "
+            f"{_escape_cell(item.file_path)} | "
+            f"{item.status} | "
+            f"{item.suggested_action} | "
+            f"{_escape_cell(item.error_type)} | "
+            f"{_escape_cell(item.error_message)} | "
+            f"{_escape_cell(item.notes)} |"
+        )
+    lines.append("")
+
+
 def render_llm_sidecar_markdown(result: LLMSidecarResult) -> str:
     lines = ["# Batch LLM Review Report", ""]
     _append_batch_summary(lines, result)
     _append_policy_table(lines)
     _append_batch_severity_counts(lines, result)
     _append_file_status(lines, result)
+    _append_batch_manual_review_checklist(lines, result)
+    _append_execution_review_checklist(lines, result)
     _append_batch_file_details(lines, result)
     return "\n".join(lines).rstrip()
 

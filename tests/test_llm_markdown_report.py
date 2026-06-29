@@ -32,6 +32,8 @@ def test_render_single_file_llm_markdown_report_with_no_findings() -> None:
     assert "| info | 0 |" in report
     assert "| unknown | 0 |" in report
     assert report.count("No LLM findings.") == 2
+    assert "## Manual Review Checklist" in report
+    assert "No manual review checklist items." in report
 
 
 def test_render_single_file_llm_markdown_report_with_multiple_findings() -> None:
@@ -85,6 +87,9 @@ def test_render_single_file_llm_markdown_report_with_multiple_findings() -> None
     assert "| error | 1 |" in report
     assert "| warning | llm.semantic.overclaim | llm | yes | no | not provided | 3 | 5 | Possible unsupported claim. | Add evidence. |" in report
     assert "| error | llm.semantic.risky_advice | llm | yes | no | 0.91 | - | - | Potentially risky advice. | Add a safety disclaimer. |" in report
+    assert "## Manual Review Checklist" in report
+    assert "| LLM-001 | medium | needs_review | pending | no | llm.semantic.overclaim | line 3, column 5 to line 3, column 14 | Possible unsupported claim. | - |" in report
+    assert "| LLM-002 | high | needs_review | pending | no | llm.semantic.risky_advice | not provided | Potentially risky advice. | - |" in report
     assert "### 1. llm.semantic.overclaim" in report
     assert "- Source: llm" in report
     assert "- Advisory: yes" in report
@@ -194,6 +199,10 @@ def test_render_batch_llm_markdown_report_for_all_success() -> None:
     assert "| warning | 1 |" in report
     assert "| a.md | success | 1 | - |" in report
     assert "| b.md | success | 1 | - |" in report
+    assert "## Manual Review Checklist" in report
+    assert "| LLM-001 | a.md | medium | needs_review | pending | no | llm.semantic.overclaim | not provided | First finding. | - |" in report
+    assert "| LLM-002 | b.md | high | needs_review | pending | no | llm.semantic.risky_advice | not provided | Second finding. | - |" in report
+    assert "## LLM Execution Review Checklist" not in report
     assert "### `a.md`" in report
     assert "### `b.md`" in report
     assert "- Overall Risk: medium" in report
@@ -226,6 +235,9 @@ def test_render_batch_llm_markdown_report_for_partial_failure() -> None:
     assert "| Files With LLM Errors | 1 |" in report
     assert "| a.md | success | 1 | - |" in report
     assert "| b.md | failed | 0 | RuntimeError: request failed |" in report
+    assert "| LLM-001 | a.md | medium | needs_review | pending | no | llm.semantic.overclaim | not provided | Success finding. | - |" in report
+    assert "## LLM Execution Review Checklist" in report
+    assert "| LLM-ERR-001 | b.md | needs_rerun | rerun_llm_review | RuntimeError | request failed | - |" in report
     assert "### `b.md`" in report
     assert "- Error Type: `RuntimeError`" in report
     assert "- Message: request failed" in report
@@ -244,6 +256,7 @@ def test_render_batch_llm_markdown_report_for_all_no_findings() -> None:
     assert "| Files With LLM Findings | 0 |" in report
     assert "| Total LLM Findings | 0 |" in report
     assert report.count("No LLM findings.") == 4
+    assert "No manual review checklist items." in report
 
 
 def test_render_batch_llm_markdown_report_preserves_stable_ordering() -> None:

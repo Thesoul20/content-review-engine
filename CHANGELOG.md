@@ -8,6 +8,49 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0074
+
+### Added
+
+- Added `src/content_review_engine/llm/manual_review.py` with stable
+  display-only checklist helpers and lightweight internal item types for
+  single-file LLM findings, batch LLM findings, and batch execution failures.
+- Added `tests/test_llm_manual_review.py` for checklist ID generation,
+  severity-to-priority mapping, stable defaults, missing field fallback, and
+  input immutability coverage.
+
+### Changed
+
+- Updated `src/content_review_engine/llm/__init__.py` to export the manual
+  review helper types, constants, and builder functions.
+- Updated `src/content_review_engine/reports/llm_markdown.py` so single-file
+  and batch LLM Markdown reports now include `## Manual Review Checklist`,
+  plus `## LLM Execution Review Checklist` for batch partial failures, with
+  stable IDs such as `LLM-001` and `LLM-ERR-001`.
+- Updated `src/content_review_engine/reports/report_index.py` so single-file
+  and batch report indexes now include a `## Manual Review Workflow` section
+  that explains presentation-only checklist semantics, non-persistence, and
+  rerun guidance for batch LLM execution failures.
+- Updated `tests/test_llm_markdown_report.py`,
+  `tests/test_report_index.py`,
+  `tests/test_llm_single_file_cli_integration.py`,
+  `tests/test_llm_batch_cli_integration.py`, and
+  `tests/test_llm_provider_usage_docs.py` for checklist rendering, workflow
+  guidance, and unchanged exit-code / quality-gate boundaries.
+- Updated `docs/CLI.md`, `docs/LLM_PROVIDER_USAGE.md`,
+  `docs/DATA_MODELS.md`, `docs/ARCHITECTURE.md`, `docs/CI.md`, and
+  `PROJECT_STATE.md` to document the manual-review checklist layer and its
+  non-persistent, non-gating behavior.
+
+### Not Added
+
+- No `ReviewResult`, `BatchReviewResult`, `LLMReviewResult`, or
+  `LLMSidecarResult` schema change.
+- No manual-review persistence, no review-state file, no new CLI status or
+  decision commands, no quality-gate change, no fail-on change, no
+  deterministic count change, no JSON sidecar change, and no real-provider
+  requirement in tests.
+
 ## TASK-0073
 
 ### Added

@@ -45,6 +45,11 @@ It now also includes a separate LLM finding advisory policy helper that keeps
 LLM presentation semantics stable across the dedicated LLM Markdown report
 and hybrid report index without changing any stored result schema, provider
 path, or quality-gate behavior.
+It now also includes a separate LLM manual-review checklist helper that
+derives stable presentation-only checklist metadata for LLM findings and
+batch execution failures across the dedicated LLM Markdown report and hybrid
+report index, without changing any stored result schema, provider path, or
+quality-gate behavior.
 
 ---
 
@@ -111,9 +116,37 @@ path, or quality-gate behavior.
 
 ## In Progress
 
-- TASK-0073: Add LLM finding advisory policy.
+- TASK-0074: Add LLM manual review checklist.
 
 ## Recent Completion
+
+- TASK-0074 is complete.
+- Added `src/content_review_engine/llm/manual_review.py` with stable
+  display-only manual-review checklist helpers and lightweight internal types
+  for single-file LLM findings, batch LLM findings, and batch execution
+  failures.
+- Updated `src/content_review_engine/reports/llm_markdown.py` so single-file
+  and batch LLM Markdown reports now include `## Manual Review Checklist`,
+  plus `## LLM Execution Review Checklist` for batch partial failures, with
+  stable checklist IDs, severity-derived priority, default status/decision,
+  and rerun guidance that does not alter JSON sidecars or quality gates.
+- Updated `src/content_review_engine/reports/report_index.py` so single-file
+  and batch report indexes now include a `## Manual Review Workflow` section
+  that explains checklist-only semantics, non-persistence, and rerun handling
+  for batch execution failures.
+- Added `tests/test_llm_manual_review.py` and updated
+  `tests/test_llm_markdown_report.py`,
+  `tests/test_report_index.py`,
+  `tests/test_llm_single_file_cli_integration.py`,
+  `tests/test_llm_batch_cli_integration.py`, and
+  `tests/test_llm_provider_usage_docs.py` for checklist ID generation,
+  priority/status/decision defaults, input immutability, report rendering,
+  hybrid-index workflow guidance, and unchanged exit-code / quality-gate
+  boundaries.
+- Updated `docs/CLI.md`, `docs/LLM_PROVIDER_USAGE.md`,
+  `docs/DATA_MODELS.md`, `docs/ARCHITECTURE.md`, `docs/CI.md`, and
+  `CHANGELOG.md` to document the new manual-review checklist presentation
+  layer and its non-persistent, non-gating semantics.
 
 - TASK-0073 is complete.
 - Added `src/content_review_engine/llm/policy.py` with stable display-only

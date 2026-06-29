@@ -108,6 +108,12 @@ def test_usage_docs_exist_and_cover_required_provider_flags_and_boundaries() -> 
     assert "matched_text" in content
     assert "confidence: null stays null" in content
     assert "advisory semantic review suggestions" in content
+    assert "Manual Review Checklist" in content
+    assert "LLM Execution Review Checklist" in content
+    assert "needs_review" in content
+    assert "pending" in content
+    assert "needs_rerun" in content
+    assert "rerun_llm_review" in content
     assert "LLM advisory severity" in content
     assert "llm.semantic_review" in content
     assert "not provided" in content

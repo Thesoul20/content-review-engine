@@ -213,6 +213,8 @@ def test_single_file_review_enable_llm_report_only_writes_markdown_report(
     assert "| File | tests/fixtures/markdown/clean_article.md |" in report
     assert "| Advisory | yes |" in report
     assert "| Quality Gate Participation | no |" in report
+    assert "## Manual Review Checklist" in report
+    assert "| LLM-001 | medium | needs_review | pending | no | llm.semantic.overclaim | line 1, column 1 | Possible overclaim. | - |" in report
     assert "Possible overclaim." in report
     assert not (tmp_path / "review.llm.json").exists()
 
@@ -332,6 +334,65 @@ def test_single_file_review_report_index_includes_deterministic_and_llm_outputs(
     assert "| Summary | One semantic issue found. |" in report
     assert "| Advisory | yes |" in report
     assert "advisory semantic review suggestions" in report
+    assert "## Manual Review Workflow" in report
+    assert "Current manual review checklist items: 1." in report
+
+
+def test_single_file_manual_review_does_not_change_exit_code_or_quality_gate(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    llm_report_path = tmp_path / "review.llm.md"
+    monkeypatch.setenv("OPENAI_API_KEY", "test-secret-value")
+    monkeypatch.setattr(
+        "content_review_engine.cli.create_llm_reviewer",
+        lambda *args, **kwargs: _SemanticReviewer(
+            ValidatedLLMSemanticReviewOutput.model_validate(
+                {
+                    "schema_version": "llm-semantic-review-output.v1",
+                    "summary": "One semantic issue found.",
+                    "findings": [
+                        {
+                            "rule_id": "llm.semantic.overclaim",
+                            "severity": "critical",
+                            "line": 1,
+                            "column": 1,
+                            "message": "Possible overclaim.",
+                            "evidence": "绝对安全",
+                            "suggestion": "Use a softer claim.",
+                            "confidence": 0.84,
+                        }
+                    ],
+                }
+            )
+        ),
+    )
+
+    exit_code = main(
+        [
+            "review",
+            "tests/fixtures/markdown/clean_article.md",
+            "--profile",
+            "tests/fixtures/profiles/default.yml",
+            "--fail-on",
+            "warning",
+            "--enable-llm",
+            "--llm-config",
+            "examples/llm/pydanticai/llm-provider.yml",
+            "--llm-api-key-env",
+            "OPENAI_API_KEY",
+            "--llm-report",
+            str(llm_report_path),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "Findings: 0" in captured.out
+    assert "Possible overclaim." not in captured.out
+    assert "| LLM-001 | high | needs_review | pending | no |" in llm_report_path.read_text(encoding="utf-8")
 
 
 def test_single_file_review_llm_provider_flags_require_provider_or_config(

@@ -208,6 +208,7 @@ def test_batch_review_enable_llm_report_only_writes_markdown_report(
     assert "| Files Reviewed | 3 |" in report
     assert "| Advisory | yes |" in report
     assert "| Quality Gate Participation | no |" in report
+    assert "## Manual Review Checklist" in report
     assert not (tmp_path / "batch.llm.json").exists()
 
 
@@ -256,6 +257,7 @@ def test_batch_review_report_index_includes_deterministic_and_llm_outputs(
     assert "## LLM File Status Summary" in report
     assert "| Advisory | yes |" in report
     assert "advisory semantic review suggestions" in report
+    assert "## Manual Review Workflow" in report
 
 
 def test_batch_review_partial_llm_failure_is_recorded_and_returns_non_zero(
@@ -322,6 +324,8 @@ def test_batch_review_partial_llm_failure_is_recorded_and_returns_non_zero(
     }
     assert "| Files With LLM Errors | 1 |" in report
     assert "forbidden.md | failed | 0 | LLMProviderError: mock provider failure |" in report
+    assert "## LLM Execution Review Checklist" in report
+    assert "| LLM-ERR-001 | tests/fixtures/batch/articles/forbidden.md | needs_rerun | rerun_llm_review | LLMProviderError | mock provider failure | - |" in report
 
 
 def test_batch_review_partial_llm_failure_report_index_includes_error_summary(
@@ -373,6 +377,67 @@ def test_batch_review_partial_llm_failure_report_index_includes_error_summary(
     assert "| Files With LLM Errors | 1 |" in report
     assert "## LLM Error Summary" in report
     assert "mock provider failure" in report
+    assert "Current LLM execution review checklist items: 1;" in report
+
+
+def test_batch_manual_review_does_not_change_exit_code_or_quality_gate(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    llm_report_path = tmp_path / "batch.llm.md"
+    reviewer = _SemanticReviewer(
+        ValidatedLLMSemanticReviewOutput.model_validate(
+            {
+                "schema_version": "llm-semantic-review-output.v1",
+                "summary": "One semantic issue found.",
+                "findings": [
+                    {
+                        "rule_id": "llm.semantic.overclaim",
+                        "severity": "critical",
+                        "line": 1,
+                        "column": 1,
+                        "message": "Possible overclaim.",
+                        "evidence": "绝对安全",
+                        "suggestion": "Use a softer claim.",
+                        "confidence": 0.84,
+                    }
+                ],
+            }
+        )
+    )
+    monkeypatch.setattr("content_review_engine.cli.create_llm_reviewer", lambda *args, **kwargs: reviewer)
+    monkeypatch.setenv("OPENAI_API_KEY", "test-secret-value")
+
+    exit_code = main(
+        [
+            "batch",
+            "tests/fixtures/batch/articles",
+            "--profile",
+            "tests/fixtures/batch/profile.yml",
+            "--recursive",
+            "--fail-on",
+            "error",
+            "--enable-llm",
+            "--llm-provider",
+            "pydanticai",
+            "--llm-model",
+            "openai:gpt-4o-mini",
+            "--llm-api-key-env",
+            "OPENAI_API_KEY",
+            "--llm-report",
+            str(llm_report_path),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "# Batch Content Review Report" not in captured.err
+    assert "Possible overclaim." not in captured.out
+    assert "Files discovered: 3" in captured.out
+    assert "Files with findings: 2" in captured.out
+    assert "| LLM-001 | tests/fixtures/batch/articles/clean.md | high | needs_review | pending | no |" in llm_report_path.read_text(encoding="utf-8")
 
 
 def test_batch_review_provider_execution_failure_records_per_file_failures(

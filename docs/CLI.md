@@ -62,6 +62,9 @@ Current guarantees:
   `advisory = yes`, and `quality gate participation = no`
 - LLM severity shown in LLM reports or the report index is advisory severity
   only and does not map to deterministic hard-rule failure
+- the index now also includes a `Manual Review Workflow` section that explains
+  checklist-only human follow-up semantics and, for batch partial failures,
+  rerun-oriented execution review items
 
 ## LLM Smoke Check
 
@@ -174,11 +177,17 @@ Single-file sidecar shape:
   `critical`, `error`, `warning`, `info`, or `unknown`
 - missing or blank LLM `rule_id` is displayed as `llm.semantic_review`
 - confidence is optional; when missing, the report displays `not provided`
+- the report now also includes `## Manual Review Checklist` with stable IDs
+  such as `LLM-001`, default `status = needs_review`, default
+  `decision = pending`, default `quality gate = no`, and
+  severity-derived manual-review priority
 - `--llm-output` and `--llm-report` can be used together
 - `--llm-report` can be used without `--llm-output`
 - `--report-index` writes a separate Markdown index that lists deterministic output, optional LLM output, optional LLM report, the report-index path itself, deterministic summary, optional LLM summary, canonical status, and the rule that quality gate uses deterministic review only
 - the report index also repeats the LLM advisory boundary so `critical` or
   `error` LLM findings are not misread as deterministic gate failures
+- the report index also states that checklist status and decision values are
+  presentation-only and are not persisted anywhere
 
 Current behavior guarantees:
 
@@ -312,6 +321,12 @@ Batch behavior guarantees:
 - batch LLM report and report index use the same advisory display policy as
   single-file LLM output: `source = llm`, `advisory = yes`, and
   `quality gate participation = no`
+- the batch LLM report also includes `## Manual Review Checklist` with
+  globally incrementing finding IDs such as `LLM-001`
+- batch partial-failure LLM reports also include
+  `## LLM Execution Review Checklist` with stable IDs such as `LLM-ERR-001`,
+  default `status = needs_rerun`, and default suggested action
+  `rerun_llm_review`
 - deterministic severity counts and rule counts are unchanged
 - deterministic finding order is unchanged
 - quality-gate evaluation still reads only deterministic findings

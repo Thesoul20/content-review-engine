@@ -255,6 +255,12 @@ Batch --llm-report Markdown
 Single-file or batch --report-index Markdown
   = presentation-only output index derived from deterministic review results
     plus optional LLM sidecar/report metadata
+
+Internal LLM manual review checklist helpers
+  = presentation-only dataclass items derived from `LLMReviewResult` or
+    `LLMSidecarResult`
+  = used only by renderer-layer Markdown outputs
+  = not serialized into deterministic JSON or LLM JSON sidecars
 ```
 
 Current report-index guarantees:
@@ -266,6 +272,9 @@ Current report-index guarantees:
 - advisory display policy for LLM findings is presentation-only and does not
   change `LLMReviewResult` or `LLMSidecarResult`
 - report index is a renderer-layer Markdown artifact only
+- manual review checklist status and decision values are renderer-layer
+  defaults only and are not persisted into `LLMReviewResult` or
+  `LLMSidecarResult`
 
 Current validated semantic-output conversion boundary:
 

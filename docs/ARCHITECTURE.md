@@ -123,6 +123,10 @@ It does not yet support HTML, watch mode, or report persistence beyond the optio
 It now also includes a separate report-index renderer that produces one
 navigation-oriented Markdown index from deterministic review results plus
 optional LLM sidecar summary data, without changing any result schema.
+It now also includes a separate display-only manual-review helper under
+`src/content_review_engine/llm/manual_review.py` that derives checklist
+metadata for LLM Markdown reports and the hybrid report index without changing
+any stored result model or quality-gate behavior.
 
 Current deterministic rules:
 

@@ -77,6 +77,8 @@ def test_render_single_file_report_index_for_deterministic_only() -> None:
     assert "## LLM Review Summary" in report
     assert "| Status | LLM not enabled |" in report
     assert "advisory semantic review suggestions" in report
+    assert "## Manual Review Workflow" in report
+    assert "Current manual review checklist items: 0." in report
 
 
 def test_render_single_file_report_index_for_hybrid_review() -> None:
@@ -125,6 +127,8 @@ def test_render_single_file_report_index_for_hybrid_review() -> None:
     assert "| Summary | One semantic issue found. |" in report
     assert "| Recommended Action | Revise wording. |" in report
     assert "advisory semantic review suggestions" in report
+    assert "Checklist status and decision values are not persisted" in report
+    assert "Current manual review checklist items: 1." in report
 
 
 def test_render_single_file_report_index_handles_markdown_escaping() -> None:
@@ -211,6 +215,8 @@ def test_render_batch_report_index_for_deterministic_only() -> None:
     assert "| - | LLM not enabled | - | - |" in report
     assert "## LLM Error Summary" not in report
     assert "advisory semantic review suggestions" in report
+    assert "## Manual Review Workflow" in report
+    assert "Current manual review checklist items: 0." in report
 
 
 def test_render_batch_report_index_for_hybrid_review() -> None:
@@ -279,6 +285,7 @@ def test_render_batch_report_index_for_hybrid_review() -> None:
     assert "| a.md | success | 1 | - |" in report
     assert "| m.md | success | 1 | - |" in report
     assert "advisory semantic review suggestions" in report
+    assert "Current manual review checklist items: 2." in report
 
 
 def test_render_batch_report_index_for_partial_llm_failure() -> None:
@@ -309,6 +316,7 @@ def test_render_batch_report_index_for_partial_llm_failure() -> None:
     assert "| a.md | failed | 0 | RuntimeError: provider failed |" in report
     assert "## LLM Error Summary" in report
     assert "| a.md | RuntimeError: provider failed |" in report
+    assert "Current LLM execution review checklist items: 1;" in report
 
 
 def test_render_batch_report_index_preserves_stable_ordering() -> None:

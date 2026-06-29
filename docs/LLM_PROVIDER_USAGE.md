@@ -23,6 +23,13 @@ the deterministic review pipeline.
 - missing or blank LLM `rule_id` is displayed as `llm.semantic_review`.
 - confidence is optional in presentation; missing values display as
   `not provided`.
+- LLM Markdown reports now also render a `Manual Review Checklist` with
+  stable IDs such as `LLM-001`, default `needs_review` status, default
+  `pending` decision, and default `quality gate = no`.
+- Batch partial-failure LLM Markdown reports now also render an
+  `LLM Execution Review Checklist` with stable IDs such as `LLM-ERR-001`,
+  default `needs_rerun` status, and default suggested action
+  `rerun_llm_review`.
 
 ## LLM semantic review prompt contract
 
@@ -254,6 +261,10 @@ Current guarantees:
 - quality gate still uses deterministic review only
 - the separate LLM Markdown report now marks each finding with
   `source = llm`, `advisory = yes`, and `quality gate participation = no`
+- the separate LLM Markdown report now also includes `## Manual Review Checklist`
+  with stable report-local checklist IDs, severity-derived priority, default
+  `needs_review` status, default `pending` decision, and default
+  `quality gate = no`
 - LLM `critical` or `error` findings remain advisory and do not become
   deterministic hard-rule failures
 - `--include-llm-report` is not supported for single-file review
@@ -297,6 +308,9 @@ Current guarantees:
 - when LLM is disabled, the index renders a stable `LLM not enabled` summary
 - when batch LLM review has partial failures, the index records an LLM file
   status summary plus a compact LLM error summary
+- report index now also includes a `Manual Review Workflow` section that
+  explains checklist-only semantics, non-persistence of checklist status and
+  decision values, and rerun-oriented handling for batch execution failures
 
 Current reserved real providers:
 
