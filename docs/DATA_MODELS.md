@@ -151,6 +151,8 @@ Notes:
 - `rule_id` and `message` must be non-empty strings
 - optional string fields, if provided, must not be empty strings
 - location fields follow the existing 1-based line and column conventions
+- the semantic-output conversion helper maps validated `evidence` into
+  `matched_text` when constructing `LLMReviewFinding`
 
 ---
 
@@ -235,6 +237,29 @@ LLMSidecarResult JSON
   = separate optional sidecar file
   -> success entries can include nested LLMReviewResult
 ```
+
+Current validated semantic-output conversion boundary:
+
+```text
+ValidatedLLMSemanticReviewOutput
+  ↓
+convert_validated_semantic_output_to_llm_review_result()
+  ↓
+LLMReviewResult
+```
+
+Current conversion behavior:
+
+- `LLMReviewResult.schema_version` stays `llm-review-result.v1`
+- `ValidatedLLMSemanticReviewOutput.schema_version` is preserved in
+  `LLMReviewResult.metadata["semantic_output_schema_version"]`
+- validated `summary` maps to `LLMReviewSummary.summary`
+- validated `rule_id`, `severity`, `line`, `column`, `message`,
+  `suggestion`, and numeric `confidence` are copied as-is
+- validated `evidence` maps to `LLMReviewFinding.matched_text`
+- `confidence = null` stays `None`; it is not converted to `0` or `1`
+- this conversion does not change `ReviewResult`, `BatchReviewResult`, or
+  sidecar envelope schemas
 
 ## LLMSidecarResult
 

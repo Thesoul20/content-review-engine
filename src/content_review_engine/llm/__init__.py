@@ -74,6 +74,10 @@ from content_review_engine.llm.output_validation import (
     parse_llm_semantic_review_output,
     validate_llm_semantic_review_output,
 )
+from content_review_engine.llm.result_conversion import (
+    LLM_SEMANTIC_OUTPUT_SCHEMA_METADATA_KEY,
+    convert_validated_semantic_output_to_llm_review_result,
+)
 from content_review_engine.llm.prompt_contract import (
     LLM_SEMANTIC_REVIEW_DEFAULT_LANGUAGE,
     LLM_SEMANTIC_REVIEW_PROMPT_VERSION,
@@ -212,6 +216,7 @@ __all__ = [
     "ValidatedLLMSemanticFinding",
     "ValidatedLLMSemanticReviewOutput",
     "LLMSemanticReviewPromptContract",
+    "LLM_SEMANTIC_OUTPUT_SCHEMA_METADATA_KEY",
     "LLMReviewer",
     "LLMReviewRunner",
     "MockLLMReviewer",
@@ -253,6 +258,7 @@ __all__ = [
     "extract_llm_semantic_review_json",
     "parse_llm_semantic_review_output",
     "validate_llm_semantic_review_output",
+    "convert_validated_semantic_output_to_llm_review_result",
     "build_pydanticai_retry_exhausted_error",
     "create_llm_reviewer",
     "get_registered_llm_provider_names",

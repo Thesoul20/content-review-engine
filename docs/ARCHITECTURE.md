@@ -258,6 +258,10 @@ Current status:
 - `src/content_review_engine/llm/prompt_contract.py` now defines a separate
   semantic-review prompt contract builder that produces stable system/user
   prompt text from `LLMReviewRequest` without calling any provider
+- `src/content_review_engine/llm/result_conversion.py` now defines a separate
+  conversion helper that maps `ValidatedLLMSemanticReviewOutput` into
+  `LLMReviewResult` without calling a provider, reading environment
+  variables, or changing sidecar or deterministic-review behavior
 - the canonical deterministic JSON output schema remains unchanged
 
 Current provider-contract boundary:
@@ -318,6 +322,18 @@ system_prompt + user_prompt + output schema version
 future provider execution
   ↓
 future output validation
+  ↓
+ValidatedLLMSemanticReviewOutput
+```
+
+Current validated-output conversion boundary:
+
+```text
+ValidatedLLMSemanticReviewOutput
+  ↓
+convert_validated_semantic_output_to_llm_review_result()
+  ↓
+LLMReviewResult
 ```
 
 Current prompt-contract guarantees:

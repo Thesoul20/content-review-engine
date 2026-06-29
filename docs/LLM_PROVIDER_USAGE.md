@@ -154,6 +154,56 @@ Current guarantees:
 - default tests for this path use fake/stub runtime calls and must not access
   the real network or require a real API key
 
+## Validated LLM semantic output to LLMReviewResult conversion
+
+The repository now also includes a separate conversion helper in
+`src/content_review_engine/llm/result_conversion.py`.
+
+Current helper:
+
+- `convert_validated_semantic_output_to_llm_review_result(output, request, *, provider=None, model=None)`
+
+Execution flow:
+
+```text
+ValidatedLLMSemanticReviewOutput
+  ↓
+convert_validated_semantic_output_to_llm_review_result()
+  ↓
+LLMReviewResult
+```
+
+Current mapping rules:
+
+- `rule_id` is copied as-is and the `llm.` prefix is preserved
+- `severity` is copied as-is and is not rewritten
+- `line` and `column` are copied as-is and are not inferred when missing
+- `message` is copied to `LLMReviewFinding.message`
+- `evidence` is copied to `LLMReviewFinding.matched_text`
+- `suggestion` is copied to `LLMReviewFinding.suggestion`
+- numeric `confidence` is copied as-is
+- `confidence: null stays null`
+- validated output `summary` is copied to `LLMReviewSummary.summary`
+- `provider`, `model`, and `profile_name` stay on the existing
+  `LLMReviewResult` fields
+- the validated output schema version is stored in result metadata as
+  `semantic_output_schema_version`
+
+Current guarantees:
+
+- the conversion helper does not call a provider
+- The conversion helper does not call a provider, does not read `os.environ`, and does not access the network.
+- the conversion helper does not read `.env`
+- the conversion helper does not modify the validated input object or the
+  request object
+- the conversion helper does not output secrets
+- `run_semantic_review()` still returns `ValidatedLLMSemanticReviewOutput`
+  and does not directly return `LLMReviewResult`
+- this conversion layer still does not integrate into `content-review review`
+  or `content-review batch`
+- this conversion layer still does not write sidecars or change deterministic
+  Quality Gate behavior
+
 ## Provider Classes
 
 Current test providers:

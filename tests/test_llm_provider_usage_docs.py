@@ -97,6 +97,10 @@ def test_usage_docs_exist_and_cover_required_provider_flags_and_boundaries() -> 
     assert "PydanticAI semantic review execution" in content
     assert "run_semantic_review(request)" in content
     assert "ValidatedLLMSemanticReviewOutput" in content
+    assert "convert_validated_semantic_output_to_llm_review_result" in content
+    assert "Validated LLM semantic output to LLMReviewResult conversion" in content
+    assert "matched_text" in content
+    assert "confidence: null stays null" in content
     assert "does not write sidecars" in content
     assert "does not execute a real provider call" in content
     assert "does not integrate into `content-review review` or `content-review batch` yet" in content
@@ -154,6 +158,7 @@ def test_docs_and_fixtures_do_not_require_real_network_or_real_api_key() -> None
     assert "Prompt construction does not read `.env`, does not read `os.environ`, and does not access the network." in usage_doc
     assert "prompt construction remains separate from output parsing, output validation," in usage_doc
     assert "the validated output is not the same thing as `LLMReviewResult`" in usage_doc
+    assert "The conversion helper does not call a provider, does not read `os.environ`, and does not access the network." in usage_doc
     assert "provider execution reuses the shared prompt contract" in usage_doc
     assert "provider execution reuses `parse_llm_semantic_review_output()`" in usage_doc
     assert "batch `--llm-provider` supports only `mock` and `pydantic-ai-testmodel`" in usage_doc

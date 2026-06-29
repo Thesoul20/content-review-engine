@@ -8,6 +8,37 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0068
+
+### Added
+
+- Added `src/content_review_engine/llm/result_conversion.py` with
+  `convert_validated_semantic_output_to_llm_review_result(...)` plus a stable
+  `semantic_output_schema_version` metadata key for converting validated
+  semantic-review output into `LLMReviewResult`.
+- Added `tests/test_llm_result_conversion.py` for empty, single, and multiple
+  findings; direct field mapping; null-confidence handling; input immutability;
+  and no-env / no-network / no-provider guarantees.
+
+### Changed
+
+- Updated `src/content_review_engine/llm/__init__.py` to export the new
+  conversion helper and metadata key as part of the package LLM boundary.
+- Updated `tests/test_llm_pydanticai_provider.py` to keep a regression check
+  that `run_semantic_review()` still returns
+  `ValidatedLLMSemanticReviewOutput`, not `LLMReviewResult`.
+- Updated `tests/test_llm_provider_usage_docs.py`,
+  `docs/LLM_PROVIDER_USAGE.md`, `docs/DATA_MODELS.md`,
+  `docs/ARCHITECTURE.md`, and `PROJECT_STATE.md` to document the validated
+  semantic-output conversion layer and its current mapping rules.
+
+### Not Added
+
+- No `content-review review` or `content-review batch` integration, no new
+  LLM CLI switches, no sidecar metadata change, no deterministic review
+  change, no provider execution inside the conversion helper, and no `.env`,
+  `os.environ`, or network access in the conversion path.
+
 ## TASK-0067
 
 ### Changed

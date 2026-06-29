@@ -25,11 +25,13 @@ from content_review_engine.llm import (
     LLMSemanticReviewOutputParseError,
     LLMSemanticReviewOutputValidationError,
     LLMReviewRequest,
+    LLMReviewResult,
     LLMReviewer,
     PYDANTICAI_LIVE_CHECK_PROMPT,
     PydanticAIReviewMapper,
     PydanticAIReviewer,
     ResolvedLLMSecret,
+    ValidatedLLMSemanticReviewOutput,
     build_pydanticai_runtime_agent,
 )
 from pydantic import SecretStr
@@ -765,6 +767,8 @@ def test_pydanticai_semantic_review_uses_prompt_contract_and_output_validation()
 
     result = reviewer.run_semantic_review(_build_request())
 
+    assert isinstance(result, ValidatedLLMSemanticReviewOutput)
+    assert not isinstance(result, LLMReviewResult)
     assert result.summary == "发现一处风险。"
     assert result.findings[0].rule_id == "llm.semantic.overclaim"
     assert captured["model"] == "gpt-4o-mini"

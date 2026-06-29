@@ -28,6 +28,10 @@ execution path that reuses that prompt contract and output validator,
 returns `ValidatedLLMSemanticReviewOutput`, and still stays outside
 `content-review review`, `content-review batch`, sidecar generation, and the
 deterministic review pipeline.
+It also now includes a separate conversion helper that maps validated
+semantic-review output into `LLMReviewResult` without changing provider
+execution boundaries, sidecar metadata, or the deterministic review
+pipeline.
 
 ---
 
@@ -97,6 +101,31 @@ deterministic review pipeline.
 - No active implementation task.
 
 ## Recent Completion
+
+- TASK-0068 is complete.
+- Added `src/content_review_engine/llm/result_conversion.py` with
+  `convert_validated_semantic_output_to_llm_review_result(...)` as a separate
+  conversion helper from `ValidatedLLMSemanticReviewOutput` to
+  `LLMReviewResult`.
+- Kept mapping stable so validated `rule_id`, `severity`, `line`, `column`,
+  `message`, `suggestion`, and numeric `confidence` are copied as-is,
+  validated `evidence` maps to `LLMReviewFinding.matched_text`, and
+  `confidence = null` stays `None`.
+- Updated `src/content_review_engine/llm/__init__.py` to export the new
+  conversion helper and metadata key while keeping
+  `PydanticAIReviewer.run_semantic_review()` returning
+  `ValidatedLLMSemanticReviewOutput`, not `LLMReviewResult`.
+- Added `tests/test_llm_result_conversion.py` and updated
+  `tests/test_llm_pydanticai_provider.py` plus
+  `tests/test_llm_provider_usage_docs.py` for empty/single/multiple finding
+  conversion, summary and metadata mapping, null-confidence handling,
+  no-env/no-network/provider isolation, input immutability, and provider
+  return-type regression coverage.
+- Updated `docs/LLM_PROVIDER_USAGE.md`, `docs/DATA_MODELS.md`,
+  `docs/ARCHITECTURE.md`, and `CHANGELOG.md` to document the new conversion
+  boundary and confirm that it still does not integrate into
+  `content-review review`, `content-review batch`, sidecars, or the
+  deterministic review pipeline.
 
 - TASK-0067 is complete.
 - Updated `src/content_review_engine/llm/pydanticai.py` so
