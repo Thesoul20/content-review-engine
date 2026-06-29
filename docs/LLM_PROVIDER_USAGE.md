@@ -13,6 +13,61 @@ the deterministic review pipeline.
 - LLM findings do not change deterministic JSON, deterministic Markdown
   reports, or `--fail-on` quality-gate behavior.
 
+## LLM semantic review prompt contract
+
+The repository now also includes an internal LLM semantic review prompt
+contract in `src/content_review_engine/llm/prompt_contract.py`.
+
+Purpose:
+
+- define stable system prompt and user prompt text before review-path
+  integration
+- define a stable JSON-only output contract for future semantic review
+- keep prompt construction separate from provider construction, provider
+  execution, and output validation
+
+Current boundaries:
+
+- this contract does not execute a real provider call
+- this contract does not integrate into `content-review review` or `content-review batch` yet
+- This task does not add output parsing, output validation, or `LLMReviewResult` generation.
+- Prompt construction does not read `.env`, does not read `os.environ`, and does not access the network.
+
+Current prompt output contract:
+
+```json
+{
+  "schema_version": "llm-semantic-review-output.v1",
+  "summary": "string",
+  "findings": [
+    {
+      "rule_id": "llm.semantic.overclaim",
+      "severity": "warning",
+      "line": 12,
+      "column": 1,
+      "message": "string",
+      "evidence": "string",
+      "suggestion": "string",
+      "confidence": 0.82
+    }
+  ]
+}
+```
+
+Prompt rules:
+
+- Return JSON only.
+- `schema_version` must be `llm-semantic-review-output.v1`.
+- `findings` must always be an array and must be `[]` when there are no issues.
+- each finding `rule_id` must start with `llm.`
+- `severity` is restricted to `info, warning, error, critical`
+- `evidence` must quote a short source snippet
+- `suggestion` must be actionable
+
+The prompt contract currently asks the model to focus on semantic risk areas
+such as exaggeration, misleading wording, unsupported claims, risky advice,
+ambiguity, inappropriate tone, and cases that need human review.
+
 ## Provider Classes
 
 Current test providers:

@@ -15,6 +15,10 @@ quality gates, and suppression without changing runtime behavior.
 Profile validation failures are now also structured with stable issue paths,
 codes, readable messages, and optional suggestions for CLI and future adapter
 use.
+The LLM layer now also has provider smoke-check infrastructure plus a separate
+semantic-review prompt contract builder that produces stable system/user
+prompt text without calling a provider, reading secrets, or changing the
+deterministic review pipeline.
 
 ---
 
@@ -84,6 +88,28 @@ use.
 - No active implementation task.
 
 ## Recent Completion
+
+- TASK-0065 is complete.
+- Added `src/content_review_engine/llm/prompt_contract.py` with a stable
+  `llm-semantic-review-prompt.v1` builder that constructs JSON-only semantic
+  review system/user prompts from `LLMReviewRequest`.
+- Updated `src/content_review_engine/llm/models.py` so `LLMReviewRequest` can
+  now carry stable `review_language` and optional deterministic-finding
+  context for prompt construction, while leaving `ReviewResult`,
+  `BatchReviewResult`, `LLMReviewResult`, and sidecar metadata unchanged.
+- Added `tests/test_llm_prompt_contract.py` plus updates to
+  `tests/test_llm_provider_usage_docs.py` for JSON-only contract coverage,
+  schema-version and severity assertions, rule-id prefix requirements,
+  deterministic-context injection, secret redaction, and no-env/no-network
+  prompt-builder guarantees.
+- Updated `docs/LLM_PROVIDER_USAGE.md`, `docs/DATA_MODELS.md`,
+  `docs/ARCHITECTURE.md`, and `CHANGELOG.md` to document the prompt contract,
+  its `llm-semantic-review-output.v1` output shape, and the boundary from
+  future provider execution and output validation.
+- Kept real provider execution, output parsing, output validation,
+  `content-review review` integration, `content-review batch` integration,
+  deterministic review behavior, and reserved-provider availability out of
+  scope.
 
 - TASK-0064 is complete.
 - Added an explicit opt-in live smoke-check path for `content-review llm-check`

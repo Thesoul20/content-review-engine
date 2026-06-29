@@ -83,6 +83,13 @@ def test_usage_docs_exist_and_cover_required_provider_flags_and_boundaries() -> 
     assert "Construction: ok" in content
     assert "Live call: not run" in content
     assert "Live call: failed" in content
+    assert "LLM semantic review prompt contract" in content
+    assert "llm-semantic-review-output.v1" in content
+    assert "Return JSON only" in content
+    assert "`llm.`" in content
+    assert "info, warning, error, critical" in content
+    assert "does not execute a real provider call" in content
+    assert "does not integrate into `content-review review` or `content-review batch` yet" in content
     assert "llm_provider" in content
     assert "llm_provider_source" in content
     assert "Quality Gate behavior does not read LLM findings" in content
@@ -134,6 +141,8 @@ def test_docs_and_fixtures_do_not_require_real_network_or_real_api_key() -> None
     assert "Empty env vars also fail before any real provider call." in usage_doc
     assert "provider construction also stays local and does not access the network" in usage_doc
     assert "Use `--live` only for explicit manual verification." in usage_doc
+    assert "Prompt construction does not read `.env`, does not read `os.environ`, and does not access the network." in usage_doc
+    assert "This task does not add output parsing, output validation, or `LLMReviewResult` generation." in usage_doc
     assert "batch `--llm-provider` supports only `mock` and `pydantic-ai-testmodel`" in usage_doc
     assert "explicit sidecar writes `llm_provider_source: explicit`" in usage_doc
     assert "omitted `--llm-provider` writes `llm_provider_source: default` or `config`" in usage_doc

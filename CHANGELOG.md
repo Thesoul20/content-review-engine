@@ -8,6 +8,41 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0065
+
+### Added
+
+- Added `src/content_review_engine/llm/prompt_contract.py` with a separate
+  `llm-semantic-review-prompt.v1` builder for stable semantic-review system
+  and user prompts plus a documented `llm-semantic-review-output.v1` output
+  contract.
+- Added `tests/test_llm_prompt_contract.py` for JSON-only output rules,
+  schema-version coverage, severity and `llm.` rule-id constraints,
+  deterministic-finding context injection, secret redaction, and no-env /
+  no-network prompt-builder guarantees.
+
+### Changed
+
+- Updated `src/content_review_engine/llm/models.py` so `LLMReviewRequest` now
+  carries `review_language` with a default of `zh-CN` plus optional
+  deterministic-finding summary lines for prompt construction only.
+- Updated `src/content_review_engine/llm/__init__.py` and
+  `tests/test_llm_provider_usage_docs.py` to export and verify the new prompt
+  contract constants and documentation boundary.
+- Updated `docs/LLM_PROVIDER_USAGE.md`, `docs/DATA_MODELS.md`,
+  `docs/ARCHITECTURE.md`, and `PROJECT_STATE.md` to document the prompt
+  contract, its JSON-only requirements, stable severity enum, `llm.` rule-id
+  prefix, and separation from provider execution and validated result models.
+
+### Not Added
+
+- No real provider call, no network access, no `.env` or `os.environ` reads
+  in the prompt builder, no output parser or validator, and no
+  `LLMReviewResult` generation.
+- No change to `ReviewResult`, `BatchReviewResult`, `LLMReviewResult`,
+  sidecar metadata, deterministic review behavior, `llm-check` behavior, or
+  reserved real provider availability.
+
 ## TASK-0064
 
 ### Changed

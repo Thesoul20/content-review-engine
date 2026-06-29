@@ -424,18 +424,100 @@ shape.
 | `profile_name` | No | Optional semantic-review profile label |
 | `content_path` | No | Optional source path for adapter context |
 | `review_goal` | No | Optional short goal such as unsupported-claim review |
+| `review_language` | Yes | Target review language for prompt construction; defaults to `zh-CN` |
+| `deterministic_findings` | Yes | Tuple of optional deterministic finding summary lines for prompt context; defaults to empty |
 | `metadata` | No | Optional string-to-string metadata map for adapter context |
 
 Notes:
 
 - `content` is trimmed and must not be empty
 - optional string fields, if provided, must not be empty strings
+- `review_language` defaults to `zh-CN` and must not be empty
+- `deterministic_findings` items, if provided, must not be empty strings
 - metadata keys and values must not be empty after trimming
 - the model does not include provider-specific options, API keys, or runtime
   transport settings
 - `MockLLMReviewer`, `PydanticAITestModelReviewer`, and `PydanticAIReviewer`
   all consume this same request model rather than introducing
   provider-specific request schemas
+
+---
+
+## LLM Semantic Review Prompt Contract
+
+The prompt-contract builder source of truth is
+`src/content_review_engine/llm/prompt_contract.py`.
+
+This contract is internal-only and exists to define stable prompt text for a
+future semantic-review execution path.
+It is not the same thing as a validated internal result model.
+It does not execute a model, does not parse model output, and does not produce
+`LLMReviewResult`.
+
+Current constants:
+
+- prompt version: `llm-semantic-review-prompt.v1`
+- output schema version: `llm-semantic-review-output.v1`
+- severity enum: `info`, `warning`, `error`, `critical`
+- stable initial rule IDs:
+  `llm.semantic.overclaim`,
+  `llm.semantic.misleading`,
+  `llm.semantic.unsupported_claim`,
+  `llm.semantic.risky_advice`,
+  `llm.semantic.ambiguous_expression`,
+  `llm.semantic.inappropriate_tone`,
+  `llm.semantic.needs_human_review`
+
+Current builder output shape:
+
+| Field | Required | Description |
+|---|---|---|
+| `prompt_version` | Yes | Stable prompt contract version, currently `llm-semantic-review-prompt.v1` |
+| `output_schema_version` | Yes | Prompt-declared output schema version, currently `llm-semantic-review-output.v1` |
+| `system_prompt` | Yes | Stable JSON-only system instruction text |
+| `user_prompt` | Yes | Stable request-specific prompt containing content, file/profile context, language, metadata, and optional deterministic finding context |
+
+Prompt output contract:
+
+```json
+{
+  "schema_version": "llm-semantic-review-output.v1",
+  "summary": "string",
+  "findings": [
+    {
+      "rule_id": "llm.semantic.overclaim",
+      "severity": "warning",
+      "line": 12,
+      "column": 1,
+      "message": "string",
+      "evidence": "string",
+      "suggestion": "string",
+      "confidence": 0.82
+    }
+  ]
+}
+```
+
+Contract notes:
+
+- `schema_version` is fixed in the prompt contract
+- `summary` is required by the prompt contract even though no validator exists yet
+- `findings` must always be an array and must be `[]` when there are no issues
+- each finding `rule_id` must start with `llm.`
+- `severity` must be one of `info`, `warning`, `error`, or `critical`
+- `line` and `column` should be integers greater than or equal to `1`, or
+  `null`
+- `message` must explain the issue clearly
+- `evidence` must quote a short source snippet
+- `suggestion` must be actionable
+- `confidence`, if present, must remain within `0.0 <= x <= 1.0`
+- this is a prompt output contract, not an already validated internal model
+- output parsing and output validation are intentionally deferred to a later
+  task
+- prompt construction does not read `.env`, does not read `os.environ`, and
+  does not access the network
+- prompt construction redacts metadata values for sensitive keys such as
+  `api_key`, `token`, `secret`, and `password`
 
 ---
 

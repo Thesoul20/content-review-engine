@@ -255,6 +255,9 @@ Current status:
 - batch review now supports per-file `LLMSidecarResult` JSON sidecars, an
   aggregate `llm-review-manifest.json`, and an optional separate batch LLM
   sidecar Markdown report
+- `src/content_review_engine/llm/prompt_contract.py` now defines a separate
+  semantic-review prompt contract builder that produces stable system/user
+  prompt text from `LLMReviewRequest` without calling any provider
 - the canonical deterministic JSON output schema remains unchanged
 
 Current provider-contract boundary:
@@ -302,6 +305,39 @@ Future Merge Layer
   ↓
 Combined Report
 ```
+
+Current prompt-contract boundary:
+
+```text
+LLMReviewRequest
+  ↓
+build_llm_semantic_review_prompt_contract()
+  ↓
+system_prompt + user_prompt + output schema version
+  ↓
+future provider execution
+  ↓
+future output validation
+```
+
+Current prompt-contract guarantees:
+
+- prompt construction is separate from provider construction and provider
+  execution
+- prompt construction does not read `.env`
+- prompt construction does not read `os.environ`
+- prompt construction does not access the network
+- prompt construction does not resolve secrets
+- prompt construction does not create `LLMReviewResult`
+- prompt construction does not integrate into `content-review review` or
+  `content-review batch` yet
+- prompt construction can include optional deterministic-finding context from
+  `LLMReviewRequest`, but it does not execute deterministic rules itself
+- prompt construction redacts metadata values for sensitive keys before they
+  enter the prompt text
+
+This keeps prompt design, provider execution, and future output validation as
+three separate layers.
 
 Current single-file Markdown report boundary:
 

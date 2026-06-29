@@ -10,12 +10,28 @@ from content_review_engine.core.models import FindingSeverity
 
 LLM_REVIEW_RESULT_SCHEMA_VERSION = "llm-review-result.v1"
 LLM_SIDECAR_RESULT_SCHEMA_VERSION = "llm-sidecar-result.v2"
+LLM_SEMANTIC_REVIEW_OUTPUT_SCHEMA_VERSION = "llm-semantic-review-output.v1"
 LLM_OVERALL_RISK_VALUES: tuple[str, ...] = ("low", "medium", "high", "unknown")
 LLM_SIDECAR_STATUS_VALUES: tuple[str, ...] = ("success", "failed", "skipped")
 LLM_SIDECAR_PROVIDER_SOURCE_VALUES: tuple[str, ...] = (
     "explicit",
     "default",
     "config",
+)
+LLM_SEMANTIC_ALLOWED_SEVERITIES: tuple[str, ...] = (
+    "info",
+    "warning",
+    "error",
+    "critical",
+)
+LLM_SEMANTIC_RULE_IDS: tuple[str, ...] = (
+    "llm.semantic.overclaim",
+    "llm.semantic.misleading",
+    "llm.semantic.unsupported_claim",
+    "llm.semantic.risky_advice",
+    "llm.semantic.ambiguous_expression",
+    "llm.semantic.inappropriate_tone",
+    "llm.semantic.needs_human_review",
 )
 
 
@@ -157,6 +173,8 @@ class LLMReviewRequest(BaseModel):
     profile_name: str | None = None
     content_path: str | None = None
     review_goal: str | None = None
+    review_language: str = "zh-CN"
+    deterministic_findings: tuple[str, ...] = Field(default_factory=tuple)
     metadata: dict[str, str] | None = None
 
     @field_validator("content")
@@ -167,10 +185,24 @@ class LLMReviewRequest(BaseModel):
             raise ValueError("content must not be empty")
         return normalized
 
-    @field_validator("profile_name", "content_path", "review_goal")
+    @field_validator("profile_name", "content_path", "review_goal", "review_language")
     @classmethod
     def validate_optional_non_empty(cls, value: str | None, info) -> str | None:
         return _validate_optional_non_empty(value, info.field_name)
+
+    @field_validator("deterministic_findings")
+    @classmethod
+    def validate_deterministic_findings(
+        cls,
+        value: tuple[str, ...],
+    ) -> tuple[str, ...]:
+        normalized_findings: list[str] = []
+        for item in value:
+            normalized_item = item.strip()
+            if normalized_item == "":
+                raise ValueError("deterministic_findings items must not be empty")
+            normalized_findings.append(normalized_item)
+        return tuple(normalized_findings)
 
     @field_validator("metadata")
     @classmethod
@@ -193,6 +225,9 @@ class LLMReviewRequest(BaseModel):
 __all__ = [
     "LLM_OVERALL_RISK_VALUES",
     "LLM_REVIEW_RESULT_SCHEMA_VERSION",
+    "LLM_SEMANTIC_ALLOWED_SEVERITIES",
+    "LLM_SEMANTIC_REVIEW_OUTPUT_SCHEMA_VERSION",
+    "LLM_SEMANTIC_RULE_IDS",
     "LLM_SIDECAR_PROVIDER_SOURCE_VALUES",
     "LLM_SIDECAR_RESULT_SCHEMA_VERSION",
     "LLM_SIDECAR_STATUS_VALUES",
