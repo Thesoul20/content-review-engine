@@ -4618,10 +4618,11 @@ def test_cli_llm_check_mock_config_succeeds(
     captured = capsys.readouterr()
 
     assert exit_code == 0
-    assert "LLM provider check passed." in captured.out
+    assert "LLM check passed." in captured.out
     assert "Provider: mock" in captured.out
+    assert "Model: mock-model" in captured.out
     assert "Config: ok" in captured.out
-    assert "Secret: skipped" in captured.out
+    assert "Secret: not required" in captured.out
     assert "Runtime: skipped" in captured.out
     assert captured.err == ""
 
@@ -4634,10 +4635,11 @@ def test_cli_llm_check_default_behavior_stays_unchanged(
     captured = capsys.readouterr()
 
     assert exit_code == 0
-    assert "LLM provider check passed." in captured.out
+    assert "LLM check passed." in captured.out
     assert "Provider: mock" in captured.out
+    assert "Model: <not configured>" in captured.out
     assert "Config: ok" in captured.out
-    assert "Secret: skipped" in captured.out
+    assert "Secret: not required" in captured.out
     assert "Runtime: skipped" in captured.out
     assert captured.err == ""
 
@@ -4693,7 +4695,7 @@ def test_cli_llm_check_provider_mock_runtime_succeeds_without_network(
 
     assert exit_code == 0
     assert "Provider: mock" in captured.out
-    assert "Secret: skipped" in captured.out
+    assert "Secret: not required" in captured.out
     assert "Runtime: ok" in captured.out
     assert captured.err == ""
 
@@ -4723,7 +4725,7 @@ def test_cli_llm_check_provider_testmodel_runtime_succeeds_without_api_key_or_ne
 
     assert exit_code == 0
     assert "Provider: pydantic-ai-testmodel" in captured.out
-    assert "Secret: skipped" in captured.out
+    assert "Secret: not required" in captured.out
     assert "Runtime: ok" in captured.out
     assert captured.err == ""
 
@@ -4795,6 +4797,36 @@ def test_cli_llm_check_pydanticai_secret_missing_returns_error(
         "Error: LLM provider secret environment variable 'OPENAI_API_KEY' is not set."
         in captured.err
     )
+    assert "OPENAI_API_KEY" not in captured.out
+
+
+def test_cli_llm_check_pydanticai_empty_api_key_env_var_returns_error(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "   ")
+
+    exit_code = main(
+        [
+            "llm-check",
+            "--llm-provider",
+            "pydanticai",
+            "--llm-model",
+            "openai:gpt-4o-mini",
+            "--llm-api-key-env",
+            "OPENAI_API_KEY",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert captured.out == ""
+    assert (
+        "Error: LLM provider secret environment variable 'OPENAI_API_KEY' is empty."
+        in captured.err
+    )
+    assert "super-secret-value" not in captured.err
 
 
 def test_cli_llm_check_pydanticai_missing_api_key_env_returns_error(
@@ -4881,8 +4913,11 @@ def test_cli_llm_check_uses_cli_override_precedence(
         captured_config["runtime"] = runtime
         return LLMSmokeCheckResult(
             provider=config.provider,
+            model=config.model,
             config_status="ok",
-            secret_status="ok",
+            secret_status="resolved",
+            api_key_env=config.api_key_env,
+            redacted_secret="<redacted>",
             runtime_status="skipped",
         )
 
@@ -4936,8 +4971,11 @@ def test_cli_llm_check_output_does_not_leak_secret_value_or_full_prompt(
         del config, runtime
         return LLMSmokeCheckResult(
             provider="pydanticai",
+            model="openai:gpt-4o-mini",
             config_status="ok",
-            secret_status="ok",
+            secret_status="resolved",
+            api_key_env="OPENAI_API_KEY",
+            redacted_secret="<redacted>",
             runtime_status="ok",
         )
 
@@ -4960,5 +4998,8 @@ def test_cli_llm_check_output_does_not_leak_secret_value_or_full_prompt(
 
     assert exit_code == 0
     assert "super-secret-value" not in captured.out
+    assert "API key env: OPENAI_API_KEY" in captured.out
+    assert "API key: <redacted>" in captured.out
+    assert "Secret: resolved" in captured.out
     assert "LLM smoke check synthetic request." not in captured.out
     assert captured.err == ""

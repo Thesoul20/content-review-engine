@@ -574,6 +574,38 @@ Notes:
 
 ---
 
+## LLMSmokeCheckResult
+
+`LLMSmokeCheckResult` is an internal dataclass used only by
+`content-review llm-check` text rendering.
+
+It is not part of the canonical deterministic `ReviewResult` or
+`BatchReviewResult` JSON schemas, and it does not change `LLMReviewResult`.
+
+Current fields:
+
+| Field | Required | Description |
+|---|---|---|
+| `provider` | Yes | Concrete provider name reported by the smoke check |
+| `model` | No | Optional configured model name; rendered as `<not configured>` when absent |
+| `config_status` | Yes | Current config stage status |
+| `secret_status` | Yes | Secret stage status: `resolved` or `not_required` |
+| `api_key_env` | No | Environment variable name reference shown only when secret resolution is required |
+| `redacted_secret` | No | Redacted secret display value produced through `redact_secret_value()` |
+| `runtime_status` | Yes | Runtime stage status: `ok` or `skipped` |
+
+Notes:
+
+- this result is rendered only as human-readable CLI text
+- it is not serialized as sidecar JSON
+- `redacted_secret` must never contain the full secret value
+- config-driven `llm-check` fills the secret fields through
+  `resolve_llm_provider_secret(config, env=None)` plus `redact_secret_value()`
+- reviewer factory construction remains a separate boundary and does not
+  resolve environment variables
+
+---
+
 ## PydanticAIReviewRequestPayload
 
 `PydanticAIReviewRequestPayload` stores the internal request payload built for

@@ -510,6 +510,9 @@ Current LLM provider-boundary status:
   boundary; `resolve_llm_provider_secret(config, env=None)` resolves a secret
   string from `LLMProviderConfig.api_key_env`, while `resolve_llm_api_key(...)`
   wraps that value in a redacted `ResolvedLLMSecret`
+- `src/content_review_engine/llm/smoke_check.py` now owns config-driven
+  `llm-check` secret preflight by calling that shared resolver directly and
+  rendering only the secret reference plus a redacted secret state
 - `src/content_review_engine/llm/mock.py` defines `MockLLMReviewer`, a
   deterministic adapter for tests and future wiring work
 - `src/content_review_engine/llm/pydantic_ai_provider.py` defines
@@ -540,6 +543,8 @@ Secret resolver boundary:
 - config validation does not resolve secrets
 - reviewer factory construction does not resolve secrets
 - CLI flag parsing does not resolve secrets
+- smoke-check orchestration resolves secrets only through
+  `resolve_llm_provider_secret(config, env=None)`
 - the resolver reads only `api_key_env`
 - the resolver can read from an explicit mapping for tests
 - otherwise it reads the current process environment
@@ -548,7 +553,9 @@ Secret resolver boundary:
 - it does not access the network
 - it must not leak secret values into errors, sidecars, reports, or canonical
   result models
-  execution and does not fallback to `mock`
+- config-driven `llm-check` may show the env var name and a redacted secret
+  marker, but never the full secret
+- reviewer-name factory execution does not fallback to `mock`
 
 TASK-0036 adds the runner boundary:
 

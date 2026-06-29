@@ -75,6 +75,10 @@ def test_usage_docs_exist_and_cover_required_provider_flags_and_boundaries() -> 
     assert "resolve_llm_provider_secret" in content
     assert "api_key_env is a secret reference" in content
     assert "does not read `.env`" in content
+    assert "API key env:" in content
+    assert "API key: <redacted>" in content
+    assert "Secret: resolved" in content
+    assert "Secret: not required" in content
     assert "llm_provider" in content
     assert "llm_provider_source" in content
     assert "Quality Gate behavior does not read LLM findings" in content

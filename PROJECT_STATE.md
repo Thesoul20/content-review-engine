@@ -85,6 +85,26 @@ use.
 
 ## Recent Completion
 
+- TASK-0062 is complete.
+- Wired `resolve_llm_provider_secret(config, env=None)` directly into
+  `src/content_review_engine/llm/smoke_check.py` so config-driven
+  `content-review llm-check` now validates `LLMProviderConfig.api_key_env`
+  without moving secret resolution into the provider factory.
+- Updated `llm-check` rendering to report provider, model, secret reference,
+  redacted secret state, and runtime stage while keeping secret values out of
+  stdout, stderr, exceptions, sidecars, and canonical result models.
+- Added and updated `tests/test_llm_smoke_check.py`, `tests/test_cli.py`, and
+  `tests/test_llm_provider_usage_docs.py` for resolved/not-required secret
+  paths, missing/unset/empty env-var failures, redaction checks, reserved
+  provider stability, and output non-leakage assertions.
+- Updated `docs/LLM_PROVIDER_USAGE.md`, `docs/CLI.md`,
+  `docs/DATA_MODELS.md`, `docs/ARCHITECTURE.md`, and `CHANGELOG.md` to
+  document the `llm-check` secret-preflight boundary and the new redacted
+  success output.
+- Kept provider-factory secret resolution out of scope, kept reserved real
+  provider names unavailable, and did not add plaintext API-key flags, `.env`
+  loading, real provider classes, or network-dependent test behavior.
+
 - TASK-0061 is complete.
 - Added a separate LLM secret-resolver contract in
   `src/content_review_engine/llm/secrets.py` with

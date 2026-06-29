@@ -58,6 +58,8 @@ Behavior:
 - `llm-check` reuses the same `--llm-config` loader and CLI override rules as `review` and `batch`
 - `llm-check --provider` uses `create_llm_reviewer()` directly with `mock` or `pydantic-ai-testmodel`
 - `llm-check --provider` does not require an API key, does not read `.env`, and does not access the network for the supported factory providers
+- config-driven `llm-check` resolves `LLMProviderConfig.api_key_env` through the shared `resolve_llm_provider_secret(config, env=None)` boundary when the selected provider requires a secret
+- `--llm-api-key-env` is a secret reference only; it passes the environment variable name and never passes or prints a plaintext API key
 - default behavior is config check plus secret check only
 - `--runtime` adds a synthetic minimal runtime smoke call
 - `llm-check` does not write sidecars
@@ -73,7 +75,9 @@ Behavior:
 Current text output stages:
 
 - `Config: ok`
-- `Secret: ok` or `Secret: skipped`
+- `Model: <not configured>` when no model is set
+- `API key env: <ENV_NAME>` plus `API key: <redacted>` when a secret is required and resolves successfully
+- `Secret: resolved` or `Secret: not required`
 - `Runtime: ok` or `Runtime: skipped`
 
 For real-provider setup and manual verification guidance, see

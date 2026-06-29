@@ -8,6 +8,34 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0062
+
+### Changed
+
+- Updated `src/content_review_engine/llm/smoke_check.py` so config-driven
+  `content-review llm-check` now resolves `LLMProviderConfig.api_key_env`
+  through `resolve_llm_provider_secret(config, env=None)` and renders the
+  secret reference plus a redacted secret state through
+  `redact_secret_value()`.
+- Updated `src/content_review_engine/llm/smoke_check.py` text rendering to
+  report provider, model, `API key env`, redacted `API key`, `Secret`, and
+  `Runtime` stages without printing the full secret or the synthetic request.
+- Updated `tests/test_llm_smoke_check.py`, `tests/test_cli.py`, and
+  `tests/test_llm_provider_usage_docs.py` for resolved/not-required secret
+  paths, missing/unset/empty env-var failures, redaction checks, and
+  non-leaking stdout/stderr assertions.
+- Updated `docs/LLM_PROVIDER_USAGE.md`, `docs/CLI.md`,
+  `docs/DATA_MODELS.md`, `docs/ARCHITECTURE.md`, and `PROJECT_STATE.md` to
+  document the `llm-check` secret-preflight boundary and output contract.
+
+### Not Added
+
+- No plaintext API-key CLI argument, no `.env` loading, no new real provider
+  class, no real SDK integration, and no network-dependent default tests.
+- No change to `ReviewResult`, `BatchReviewResult`, `LLMReviewResult`, sidecar
+  metadata, deterministic review behavior, or reserved real provider
+  availability.
+
 ## TASK-0061
 
 ### Added

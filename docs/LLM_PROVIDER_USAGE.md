@@ -128,6 +128,7 @@ uv run content-review llm-check --provider pydantic-ai-testmodel --runtime
 uv run content-review llm-check --llm-config examples/llm/mock/llm-provider.yml
 uv run content-review llm-check --llm-config examples/llm/pydanticai/llm-provider.yml
 uv run content-review llm-check --llm-config examples/llm/pydanticai/llm-provider.yml --runtime
+uv run content-review llm-check --llm-provider pydanticai --llm-model openai:gpt-4o-mini --llm-api-key-env OPENAI_API_KEY
 ```
 
 Default behavior:
@@ -135,6 +136,11 @@ Default behavior:
 - config check
 - secret check when the provider requires one
 - no runtime call
+- successful secret checks print `API key env: ...`, `API key: <redacted>`,
+  and `Secret: resolved`
+- providers that do not require a secret print `Secret: not required`
+- failures may name the missing env var reference, but they do not print the
+  secret value
 
 `--provider` behavior:
 
@@ -227,6 +233,15 @@ Empty env vars also fail before any real provider call.
 Reserved real provider names such as `openai` or `anthropic` still remain
 unavailable after this task; the resolver contract only prepares the future
 boundary.
+
+Current `llm-check` behavior on top of that resolver:
+
+- `llm-check` reuses `resolve_llm_provider_secret(config, env=None)` directly
+  for config-driven secret preflight
+- `llm-check` reuses `redact_secret_value()` for the displayed secret state
+- `llm-check` prints the env var name and `<redacted>`, never the full secret
+- `llm-check` does not read `.env` and does not fallback to a plaintext
+  `--api-key` or `--llm-api-key` flag
 
 ## Single-file Sidecar Provider Selection
 
