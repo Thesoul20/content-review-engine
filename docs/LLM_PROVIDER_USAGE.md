@@ -311,6 +311,47 @@ Current guarantees:
 - sidecar-only extra files that do not exist in deterministic batch results
   are ignored by the builder
 
+## Batch combined Markdown report
+
+The repository now also includes a separate batch combined Markdown renderer in
+`src/content_review_engine/reports/batch_combined_markdown.py`.
+
+Current helper:
+
+- `render_batch_combined_markdown_report(...)`
+
+Current presentation rules:
+
+- the report input is `BatchCombinedReviewResult`
+- the report output is Markdown text only
+- the combined Markdown report reuses the deterministic batch Markdown report
+  unchanged and embeds it as the canonical deterministic section
+- the report also adds batch-level LLM summary counts, per-file LLM status,
+  advisory findings, failed-file error summary, manual review workflow,
+  advisory manual review checklist, and deterministic-only quality-gate
+  boundary text
+- advisory findings stay presentation-only and do not become deterministic
+  findings
+- failed files can also render `LLM Execution Review Checklist` follow-up rows
+  with stable IDs such as `LLM-ERR-001`
+- Markdown table cells are escaped for `|` and newline content
+- supported batch LLM presentation states include all succeeded, partial
+  failure, all failed, `not_run`, and `skipped`
+
+Current guarantees:
+
+- this combined Markdown report is also not CLI default output
+- the batch CLI still does not expose a combined-output flag
+- the combined Markdown renderer is pure, does not read or write files, does
+  not call the CLI, does not call a provider, does not read `.env`, does not
+  read `os.environ`, and does not access the network
+- the renderer does not mutate `BatchCombinedReviewResult`
+- the renderer does not change `BatchReviewResult`
+- the renderer does not change deterministic `severity_counts`,
+  `rule_counts`, quality gate, or exit code behavior
+- the renderer does not change raw `LLMSidecarResult` JSON sidecars or the
+  batch combined JSON serializer
+
 - provider output remains `LLMReviewResult`
 - the adapter can normalize that `LLMReviewResult` into internal candidates
 - candidate `source` is always `llm`

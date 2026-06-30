@@ -111,6 +111,8 @@ def test_usage_docs_exist_and_cover_required_provider_flags_and_boundaries() -> 
     assert "Batch combined review result envelope" in content
     assert "build_batch_combined_review_result" in content
     assert "batch-combined-review-result.v1" in content
+    assert "Batch combined Markdown report" in content
+    assert "render_batch_combined_markdown_report" in content
     assert "`LLMSidecarResult`" in content
     assert "`not_run`, `skipped`, `succeeded`, or `failed`" in content
     assert "`advisory_finding_count`" in content
@@ -125,6 +127,8 @@ def test_usage_docs_exist_and_cover_required_provider_flags_and_boundaries() -> 
     assert "failed `llm_error` display" in content
     assert "manual review workflow" in content
     assert "deterministic-only quality-gate boundary" in content
+    assert "per-file LLM status" in content
+    assert "LLM error summary" in content
     assert "Single-file CLI LLM integration" in content
     assert "--llm-output` writes raw `LLMReviewResult` JSON" in content
     assert "--llm-report` writes a separate Markdown report rendered from the same" in content
@@ -213,6 +217,7 @@ def test_docs_and_fixtures_do_not_require_real_network_or_real_api_key() -> None
     assert "failed combined-file `llm_error` values are structured and sanitized" in usage_doc
     assert "files are ordered by deterministic `BatchReviewResult.results`" in usage_doc
     assert "the batch CLI does not expose a combined-output flag" in usage_doc
+    assert "the report also adds batch-level LLM summary counts" in usage_doc
     assert "the combined Markdown renderer is pure" in usage_doc
     assert "provider execution reuses the shared prompt contract" in usage_doc
     assert "provider execution reuses `parse_llm_semantic_review_output()`" in usage_doc

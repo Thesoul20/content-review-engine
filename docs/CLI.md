@@ -44,8 +44,9 @@ The committed files under `examples/llm_review_artifacts/` are reference
 artifacts only. They do not change CLI behavior, enable LLM review, or
 replace the canonical deterministic JSON schemas.
 The package now also has an internal batch combined-result envelope builder,
-but the batch CLI does not expose a combined-output flag and current batch
-default output remains unchanged.
+plus a separate internal batch combined Markdown renderer, but the batch CLI
+does not expose a combined-output flag and current batch default output
+remains unchanged.
 
 ## Review Output Index
 
@@ -74,6 +75,8 @@ Current guarantees:
   default output
 - there is still no batch `--combined-output`; batch combined results remain
   internal package helpers only
+- the internal batch combined Markdown renderer is not used by the batch CLI
+  and does not change existing deterministic batch Markdown output
 - quality gate still reads deterministic findings only
 - when LLM output is present, the index marks it as `source = llm`,
   `advisory = yes`, and `quality gate participation = no`

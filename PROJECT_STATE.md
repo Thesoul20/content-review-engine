@@ -72,6 +72,12 @@ per-file `not_run` / `skipped` / `succeeded` / `failed` LLM status plus
 structured error metadata, and compute a batch-level LLM summary without
 changing the deterministic batch pipeline, batch CLI default behavior,
 sidecar schemas, or quality-gate behavior.
+It now also includes a separate batch combined Markdown report renderer that
+accepts `BatchCombinedReviewResult`, reuses the deterministic batch Markdown
+report unchanged, and appends presentation-only batch LLM summary, per-file
+status, advisory findings, error summary, manual review workflow, checklist
+output, and deterministic-only quality-gate boundary text without changing
+batch CLI defaults or schemas.
 It now also includes a separate single-file combined Markdown report renderer
 that accepts `SingleFileCombinedReviewResult`, reuses the deterministic
 Markdown report unchanged, and appends presentation-only LLM status,
@@ -151,6 +157,25 @@ behavior, quality gates, and exit codes unchanged.
 - No active task is recorded in this file.
 
 ## Recent Completion
+
+- TASK-0081 is complete.
+- Added `src/content_review_engine/reports/batch_combined_markdown.py` with
+  pure `render_batch_combined_markdown_report(...)` rendering for
+  `BatchCombinedReviewResult`, including deterministic batch report reuse,
+  batch-level LLM summary, per-file status summary, advisory findings,
+  structured LLM error summary, manual review workflow, advisory checklist,
+  execution review checklist for failed files, and deterministic-only quality
+  gate boundary text.
+- Added `tests/test_llm_batch_combined_markdown_report.py` for
+  all-succeeded, partial-failure, all-failed, not-run, skipped, LLM summary
+  counts, file status summary, advisory findings, error summary, deterministic
+  report preservation, manual review workflow, manual review checklist,
+  quality-gate boundary, Markdown escaping, and unchanged serializer boundary
+  coverage.
+- Updated `docs/ARCHITECTURE.md`, `docs/DATA_MODELS.md`,
+  `docs/LLM_PROVIDER_USAGE.md`, `docs/CLI.md`, and `CHANGELOG.md` to
+  document the batch combined Markdown renderer as a presentation-only
+  package-level helper with unchanged batch CLI and quality-gate behavior.
 
 - TASK-0080 is complete.
 - Added `src/content_review_engine/llm/batch_combined_result.py` with

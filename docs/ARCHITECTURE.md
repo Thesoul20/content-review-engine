@@ -145,12 +145,19 @@ It now also includes a separate combined Markdown renderer under
 `SingleFileCombinedReviewResult`, reuses the existing deterministic Markdown
 report as-is, and appends presentation-only LLM status, advisory findings,
 manual review workflow, and deterministic-only quality-gate boundary text.
+It now also includes a separate batch combined Markdown renderer under
+`src/content_review_engine/reports/batch_combined_markdown.py` that accepts
+`BatchCombinedReviewResult`, reuses the existing deterministic batch Markdown
+report as-is, and appends batch-level LLM summary, per-file LLM status,
+advisory findings, error summary, manual review workflow, checklist output,
+and deterministic-only quality-gate boundary text.
 The single-file CLI adapter can now also explicitly write that combined
 envelope or combined Markdown report through `--combined-output`, while
 keeping the main deterministic output, batch command, and quality gate
 behavior unchanged.
 The batch CLI still does not expose a combined-output path. The batch
-combined-result helper is package-level preparation only.
+combined-result helper plus the batch combined Markdown renderer remain
+package-level helpers only.
 It now also includes committed reference artifacts under
 `examples/llm_review_artifacts/` that document the current presentation
 outputs for single-file and batch LLM review without becoming runtime
@@ -166,7 +173,9 @@ LLMCoreFindingCandidate
   ↓
 BatchCombinedReviewResult
   ↓
-future batch combined Markdown / CLI output
+batch combined Markdown renderer
+  ↓
+future batch CLI output
 ```
 
 Current deterministic rules:

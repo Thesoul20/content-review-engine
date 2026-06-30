@@ -8,6 +8,44 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0081
+
+### Added
+
+- Added `src/content_review_engine/reports/batch_combined_markdown.py` with
+  `render_batch_combined_markdown_report(...)`, a pure renderer for
+  `BatchCombinedReviewResult` that reuses the deterministic batch Markdown
+  report and adds batch-level LLM summary, per-file status summary, advisory
+  findings, structured error summary, manual review workflow, checklist
+  output, and deterministic-only quality-gate boundary text.
+- Added `tests/test_llm_batch_combined_markdown_report.py` for
+  all-succeeded, partial-failure, all-failed, not-run, skipped, LLM summary
+  counts, file status summary, advisory findings, LLM error summary,
+  deterministic report preservation, manual review workflow, manual review
+  checklist, quality-gate boundary, Markdown escaping, and unchanged
+  serializer-boundary coverage.
+
+### Changed
+
+- Updated `src/content_review_engine/reports/__init__.py` to export
+  `render_batch_combined_markdown_report(...)`.
+- Updated `docs/CLI.md`, `docs/ARCHITECTURE.md`, `docs/DATA_MODELS.md`,
+  `docs/LLM_PROVIDER_USAGE.md`, and `PROJECT_STATE.md` to document the new
+  batch combined Markdown renderer as a presentation-only package helper with
+  unchanged batch CLI behavior.
+
+### Not Added
+
+- No `BatchCombinedReviewResult`, `BatchReviewResult`, or `ReviewResult`
+  schema change, no merge of LLM findings into deterministic findings, and no
+  deterministic runner or deterministic rule-engine change.
+- No batch CLI flag change, no `--combined-output` path for batch, no change
+  to existing `--output`, `--llm-output`, or `--format` semantics, and no
+  change to existing deterministic batch Markdown output.
+- No quality-gate or exit-code behavior change, no provider-contract change,
+  no real API call, no environment-variable dependency, no file I/O in the
+  renderer, and no runtime dependency on `examples/`.
+
 ## TASK-0080
 
 ### Added

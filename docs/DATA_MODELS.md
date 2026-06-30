@@ -300,6 +300,8 @@ It is an integration envelope only:
 - this envelope does not change batch CLI default output
 - this envelope does not change deterministic counts, quality gates, or exit
   codes
+- this envelope can now also be rendered into a separate human-readable batch
+  combined Markdown report without changing the schema itself
 
 | Field | Required | Description |
 |---|---|---|
@@ -328,6 +330,11 @@ Notes:
 - serializer reuses the existing nested `LLMReviewResult` serializer
 - extra sidecar-only files that are absent from deterministic batch results are
   ignored by the combined envelope builder
+- the paired renderer lives in
+  `src/content_review_engine/reports/batch_combined_markdown.py`
+- that renderer is pure, returns Markdown text, reuses the deterministic batch
+  report unchanged, and does not read files, write files, call providers, or
+  read environment variables
 
 | Field | Required | Description |
 |---|---|---|
