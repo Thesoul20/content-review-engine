@@ -97,6 +97,11 @@ The combined-output stage now also has consolidated documentation across CLI,
 architecture, data-model, provider-usage, CI, and committed reference
 artifacts so single-file and batch behavior boundaries stay aligned without
 changing runtime behavior.
+It now also includes a stable runtime combined-envelope entrypoint that
+dispatches single-file and batch builders plus JSON serialization, and a
+small combined Markdown dispatch helper, so `--combined-output` reuses one
+explicit internal builder/serializer path without changing deterministic
+output semantics, sidecar semantics, quality gates, or exit codes.
 
 ---
 
@@ -166,6 +171,20 @@ changing runtime behavior.
 - No active task is recorded in this file.
 
 ## Recent Completion
+
+- TASK-0084 is complete.
+- Added `src/content_review_engine/llm/combined_envelope.py` as the stable
+  runtime combined-envelope entrypoint for single-file and batch builder /
+  serializer reuse, and added `src/content_review_engine/reports/combined.py`
+  as the shared combined Markdown dispatch helper.
+- Updated `src/content_review_engine/cli.py` so both single-file and batch
+  `--combined-output` paths now reuse that shared envelope entrypoint for
+  JSON plus the shared report dispatch for Markdown, without changing
+  `--output`, `--llm-output`, quality-gate, or exit-code behavior.
+- Added `tests/test_llm_combined_output_models.py` and updated docs to assert
+  stable combined envelope structure, JSON compatibility, deterministic-only
+  summary boundaries, and committed example compatibility through the new
+  runtime entrypoint.
 
 - TASK-0083 is complete.
 - Consolidated single-file and batch combined-output documentation across

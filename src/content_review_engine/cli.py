@@ -41,9 +41,9 @@ from content_review_engine.llm import (
     LLMProviderRetryExhaustedError,
     LLMProviderTimeoutError,
     build_llm_review_request,
-    build_batch_combined_review_result,
-    build_single_file_combined_review_result,
-    batch_combined_review_result_to_json,
+    build_batch_combined_review_envelope,
+    build_single_file_combined_review_envelope,
+    combined_review_envelope_to_json,
     llm_review_result_to_json,
     llm_sidecar_result_to_json,
     run_batch_llm_review,
@@ -55,17 +55,15 @@ from content_review_engine.llm import (
     render_llm_smoke_check_result,
     run_llm_smoke_check,
     run_single_file_llm_review,
-    single_file_combined_review_result_to_json,
 )
 from content_review_engine.parser import read_markdown
 from content_review_engine.reports import (
-    render_batch_combined_markdown_report,
+    render_combined_markdown_report,
     render_batch_report_index,
     render_batch_markdown_report,
     render_llm_review_markdown,
     render_llm_sidecar_markdown,
     render_markdown_report,
-    render_single_file_combined_markdown_report,
     render_single_file_report_index,
 )
 from content_review_engine.review import review_document, review_markdown_directory
@@ -994,7 +992,7 @@ def _write_single_file_combined_output(
     llm_status: str | None = None,
     llm_error: dict[str, object] | None = None,
 ) -> None:
-    combined_result = build_single_file_combined_review_result(
+    combined_result = build_single_file_combined_review_envelope(
         review_result=review_result,
         llm_result=llm_result,
         llm_status=llm_status,
@@ -1002,9 +1000,9 @@ def _write_single_file_combined_output(
     )
     combined_path = Path(output_path)
     if output_format == "json":
-        combined_text = single_file_combined_review_result_to_json(combined_result)
+        combined_text = combined_review_envelope_to_json(combined_result)
     else:
-        combined_text = render_single_file_combined_markdown_report(combined_result)
+        combined_text = render_combined_markdown_report(combined_result)
     try:
         combined_path.write_text(combined_text, encoding="utf-8")
     except OSError as exc:
@@ -1021,16 +1019,16 @@ def _write_batch_combined_output(
     batch_llm_result: LLMSidecarResult | None = None,
     default_llm_status: str = "not_run",
 ) -> None:
-    combined_result = build_batch_combined_review_result(
+    combined_result = build_batch_combined_review_envelope(
         batch_review_result=batch_result,
         batch_llm_result=batch_llm_result,
         default_llm_status=default_llm_status,
     )
     combined_path = Path(output_path)
     if output_format == "json":
-        combined_text = batch_combined_review_result_to_json(combined_result)
+        combined_text = combined_review_envelope_to_json(combined_result)
     else:
-        combined_text = render_batch_combined_markdown_report(combined_result)
+        combined_text = render_combined_markdown_report(combined_result)
     try:
         combined_path.write_text(combined_text, encoding="utf-8")
     except OSError as exc:

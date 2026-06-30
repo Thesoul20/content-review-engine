@@ -78,8 +78,12 @@ Combined-output compatibility rules:
 - combined output does not merge LLM findings into deterministic findings
 - combined output does not change deterministic `severity_counts`,
   deterministic `rule_counts`, `--fail-on`, quality gate, or exit code logic
+- combined JSON output now reuses the shared runtime entrypoint in
+  `src/content_review_engine/llm/combined_envelope.py`
 - combined Markdown reports are presentation-only and reuse the deterministic
   report before appending LLM sections
+- combined Markdown dispatch now also reuses
+  `src/content_review_engine/reports/combined.py`
 - committed combined artifacts in `examples/llm_review_artifacts/` are
   reference-only examples and do not become runtime dependencies
 

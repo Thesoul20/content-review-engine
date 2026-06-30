@@ -140,6 +140,11 @@ integration envelope containing the canonical deterministic
 `LLMCoreFindingCandidate` values, per-file LLM status/error metadata, and a
 batch-level LLM summary without changing batch CLI output, sidecar schemas,
 or quality-gate behavior.
+It now also includes a stable runtime combined-envelope entrypoint under
+`src/content_review_engine/llm/combined_envelope.py` that dispatches those
+single-file and batch helpers plus JSON-compatible serialization so adapters
+can reuse one explicit combined-envelope boundary instead of assembling
+payloads themselves.
 It now also includes a separate combined Markdown renderer under
 `src/content_review_engine/reports/combined_markdown.py` that accepts
 `SingleFileCombinedReviewResult`, reuses the existing deterministic Markdown
@@ -151,6 +156,10 @@ It now also includes a separate batch combined Markdown renderer under
 report as-is, and appends batch-level LLM summary, per-file LLM status,
 advisory findings, error summary, manual review workflow, checklist output,
 and deterministic-only quality-gate boundary text.
+It now also includes a tiny Markdown dispatch helper under
+`src/content_review_engine/reports/combined.py` so combined Markdown output
+can reuse one stable renderer entrypoint for both envelope types without
+changing report sections or quality-gate semantics.
 The single-file CLI adapter can now also explicitly write that combined
 envelope or combined Markdown report through `--combined-output`, while
 keeping the main deterministic output, batch command, and quality gate

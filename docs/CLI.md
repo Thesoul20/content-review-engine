@@ -47,6 +47,11 @@ The package now also has an internal batch combined-result envelope builder,
 plus a separate internal batch combined Markdown renderer, and the batch CLI
 can now explicitly write them through `--combined-output` without changing
 current batch default output.
+Both `review` and `batch` now route combined JSON writing through the shared
+runtime envelope entrypoint in
+`src/content_review_engine/llm/combined_envelope.py`, and combined Markdown
+writing through `src/content_review_engine/reports/combined.py`, without
+changing user-visible output.
 
 ## Output Artifact Boundaries
 
@@ -71,6 +76,8 @@ Boundary rules:
 - raw LLM sidecars remain the canonical LLM-layer machine-readable output.
 - combined output is an integration artifact that packages deterministic
   output plus optional LLM output without changing either runtime contract.
+- the CLI reuses the stable combined-envelope builders and serializers rather
+  than assembling combined JSON payloads inline.
 
 ## Combined Output Behavior Matrix
 

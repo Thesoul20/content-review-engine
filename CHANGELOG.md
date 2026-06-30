@@ -8,6 +8,43 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0084
+
+### Added
+
+- Added `src/content_review_engine/llm/combined_envelope.py` as the stable
+  runtime combined-envelope entrypoint for single-file and batch builder /
+  serializer dispatch.
+- Added `src/content_review_engine/reports/combined.py` as the shared
+  combined Markdown dispatch helper for both combined envelope types.
+- Added `tests/test_llm_combined_output_models.py` for stable envelope
+  builder coverage, JSON-compatible serialization, deterministic-boundary
+  assertions, and committed-example compatibility.
+
+### Changed
+
+- Updated `src/content_review_engine/cli.py` so single-file and batch
+  `--combined-output` now both reuse the shared combined-envelope builder /
+  serializer entrypoint for JSON and the shared combined report dispatch for
+  Markdown.
+- Updated `src/content_review_engine/llm/__init__.py` and
+  `src/content_review_engine/reports/__init__.py` to export the new shared
+  entrypoints.
+- Updated `docs/CLI.md`, `docs/ARCHITECTURE.md`, `docs/DATA_MODELS.md`,
+  `docs/LLM_PROVIDER_USAGE.md`, and `PROJECT_STATE.md` to document the stable
+  runtime combined-envelope reuse boundary.
+
+### Not Added
+
+- No change to `ReviewResult`, `BatchReviewResult`, `LLMReviewResult`,
+  `LLMSidecarResult`, `SingleFileCombinedReviewResult`, or
+  `BatchCombinedReviewResult` schemas.
+- No merge of LLM findings into deterministic findings or deterministic
+  summary counts, and no change to `--fail-on`, quality-gate, or exit-code
+  behavior.
+- No provider interface change, no new real provider, no API / MCP / GUI
+  work, and no deterministic engine refactor beyond combined-output reuse.
+
 ## TASK-0083
 
 ### Added

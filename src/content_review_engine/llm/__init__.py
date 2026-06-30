@@ -25,6 +25,13 @@ from content_review_engine.llm.combined_result import (
     single_file_combined_review_result_to_dict,
     single_file_combined_review_result_to_json,
 )
+from content_review_engine.llm.combined_envelope import (
+    CombinedReviewEnvelope,
+    build_batch_combined_review_envelope,
+    build_single_file_combined_review_envelope,
+    combined_review_envelope_to_dict,
+    combined_review_envelope_to_json,
+)
 from content_review_engine.llm.batch_combined_result import (
     BATCH_COMBINED_REVIEW_RESULT_SCHEMA_VERSION,
     LLM_BATCH_STATUS_VALUES,
@@ -305,6 +312,7 @@ __all__ = [
     "BatchCombinedLLMError",
     "BatchCombinedLLMSummary",
     "BatchCombinedReviewResult",
+    "CombinedReviewEnvelope",
     "SingleFileCombinedLLMError",
     "SingleFileCombinedReviewResult",
     "ValidatedLLMSemanticFinding",
@@ -358,10 +366,14 @@ __all__ = [
     "build_llm_finding_display_metadata",
     "build_llm_execution_review_items",
     "build_llm_manual_review_items",
+    "build_batch_combined_review_envelope",
     "build_batch_combined_review_result",
+    "build_single_file_combined_review_envelope",
     "build_single_file_combined_review_result",
     "batch_combined_review_result_to_dict",
     "batch_combined_review_result_to_json",
+    "combined_review_envelope_to_dict",
+    "combined_review_envelope_to_json",
     "extract_llm_semantic_review_json",
     "format_llm_confidence_like_value",
     "parse_llm_semantic_review_output",

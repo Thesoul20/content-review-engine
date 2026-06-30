@@ -17,6 +17,9 @@ The single-file combined-review envelope helper and serializer live in
 `src/content_review_engine/llm/combined_result.py`.
 The batch combined-review envelope helper and serializer live in
 `src/content_review_engine/llm/batch_combined_result.py`.
+The stable runtime entrypoint that dispatches single-file and batch combined
+builders plus JSON serialization lives in
+`src/content_review_engine/llm/combined_envelope.py`.
 
 Committed example artifacts now also live under
 `examples/llm_review_artifacts/`. Those files are documentation and test
