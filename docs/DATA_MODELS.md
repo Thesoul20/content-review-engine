@@ -46,13 +46,14 @@ model boundary.
 | --- | --- | --- | --- | --- |
 | Deterministic output | `ReviewResult` | `BatchReviewResult` | `--output` or stdout | Canonical deterministic output. Quality gate reads only this layer. |
 | Raw LLM sidecar output | `LLMReviewResult` | `LLMSidecarResult` | `--llm-output` | Canonical LLM-layer machine-readable output. Advisory only. |
-| Combined output | `SingleFileCombinedReviewResult` | `BatchCombinedReviewResult` | `--combined-output` | Explicit opt-in integration artifact. Preserves deterministic output and raw LLM output without changing either schema. |
+| Combined output | `SingleFileCombinedReviewResult` | `BatchCombinedReviewResult` | `--combined-output` | Explicit opt-in integration artifact. Preserves deterministic output and raw LLM output without changing either schema, and can expose explicit `llm.quality_gate` metadata. |
 
 Compatibility rules:
 
 - combined output does not change `ReviewResult`, `BatchReviewResult`,
   `LLMReviewResult`, or `LLMSidecarResult`
 - combined output does not auto-enable LLM review
+- explicit `--llm-fail-on` also does not auto-enable LLM review
 - when LLM is not enabled, combined output records `not_run` status rather
   than synthesizing LLM findings
 - when LLM fails, combined output records structured error metadata rather
@@ -60,6 +61,9 @@ Compatibility rules:
 - LLM findings never enter deterministic `findings`, deterministic
   `severity_counts`, deterministic `rule_counts`, `--fail-on`, quality gate,
   or exit code behavior
+- explicit `llm.quality_gate` metadata in combined output is integration-only
+  metadata and does not change deterministic JSON schemas or raw LLM sidecar
+  schemas
 - combined Markdown report is a presentation artifact derived from the combined envelope
   and keeps the same artifact boundary
 
@@ -332,6 +336,9 @@ It is an integration envelope only:
 - this envelope does not change batch CLI default output
 - this envelope does not change deterministic counts, quality gates, or exit
   codes
+- this envelope can record explicit `llm.quality_gate` metadata for
+  presentation and CLI integration without changing deterministic schemas or
+  raw sidecar schemas
 - this envelope can now also be rendered into a separate human-readable batch
   combined Markdown report without changing the schema itself
 - TASK-0082 now also allows the batch CLI adapter to write this envelope or
@@ -346,6 +353,7 @@ It is an integration envelope only:
 | `files` | Yes | Tuple of `BatchCombinedFileResult` |
 | `llm_summary` | Yes | `BatchCombinedLLMSummary` |
 | `advisory` | Yes | Always `True` |
+| `llm_quality_gate` | Yes | Explicit `LLMQualityGateResult` metadata for `--llm-fail-on` |
 
 Serializer shape:
 
@@ -354,6 +362,7 @@ schema_version
 batch_review_result
 llm.advisory
 llm.summary
+llm.quality_gate
 llm.result
 llm.files[]
 ```
@@ -490,6 +499,9 @@ paired combined Markdown report only when `--combined-output` is explicitly
 requested.
 It does not change CLI default output, deterministic Markdown reports, batch
 schemas, sidecar schemas, quality gates, or exit codes.
+It can now also record explicit `llm.quality_gate` metadata for
+`--llm-fail-on` without changing deterministic schemas or raw sidecar
+schemas.
 
 | Field | Required | Description |
 |---|---|---|
@@ -500,6 +512,7 @@ schemas, sidecar schemas, quality gates, or exit codes.
 | `llm_status` | Yes | `not_run`, `skipped`, `succeeded`, or `failed` |
 | `llm_error` | No | Optional `SingleFileCombinedLLMError` |
 | `advisory` | Yes | Always `True` |
+| `llm_quality_gate` | Yes | Explicit `LLMQualityGateResult` metadata for `--llm-fail-on` |
 
 Status semantics:
 
@@ -520,6 +533,10 @@ Serialization shape:
   "llm": {
     "status": "succeeded",
     "advisory": true,
+    "quality_gate": {
+      "enabled": false,
+      "evaluation_status": "disabled"
+    },
     "error": null,
     "result": {
       "...": "existing raw LLMReviewResult JSON"
@@ -555,6 +572,28 @@ Notes:
 - `src/content_review_engine/reports/combined_markdown.py` can render this
   envelope to human-readable Markdown, but that renderer does not add or
   persist any new schema fields
+
+## LLMQualityGateResult
+
+`LLMQualityGateResult` is an internal integration model in
+`src/content_review_engine/llm/quality_gate.py`.
+
+It is not part of canonical deterministic `ReviewResult` or canonical raw
+LLM sidecar schemas.
+It is used by the CLI and combined envelope to represent explicit
+`--llm-fail-on` evaluation without changing deterministic counts or raw
+sidecar payloads.
+
+| Field | Required | Description |
+|---|---|---|
+| `enabled` | Yes | Whether explicit LLM gating was configured |
+| `fail_on` | No | Configured LLM severity threshold |
+| `failed` | Yes | Whether matched LLM findings met the threshold |
+| `evaluation_status` | Yes | `disabled`, `not_run`, `evaluated`, or `execution_failed` |
+| `matched_finding_count` | Yes | Number of matched LLM findings |
+| `matched_severity_counts` | Yes | Matched counts by canonical severity |
+| `matched_file_count` | Yes | Number of files with matched LLM findings |
+| `matched_files` | Yes | Matched batch file paths when applicable |
 
 ## LLMCoreFindingCandidate
 

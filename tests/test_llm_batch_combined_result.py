@@ -341,6 +341,7 @@ def test_batch_combined_review_result_serializer_structure_is_stable() -> None:
     assert payload["batch_review_result"]["schema_version"] == "batch-review-result.v1"
     assert payload["llm"]["advisory"] is True
     assert payload["llm"]["summary"]["total_files"] == 3
+    assert payload["llm"]["quality_gate"]["enabled"] is False
     assert payload["llm"]["result"]["schema_version"] == "llm-sidecar-result.v2"
     assert payload["llm"]["files"][0]["file"] == "z.md"
     assert payload["llm"]["files"][0]["status"] == "succeeded"
@@ -362,6 +363,7 @@ def test_batch_combined_review_result_payload_is_json_serializable() -> None:
 
     assert serialized["llm"]["summary"]["not_run_count"] == 3
     assert serialized["llm"]["files"][0]["finding_candidates"] == []
+    assert serialized["llm"]["quality_gate"]["evaluation_status"] == "disabled"
 
 
 def test_batch_combined_result_does_not_change_existing_serializers() -> None:

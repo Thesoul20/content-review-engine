@@ -353,6 +353,35 @@ def _append_llm_summary(
             ("Advisory Findings", str(len(result.llm_finding_candidates))),
             ("Advisory", "yes"),
             ("Quality Gate Participation", "no"),
+            (
+                "Explicit LLM Gate",
+                "enabled" if result.llm_quality_gate.enabled else "disabled",
+            ),
+            (
+                "LLM Gate Threshold",
+                _escape_cell(result.llm_quality_gate.fail_on),
+            ),
+            (
+                "LLM Gate Status",
+                "failed" if result.llm_quality_gate.failed else "passed",
+            ),
+            (
+                "LLM Gate Evaluation",
+                result.llm_quality_gate.evaluation_status,
+            ),
+            (
+                "LLM Gate Matched Findings",
+                str(result.llm_quality_gate.matched_finding_count),
+            ),
+            (
+                "LLM Gate Matched Severity Counts",
+                _escape_cell(
+                    ", ".join(
+                        f"{severity}={result.llm_quality_gate.matched_severity_counts.get(severity, 0)}"
+                        for severity in REVIEW_SUMMARY_SEVERITIES
+                    )
+                ),
+            ),
             ("Policy Note", _escape_cell(render_llm_finding_policy_note())),
             ("LLM Error", llm_error_value),
         ],
@@ -374,9 +403,10 @@ def render_single_file_combined_markdown_report(
         lines,
         "## Quality Gate Behavior",
         [
-            "Quality gate evaluation remains deterministic-only.",
-            "LLM advisory findings do not participate in severity counts, rule counts, fail-on, quality gate, or exit code.",
-            "Only deterministic findings can affect `--fail-on`, quality gate, or CLI exit code.",
+            "Deterministic quality gate evaluation remains unchanged and still reads deterministic findings only.",
+            "LLM advisory findings do not participate in deterministic severity counts, deterministic rule counts, or `--fail-on`.",
+            "When `--llm-fail-on` is not set, LLM findings do not affect CLI exit code.",
+            "When `--llm-fail-on` is set, it is evaluated independently from deterministic `--fail-on` and can also trigger CLI exit code `1`.",
         ],
     )
     _append_bullets(

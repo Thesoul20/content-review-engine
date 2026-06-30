@@ -7,6 +7,7 @@ from content_review_engine.core.models import (
     ReviewResult,
 )
 from content_review_engine.llm import (
+    LLMQualityGateResult,
     LLMReviewFinding,
     LLMReviewResult,
     build_single_file_combined_review_result,
@@ -64,6 +65,8 @@ def test_render_combined_markdown_report_for_succeeded_status() -> None:
     assert "| Status | succeeded |" in report
     assert "| Advisory Findings | 1 |" in report
     assert "| Quality Gate Participation | no |" in report
+    assert "| Explicit LLM Gate | disabled |" in report
+    assert "| LLM Gate Evaluation | disabled |" in report
     assert "LLM findings are advisory semantic review suggestions" in report
     assert "| warning | llm.unsafe_medical_claim | llm | yes | no | not provided | 3:1 | Needs manual confirmation. | Qualify the wording. |" in report
     assert "## Manual Review Workflow" in report
@@ -160,8 +163,45 @@ def test_render_combined_markdown_report_includes_quality_gate_boundary() -> Non
     )
 
     assert "## Quality Gate Behavior" in report
-    assert "Quality gate evaluation remains deterministic-only." in report
-    assert "do not participate in severity counts, rule counts, fail-on, quality gate, or exit code." in report
+    assert "Deterministic quality gate evaluation remains unchanged and still reads deterministic findings only." in report
+    assert "When `--llm-fail-on` is set, it is evaluated independently from deterministic `--fail-on` and can also trigger CLI exit code `1`." in report
+
+
+def test_render_combined_markdown_report_displays_explicit_llm_gate_result() -> None:
+    report = render_single_file_combined_markdown_report(
+        build_single_file_combined_review_result(
+            review_result=_build_review_result(),
+            llm_result=LLMReviewResult(
+                findings=(
+                    LLMReviewFinding(
+                        rule_id="llm.semantic.risky_advice",
+                        severity="error",
+                        message="Error semantic issue.",
+                    ),
+                )
+            ),
+            llm_quality_gate=LLMQualityGateResult(
+                enabled=True,
+                fail_on="error",
+                failed=True,
+                evaluation_status="evaluated",
+                matched_finding_count=1,
+                matched_severity_counts={
+                    "info": 0,
+                    "warning": 0,
+                    "error": 1,
+                    "critical": 0,
+                },
+                matched_file_count=1,
+            ),
+        )
+    )
+
+    assert "| Explicit LLM Gate | enabled |" in report
+    assert "| LLM Gate Threshold | error |" in report
+    assert "| LLM Gate Status | failed |" in report
+    assert "| LLM Gate Evaluation | evaluated |" in report
+    assert "| LLM Gate Matched Findings | 1 |" in report
 
 
 def test_render_combined_markdown_report_escapes_markdown_table_cells() -> None:

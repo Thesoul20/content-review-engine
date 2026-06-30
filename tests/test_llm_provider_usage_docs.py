@@ -120,13 +120,20 @@ def test_usage_docs_exist_and_cover_required_provider_flags_and_boundaries() -> 
     assert "render_single_file_combined_markdown_report" in content
     assert "--combined-output" in content
     assert "--combined-output-format" in content
+    assert "--llm-fail-on" in content
     assert "Deterministic, Sidecar, And Combined Boundaries" in content
     assert "deterministic output: the main `--output` artifact" in content
     assert "raw LLM sidecar output: the `--llm-output` artifact" in content
     assert "combined output: the explicit opt-in `--combined-output` artifact" in content
     assert "`--combined-output` does not enable LLM by itself" in content
+    assert "`--llm-fail-on` does not enable LLM by itself" in content
+    assert "Explicit LLM Quality Gate" in content
+    assert "LLMQualityGateResult" in content
+    assert "evaluate_llm_quality_gate" in content
+    assert "evaluate_batch_llm_quality_gate" in content
     assert "`llm.status` is one of `not_run`, `skipped`, `succeeded`, or `failed`" in content
     assert "`llm.advisory` is always `true`" in content
+    assert "`llm.quality_gate.enabled`" in content
     assert "failed `llm_error` can include `type`, `message`, `provider`, and" in content
     assert "raw single-file `LLMReviewResult` JSON sidecars are unchanged" in content
     assert "failed `llm_error` display" in content
@@ -218,6 +225,7 @@ def test_docs_and_fixtures_do_not_require_real_network_or_real_api_key() -> None
     assert "this envelope does not change `ReviewResult.findings`" in usage_doc
     assert "this envelope does not read or write files" in usage_doc
     assert "this envelope does not change `BatchReviewResult`" in usage_doc
+    assert "when omitted, deterministic review remains the only source for exit code `1`" in usage_doc
     assert "this envelope does not change deterministic `severity_counts`" in usage_doc
     assert "failed combined-file `llm_error` values are structured and sanitized" in usage_doc
     assert "files are ordered by deterministic `BatchReviewResult.results`" in usage_doc

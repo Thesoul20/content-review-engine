@@ -140,6 +140,24 @@ CI boundary for combined artifacts:
   generating LLM findings
 - when LLM fails, combined output may still be written with structured error
   metadata, but deterministic gating behavior stays unchanged
+- combined output can also record explicit `llm.quality_gate` metadata when
+  `--llm-fail-on` is set
+
+If CI explicitly wants LLM findings to affect exit code, use the separate
+opt-in LLM gate:
+
+```bash
+uv run content-review batch articles --profile profiles/my-wechat.yaml --recursive --enable-llm --llm-provider mock --llm-output artifacts/batch.llm.json --llm-fail-on error
+```
+
+CI boundary for explicit LLM gating:
+
+- `--fail-on` still evaluates deterministic findings only
+- `--llm-fail-on` evaluates LLM findings only
+- `--llm-fail-on` does not auto-enable LLM review
+- `--llm-fail-on` without `--enable-llm` is a CLI usage error
+- use explicit LLM gating only when you intentionally want LLM findings to
+  participate in exit code `1`
 
 ## Customize Paths
 
@@ -173,6 +191,13 @@ Workflow example:
 - `1`: review completed, but at least one finding met the `--fail-on` threshold.
 - `2`: command usage, input, profile, or filesystem error.
 
+`content-review batch ... --fail-on error --llm-fail-on error`:
+
+- `0`: review completed and both gates passed.
+- `1`: review completed, and either deterministic findings met `--fail-on` or
+  LLM findings met `--llm-fail-on`.
+- `2`: command usage, input, profile, filesystem, or LLM execution error.
+
 If you also enable the experimental LLM sidecar path, LLM finding content and
 LLM sidecar failures still do not affect the deterministic quality-gate exit
 code. The same rule applies if you also write an independent LLM sidecar
@@ -190,16 +215,19 @@ still do not change deterministic gate semantics. A missing or empty
 timeout, auth, network, rate-limit, model, retry-exhausted, and unknown
 failures are serialized into LLM sidecars without changing the deterministic
 exit code.
-Only deterministic findings contribute to exit code `1`.
+Only deterministic findings contribute to exit code `1` by default.
+If CI explicitly sets `--llm-fail-on`, LLM findings can also contribute to
+exit code `1` through that separate gate.
 
 When LLM output artifacts are written in CI, treat every LLM finding as
 `source = llm`, `advisory = yes`, and `quality gate participation = no`.
 Advisory LLM severities such as `critical` or `error` remain display-only and
 do not change deterministic gate semantics.
 The same rule applies to combined output: combined artifacts can display
-advisory findings, partial failures, and structured LLM errors, but only
-deterministic findings can trigger exit code `1`.
-In other words, only deterministic findings can trigger exit code `1`.
+advisory findings, partial failures, structured LLM errors, and explicit
+`llm.quality_gate` metadata, while deterministic findings remain the default
+gating source. Only deterministic findings can trigger exit code `1` unless
+CI explicitly opts into `--llm-fail-on`.
 The same rule applies to the LLM Markdown `Manual Review Checklist` and the
 batch `LLM Execution Review Checklist`: their default `needs_review`,
 `pending`, `needs_rerun`, and `rerun_llm_review` values are presentation-only

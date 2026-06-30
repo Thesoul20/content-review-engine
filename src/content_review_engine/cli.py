@@ -33,6 +33,7 @@ from content_review_engine.core.serialization import (
 from content_review_engine.llm import (
     BatchLLMReviewItem,
     LLMSidecarResult,
+    LLMQualityGateResult,
     LLMProviderConfig,
     LLMProviderNetworkError,
     LLMProviderRateLimitError,
@@ -44,6 +45,8 @@ from content_review_engine.llm import (
     build_batch_combined_review_envelope,
     build_single_file_combined_review_envelope,
     combined_review_envelope_to_json,
+    evaluate_batch_llm_quality_gate,
+    evaluate_llm_quality_gate,
     llm_review_result_to_json,
     llm_sidecar_result_to_json,
     run_batch_llm_review,
@@ -178,6 +181,13 @@ def build_parser() -> argparse.ArgumentParser:
         type=_parse_fail_on,
         choices=SEVERITY_ORDER,
         help="Exit with code 1 when findings are at or above the severity threshold.",
+    )
+    review_parser.add_argument(
+        "--llm-fail-on",
+        metavar="SEVERITY",
+        type=_parse_fail_on,
+        choices=SEVERITY_ORDER,
+        help="Exit with code 1 when LLM findings are at or above the severity threshold.",
     )
     review_parser.add_argument(
         "--enable-llm",
@@ -440,6 +450,13 @@ def build_parser() -> argparse.ArgumentParser:
         type=_parse_fail_on,
         choices=SEVERITY_ORDER,
         help="Exit with code 1 when findings are at or above the severity threshold.",
+    )
+    batch_parser.add_argument(
+        "--llm-fail-on",
+        metavar="SEVERITY",
+        type=_parse_fail_on,
+        choices=SEVERITY_ORDER,
+        help="Exit with code 1 when LLM findings are at or above the severity threshold.",
     )
     batch_parser.add_argument(
         "--enable-llm",
@@ -752,8 +769,19 @@ def _quality_gate_exit_code(
     return 1 if quality_gate_failed(severity_counts, threshold) else 0
 
 
+def _combine_quality_gate_exit_codes(
+    deterministic_exit_code: int,
+    llm_quality_gate: LLMQualityGateResult,
+) -> int:
+    if deterministic_exit_code == 1 or llm_quality_gate.failed:
+        return 1
+    return deterministic_exit_code
+
+
 def _validate_review_llm_args(args: argparse.Namespace) -> None:
     if not args.enable_llm:
+        if args.llm_fail_on is not None:
+            raise ValueError("--llm-fail-on requires --enable-llm")
         if args.llm_provider is not None:
             raise ValueError("--llm-provider can only be used with --enable-llm")
         if args.llm_output is not None:
@@ -788,6 +816,8 @@ def _validate_review_llm_args(args: argparse.Namespace) -> None:
 
 def _validate_batch_llm_args(args: argparse.Namespace) -> None:
     if not args.enable_llm:
+        if args.llm_fail_on is not None:
+            raise ValueError("--llm-fail-on requires --enable-llm")
         if args.llm_provider is not None:
             raise ValueError("--llm-provider can only be used with --enable-llm")
         if args.llm_output is not None:
@@ -991,12 +1021,14 @@ def _write_single_file_combined_output(
     llm_result: LLMReviewResult | None = None,
     llm_status: str | None = None,
     llm_error: dict[str, object] | None = None,
+    llm_quality_gate: LLMQualityGateResult | None = None,
 ) -> None:
     combined_result = build_single_file_combined_review_envelope(
         review_result=review_result,
         llm_result=llm_result,
         llm_status=llm_status,
         llm_error=llm_error,
+        llm_quality_gate=llm_quality_gate,
     )
     combined_path = Path(output_path)
     if output_format == "json":
@@ -1018,11 +1050,13 @@ def _write_batch_combined_output(
     output_format: str,
     batch_llm_result: LLMSidecarResult | None = None,
     default_llm_status: str = "not_run",
+    llm_quality_gate: LLMQualityGateResult | None = None,
 ) -> None:
     combined_result = build_batch_combined_review_envelope(
         batch_review_result=batch_result,
         batch_llm_result=batch_llm_result,
         default_llm_status=default_llm_status,
+        llm_quality_gate=llm_quality_gate,
     )
     combined_path = Path(output_path)
     if output_format == "json":
@@ -1120,6 +1154,7 @@ def _run_review_command(args: argparse.Namespace) -> int:
     llm_result: LLMReviewResult | None = None
     llm_status = "not_run"
     llm_error: dict[str, object] | None = None
+    llm_quality_gate = evaluate_llm_quality_gate(None, args.llm_fail_on)
     if args.enable_llm:
         try:
             llm_result = _run_llm_review(
@@ -1129,6 +1164,7 @@ def _run_review_command(args: argparse.Namespace) -> int:
                 reviewer=llm_reviewer,
             )
             llm_status = "succeeded"
+            llm_quality_gate = evaluate_llm_quality_gate(llm_result, args.llm_fail_on)
             if args.llm_output is not None:
                 _write_llm_review_result(
                     review_result=llm_result,
@@ -1142,6 +1178,11 @@ def _run_review_command(args: argparse.Namespace) -> int:
                 )
         except LLMReviewError as exc:
             llm_status = "failed"
+            llm_quality_gate = evaluate_llm_quality_gate(
+                None,
+                args.llm_fail_on,
+                execution_failed=True,
+            )
             llm_error = _build_single_file_combined_llm_error(
                 exc,
                 reviewer=llm_reviewer,
@@ -1154,6 +1195,7 @@ def _run_review_command(args: argparse.Namespace) -> int:
                     output_format=args.combined_output_format,
                     llm_status=llm_status,
                     llm_error=llm_error,
+                    llm_quality_gate=llm_quality_gate,
                 )
             raise
     elif args.combined_output is not None:
@@ -1166,6 +1208,7 @@ def _run_review_command(args: argparse.Namespace) -> int:
             llm_result=llm_result,
             llm_status=llm_status,
             llm_error=llm_error,
+            llm_quality_gate=llm_quality_gate,
         )
     if args.report_index is not None:
         _write_report_index(
@@ -1181,10 +1224,11 @@ def _run_review_command(args: argparse.Namespace) -> int:
             ),
             output_path=args.report_index,
         )
-    return _quality_gate_exit_code(
+    deterministic_exit_code = _quality_gate_exit_code(
         review_result.summary.severity_counts,
         args.fail_on,
     )
+    return _combine_quality_gate_exit_codes(deterministic_exit_code, llm_quality_gate)
 
 
 def _run_batch_command(args: argparse.Namespace) -> int:
@@ -1210,6 +1254,7 @@ def _run_batch_command(args: argparse.Namespace) -> int:
     if output_exit_code != 0:
         return output_exit_code
     manifest_result: LLMSidecarResult | None = None
+    llm_quality_gate = evaluate_batch_llm_quality_gate(None, args.llm_fail_on)
     if args.enable_llm:
         llm_provider, llm_provider_source = llm_provider_metadata
         batch_items = _build_batch_llm_review_items(
@@ -1236,6 +1281,10 @@ def _run_batch_command(args: argparse.Namespace) -> int:
                 sidecar_result=manifest_result,
                 output_path=args.llm_report,
             )
+        llm_quality_gate = evaluate_batch_llm_quality_gate(
+            manifest_result,
+            args.llm_fail_on,
+        )
     if args.combined_output is not None:
         _write_batch_combined_output(
             batch_result=batch_result,
@@ -1243,6 +1292,7 @@ def _run_batch_command(args: argparse.Namespace) -> int:
             output_format=args.combined_output_format,
             batch_llm_result=manifest_result,
             default_llm_status="not_run" if manifest_result is None else "skipped",
+            llm_quality_gate=llm_quality_gate,
         )
     if args.report_index is not None:
         _write_report_index(
@@ -1262,10 +1312,11 @@ def _run_batch_command(args: argparse.Namespace) -> int:
         )
     if manifest_result is not None and manifest_result.summary.failed_count > 0:
         return 2
-    return _quality_gate_exit_code(
+    deterministic_exit_code = _quality_gate_exit_code(
         batch_result.summary.severity_counts,
         args.fail_on,
     )
+    return _combine_quality_gate_exit_codes(deterministic_exit_code, llm_quality_gate)
 
 
 def _run_profile_validate_command(args: argparse.Namespace) -> int:

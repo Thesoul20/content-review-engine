@@ -14,6 +14,7 @@ from content_review_engine.llm.finding_adapter import (
 )
 from content_review_engine.llm.models import LLMReviewResult
 from content_review_engine.llm.policy import LLM_FINDING_ADVISORY
+from content_review_engine.llm.quality_gate import LLMQualityGateResult
 from content_review_engine.llm.serialization import llm_review_result_to_dict
 
 SINGLE_FILE_COMBINED_REVIEW_RESULT_SCHEMA_VERSION = (
@@ -46,6 +47,7 @@ class SingleFileCombinedReviewResult(BaseModel):
     llm_status: Literal["not_run", "skipped", "succeeded", "failed"] = "not_run"
     llm_error: SingleFileCombinedLLMError | None = None
     advisory: bool = LLM_FINDING_ADVISORY
+    llm_quality_gate: LLMQualityGateResult = Field(default_factory=LLMQualityGateResult)
 
     @model_validator(mode="after")
     def validate_consistency(self) -> "SingleFileCombinedReviewResult":
@@ -83,6 +85,7 @@ def build_single_file_combined_review_result(
     llm_result: LLMReviewResult | None = None,
     llm_status: Literal["not_run", "skipped", "succeeded", "failed"] | None = None,
     llm_error: dict[str, Any] | SingleFileCombinedLLMError | None = None,
+    llm_quality_gate: LLMQualityGateResult | dict[str, Any] | None = None,
 ) -> SingleFileCombinedReviewResult:
     if not isinstance(review_result, ReviewResult):
         raise TypeError("review_result must be a ReviewResult")
@@ -96,6 +99,14 @@ def build_single_file_combined_review_result(
         normalized_error = llm_error
     else:
         normalized_error = SingleFileCombinedLLMError.model_validate(llm_error)
+
+    normalized_quality_gate: LLMQualityGateResult
+    if llm_quality_gate is None:
+        normalized_quality_gate = LLMQualityGateResult()
+    elif isinstance(llm_quality_gate, LLMQualityGateResult):
+        normalized_quality_gate = llm_quality_gate
+    else:
+        normalized_quality_gate = LLMQualityGateResult.model_validate(llm_quality_gate)
 
     normalized_status = llm_status
     if normalized_status is None:
@@ -119,6 +130,7 @@ def build_single_file_combined_review_result(
         llm_status=normalized_status,
         llm_error=normalized_error,
         advisory=LLM_FINDING_ADVISORY,
+        llm_quality_gate=normalized_quality_gate,
     )
 
 
@@ -147,6 +159,9 @@ def single_file_combined_review_result_to_dict(
             "finding_candidates": [
                 asdict(candidate) for candidate in result.llm_finding_candidates
             ],
+            "quality_gate": result.llm_quality_gate.model_dump(
+                mode="json", exclude_none=True
+            ),
         },
     }
 

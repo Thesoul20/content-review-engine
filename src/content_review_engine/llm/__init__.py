@@ -139,6 +139,12 @@ from content_review_engine.llm.policy import (
     normalize_llm_finding_severity,
     render_llm_finding_policy_note,
 )
+from content_review_engine.llm.quality_gate import (
+    LLM_QUALITY_GATE_EVALUATION_STATUS_VALUES,
+    LLMQualityGateResult,
+    evaluate_batch_llm_quality_gate,
+    evaluate_llm_quality_gate,
+)
 from content_review_engine.llm.result_conversion import (
     LLM_SEMANTIC_OUTPUT_SCHEMA_METADATA_KEY,
     convert_validated_semantic_output_to_llm_review_result,
@@ -306,6 +312,8 @@ __all__ = [
     "LLMReviewRequest",
     "LLMReviewResult",
     "LLMReviewSummary",
+    "LLM_QUALITY_GATE_EVALUATION_STATUS_VALUES",
+    "LLMQualityGateResult",
     "BATCH_COMBINED_REVIEW_RESULT_SCHEMA_VERSION",
     "SINGLE_FILE_COMBINED_REVIEW_RESULT_SCHEMA_VERSION",
     "BatchCombinedFileResult",
@@ -366,6 +374,8 @@ __all__ = [
     "build_llm_finding_display_metadata",
     "build_llm_execution_review_items",
     "build_llm_manual_review_items",
+    "evaluate_batch_llm_quality_gate",
+    "evaluate_llm_quality_gate",
     "build_batch_combined_review_envelope",
     "build_batch_combined_review_result",
     "build_single_file_combined_review_envelope",

@@ -15,6 +15,7 @@ from content_review_engine.llm.finding_adapter import (
 )
 from content_review_engine.llm.models import LLMSidecarFile, LLMSidecarResult, LLMReviewResult
 from content_review_engine.llm.policy import LLM_FINDING_ADVISORY
+from content_review_engine.llm.quality_gate import LLMQualityGateResult
 from content_review_engine.llm.serialization import (
     llm_review_result_to_dict,
     llm_sidecar_result_to_dict,
@@ -103,6 +104,7 @@ class BatchCombinedReviewResult(BaseModel):
     files: tuple[BatchCombinedFileResult, ...] = Field(default_factory=tuple)
     llm_summary: BatchCombinedLLMSummary
     advisory: bool = LLM_FINDING_ADVISORY
+    llm_quality_gate: LLMQualityGateResult = Field(default_factory=LLMQualityGateResult)
 
     @model_validator(mode="after")
     def validate_consistency(self) -> "BatchCombinedReviewResult":
@@ -211,6 +213,7 @@ def build_batch_combined_review_result(
     batch_review_result: BatchReviewResult,
     batch_llm_result: LLMSidecarResult | None = None,
     default_llm_status: Literal["not_run", "skipped", "succeeded", "failed"] = "not_run",
+    llm_quality_gate: LLMQualityGateResult | dict[str, Any] | None = None,
 ) -> BatchCombinedReviewResult:
     if not isinstance(batch_review_result, BatchReviewResult):
         raise TypeError("batch_review_result must be a BatchReviewResult")
@@ -220,6 +223,14 @@ def build_batch_combined_review_result(
         raise ValueError(
             "default_llm_status must be 'not_run' or 'skipped' when batch_llm_result is None"
         )
+
+    normalized_quality_gate: LLMQualityGateResult
+    if llm_quality_gate is None:
+        normalized_quality_gate = LLMQualityGateResult()
+    elif isinstance(llm_quality_gate, LLMQualityGateResult):
+        normalized_quality_gate = llm_quality_gate
+    else:
+        normalized_quality_gate = LLMQualityGateResult.model_validate(llm_quality_gate)
 
     sidecar_files_by_path: dict[str, LLMSidecarFile] = {}
     if batch_llm_result is not None:
@@ -243,6 +254,7 @@ def build_batch_combined_review_result(
         files=files,
         llm_summary=_build_batch_combined_llm_summary(files),
         advisory=LLM_FINDING_ADVISORY,
+        llm_quality_gate=normalized_quality_gate,
     )
 
 
@@ -281,6 +293,9 @@ def batch_combined_review_result_to_dict(
         "llm": {
             "advisory": result.advisory,
             "summary": result.llm_summary.model_dump(mode="json", exclude_none=True),
+            "quality_gate": result.llm_quality_gate.model_dump(
+                mode="json", exclude_none=True
+            ),
             "result": (
                 None
                 if result.batch_llm_result is None

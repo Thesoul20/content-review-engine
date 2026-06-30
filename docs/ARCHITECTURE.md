@@ -119,6 +119,9 @@ For batch review, the CLI adds a deterministic directory discovery step before t
 The CLI currently supports reviewing one Markdown file with one YAML profile, reviewing a directory of Markdown files with one YAML profile, validating a YAML profile independently before a review run, initializing a local profile from a built-in template, and listing the built-in templates exposed by the same registry.
 It prints simple human-readable summaries, supports JSON output, and can export Markdown review reports for both single-file and batch review.
 It also supports a CLI quality gate through `--fail-on`, using canonical severity ordering in the core package to choose automation-friendly exit codes.
+It now also supports a separate explicit LLM quality-gate helper under
+`src/content_review_engine/llm/quality_gate.py`, surfaced through
+`--llm-fail-on`, while keeping deterministic `--fail-on` semantics unchanged.
 It does not yet support HTML, watch mode, or report persistence beyond the optional Markdown output file.
 It now also includes a separate report-index renderer that produces one
 navigation-oriented Markdown index from deterministic review results plus
@@ -131,15 +134,18 @@ It now also includes a separate single-file combined-result helper under
 `src/content_review_engine/llm/combined_result.py` that can build one
 envelope containing the canonical deterministic `ReviewResult`, an optional
 raw `LLMReviewResult`, adapted `LLMCoreFindingCandidate` values, and explicit
-single-file LLM execution status/error metadata without changing CLI default
-output, sidecar schemas, Markdown renderers, or quality-gate behavior.
+single-file LLM execution status/error metadata plus explicit
+presentation-only `llm.quality_gate` metadata without changing CLI default
+output, sidecar schemas, Markdown renderers, or deterministic quality-gate
+behavior.
 It now also includes a separate batch combined-result helper under
 `src/content_review_engine/llm/batch_combined_result.py` that can build one
 integration envelope containing the canonical deterministic
 `BatchReviewResult`, an optional raw `LLMSidecarResult`, per-file adapted
 `LLMCoreFindingCandidate` values, per-file LLM status/error metadata, and a
-batch-level LLM summary without changing batch CLI output, sidecar schemas,
-or quality-gate behavior.
+batch-level LLM summary plus explicit presentation-only `llm.quality_gate`
+metadata without changing batch CLI output, sidecar schemas, or deterministic
+quality-gate behavior.
 It now also includes a stable runtime combined-envelope entrypoint under
 `src/content_review_engine/llm/combined_envelope.py` that dispatches those
 single-file and batch helpers plus JSON-compatible serialization so adapters
@@ -220,6 +226,8 @@ Current compatibility boundary:
 
 - combined output is explicit opt-in at the CLI adapter layer
 - combined output does not auto-enable the optional LLM review path
+- `--llm-fail-on` is also explicit opt-in and does not auto-enable the
+  optional LLM review path
 - combined output reuses existing deterministic results and existing LLM
   results; it does not replace either schema
 - combined Markdown rendering is presentation-only and is derived from the
@@ -229,8 +237,10 @@ Current compatibility boundary:
   and deterministic-only quality-gate behavior
 - deterministic quality-gate evaluation remains upstream of all combined
   rendering and still reads deterministic findings only
+- explicit LLM gate evaluation is separate from deterministic quality-gate
+  evaluation and reads LLM findings only
 - LLM findings remain advisory and do not enter deterministic findings,
-  severity counts, rule counts, `--fail-on`, or exit code logic
+  severity counts, rule counts, or deterministic `--fail-on` logic
 
 Current deterministic rules:
 

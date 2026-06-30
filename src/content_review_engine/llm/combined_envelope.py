@@ -17,6 +17,7 @@ from content_review_engine.llm.combined_result import (
     single_file_combined_review_result_to_json,
 )
 from content_review_engine.llm.models import LLMSidecarResult, LLMReviewResult
+from content_review_engine.llm.quality_gate import LLMQualityGateResult
 
 CombinedReviewEnvelope: TypeAlias = (
     SingleFileCombinedReviewResult | BatchCombinedReviewResult
@@ -29,12 +30,14 @@ def build_single_file_combined_review_envelope(
     llm_result: LLMReviewResult | None = None,
     llm_status: Literal["not_run", "skipped", "succeeded", "failed"] | None = None,
     llm_error: dict[str, Any] | SingleFileCombinedLLMError | None = None,
+    llm_quality_gate: LLMQualityGateResult | dict[str, Any] | None = None,
 ) -> SingleFileCombinedReviewResult:
     return build_single_file_combined_review_result(
         review_result=review_result,
         llm_result=llm_result,
         llm_status=llm_status,
         llm_error=llm_error,
+        llm_quality_gate=llm_quality_gate,
     )
 
 
@@ -43,11 +46,13 @@ def build_batch_combined_review_envelope(
     batch_review_result: BatchReviewResult,
     batch_llm_result: LLMSidecarResult | None = None,
     default_llm_status: Literal["not_run", "skipped", "succeeded", "failed"] = "not_run",
+    llm_quality_gate: LLMQualityGateResult | dict[str, Any] | None = None,
 ) -> BatchCombinedReviewResult:
     return build_batch_combined_review_result(
         batch_review_result=batch_review_result,
         batch_llm_result=batch_llm_result,
         default_llm_status=default_llm_status,
+        llm_quality_gate=llm_quality_gate,
     )
 
 

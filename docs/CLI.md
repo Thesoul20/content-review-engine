@@ -23,8 +23,8 @@ suppression comments, counts, and quality gates, see
 ## Current Command
 
 ```bash
-uv run content-review review <markdown_file> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--report-index <file>] [--combined-output <file>] [--combined-output-format json|markdown] [--fail-on info|warning|error|critical] [--enable-llm [--llm-output <file>] [--llm-report <file>] [--llm-config <path>] [--llm-provider mock|pydanticai|pydantic-ai-testmodel] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>] [--llm-timeout-seconds <seconds>] [--llm-retry-attempts <count>] [--llm-retry-backoff-seconds <seconds>] [--llm-min-request-interval-seconds <seconds>]]
-uv run content-review batch <input_dir> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--report-index <file>] [--combined-output <file>] [--combined-output-format json|markdown] [--recursive] [--pattern "*.md"] [--fail-on info|warning|error|critical] [--enable-llm [--llm-output <file>] [--llm-report <file>] [--llm-config <path>] [--llm-provider mock|pydanticai|pydantic-ai-testmodel] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>] [--llm-timeout-seconds <seconds>] [--llm-retry-attempts <count>] [--llm-retry-backoff-seconds <seconds>] [--llm-min-request-interval-seconds <seconds>]]
+uv run content-review review <markdown_file> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--report-index <file>] [--combined-output <file>] [--combined-output-format json|markdown] [--fail-on info|warning|error|critical] [--llm-fail-on info|warning|error|critical] [--enable-llm [--llm-output <file>] [--llm-report <file>] [--llm-config <path>] [--llm-provider mock|pydanticai|pydantic-ai-testmodel] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>] [--llm-timeout-seconds <seconds>] [--llm-retry-attempts <count>] [--llm-retry-backoff-seconds <seconds>] [--llm-min-request-interval-seconds <seconds>]]
+uv run content-review batch <input_dir> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--report-index <file>] [--combined-output <file>] [--combined-output-format json|markdown] [--recursive] [--pattern "*.md"] [--fail-on info|warning|error|critical] [--llm-fail-on info|warning|error|critical] [--enable-llm [--llm-output <file>] [--llm-report <file>] [--llm-config <path>] [--llm-provider mock|pydanticai|pydantic-ai-testmodel] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>] [--llm-timeout-seconds <seconds>] [--llm-retry-attempts <count>] [--llm-retry-backoff-seconds <seconds>] [--llm-min-request-interval-seconds <seconds>]]
 uv run content-review llm-check [--provider mock|pydantic-ai-testmodel] [--llm-config <path>] [--llm-provider mock|pydanticai] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>] [--llm-timeout-seconds <seconds>] [--llm-retry-attempts <count>] [--llm-retry-backoff-seconds <seconds>] [--llm-min-request-interval-seconds <seconds>] [--live|--runtime]
 uv run content-review profile validate <profile_file> [--format text|json]
 uv run content-review profile init --template <general-basic|general-publishing|health-content|marketing-copy|technical-blog|wechat-basic|wechat-article|wechat-strict> --output <profile_file> [--force]
@@ -78,6 +78,28 @@ Boundary rules:
   output plus optional LLM output without changing either runtime contract.
 - the CLI reuses the stable combined-envelope builders and serializers rather
   than assembling combined JSON payloads inline.
+- `--fail-on` remains deterministic-only.
+- `--llm-fail-on` is a separate explicit LLM quality gate threshold.
+- `--llm-fail-on` does not auto-enable LLM review.
+- `--llm-fail-on` without `--enable-llm` is a CLI usage error.
+
+## Explicit LLM Quality Gate
+
+`--llm-fail-on <severity>` is an explicit opt-in LLM quality gate.
+
+Rules:
+
+- it only evaluates LLM findings
+- it is independent from deterministic `--fail-on`
+- it does not merge LLM findings into deterministic `ReviewResult.findings`
+- it does not change deterministic `severity_counts` or `rule_counts`
+- it does not change raw `--llm-output` sidecar schemas
+- it does not auto-enable LLM review
+- if `--enable-llm` is not set, `--llm-fail-on` fails with a CLI usage error
+- if deterministic `--fail-on` fails, exit code is `1`
+- if explicit `--llm-fail-on` fails, exit code is also `1`
+- if both gates pass, exit code remains `0`
+- if LLM execution itself fails, the command still returns exit code `2`
 
 ## Combined Output Behavior Matrix
 
@@ -85,8 +107,8 @@ This behavior matrix is the canonical CLI reference for combined output.
 
 | Command | Flag | Formats | LLM required | When LLM is disabled | When LLM succeeds | When LLM fails | Quality gate |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `review` | `--combined-output` | `markdown` or `json` via `--combined-output-format` | no | writes combined output with `llm.status = not_run` | writes combined output with `llm.status = succeeded` plus raw nested `LLMReviewResult` and adapted advisory findings | writes combined output with `llm.status = failed` plus structured `llm.error`; command still exits `2` | deterministic-only |
-| `batch` | `--combined-output` | `markdown` or `json` via `--combined-output-format` | no | writes combined output with per-file `status = not_run` | writes combined output with per-file `status = succeeded`, raw nested `LLMSidecarResult`, and adapted advisory findings | writes combined output with partial-failure or all-failed status summary plus structured per-file errors; command still exits `2` on LLM failure | deterministic-only |
+| `review` | `--combined-output` | `markdown` or `json` via `--combined-output-format` | no | writes combined output with `llm.status = not_run` | writes combined output with `llm.status = succeeded` plus raw nested `LLMReviewResult`, adapted advisory findings, and `llm.quality_gate` metadata | writes combined output with `llm.status = failed` plus structured `llm.error`; command still exits `2` | deterministic-only by default; explicit LLM gate via `--llm-fail-on` |
+| `batch` | `--combined-output` | `markdown` or `json` via `--combined-output-format` | no | writes combined output with per-file `status = not_run` | writes combined output with per-file `status = succeeded`, raw nested `LLMSidecarResult`, adapted advisory findings, and `llm.quality_gate` metadata | writes combined output with partial-failure or all-failed status summary plus structured per-file errors; command still exits `2` on LLM failure | deterministic-only by default; explicit LLM gate via `--llm-fail-on` |
 
 Interpretation:
 
@@ -99,6 +121,8 @@ Interpretation:
 - LLM findings shown in combined output are advisory only and do not enter
   deterministic `findings`, severity counts, rule counts, `--fail-on`, or
   exit code evaluation
+- combined output can also show explicit `llm.quality_gate` metadata without
+  changing deterministic result schemas or raw LLM sidecar schemas
 
 ## Combined Markdown Report Sections
 
@@ -120,6 +144,7 @@ Current combined Markdown section contract:
 - both combined Markdown reports are explicit browsing artifacts only
 - both reports state the artifact boundary and deterministic-only quality-gate
   behavior directly in the Markdown body
+- both reports can also show explicit `--llm-fail-on` behavior and result
 - empty deterministic findings, empty LLM findings, and LLM-not-run states are
   rendered as explicit empty-state text instead of synthesized findings
 
@@ -153,6 +178,8 @@ Current guarantees:
 - batch combined Markdown output reuses the internal batch combined Markdown
   renderer and does not change existing deterministic batch Markdown output
 - quality gate still reads deterministic findings only
+- explicit `--llm-fail-on`, when set, is evaluated separately from
+  deterministic `--fail-on`
 - when LLM output is present, the index marks it as `source = llm`,
   `advisory = yes`, and `quality gate participation = no`
 - LLM severity shown in LLM reports or the report index is advisory severity
@@ -242,9 +269,11 @@ Single-file `review` constraints:
 - `--report-index` alone is allowed and keeps LLM disabled
 - `--llm-output` without `--enable-llm` fails
 - `--llm-report` without `--enable-llm` fails
+- `--llm-fail-on` without `--enable-llm` fails
 - `--report-index` does not satisfy the `--enable-llm` output requirement
 - `--include-llm-report` is not supported for single-file LLM review
 - `--llm-provider` without `--enable-llm` fails
+- `--llm-fail-on` does not auto-enable LLM review
 - `--llm-config` loads a YAML `LLMProviderConfig` file
 - explicit CLI flags override the same field from `--llm-config`
 - parser defaults do not override config-file values
@@ -292,6 +321,9 @@ Single-file sidecar shape:
 - combined JSON output reuses
   `single_file_combined_review_result_to_dict(...)` /
   `single_file_combined_review_result_to_json(...)`
+- when `--llm-fail-on` is set, the combined result records explicit
+  `llm.quality_gate` metadata and the CLI can return exit code `1` even when
+  deterministic findings stay below deterministic `--fail-on`
 - `--output`, `--llm-output`, and `--combined-output` are independent and may
   be used together
 - `--report-index` writes a separate Markdown index that lists deterministic output, optional LLM output, optional LLM report, the report-index path itself, deterministic summary, optional LLM summary, canonical status, and the rule that quality gate uses deterministic review only
@@ -339,8 +371,10 @@ Batch `batch` constraints:
 - omitting `--combined-output` leaves existing batch CLI behavior unchanged
 - combined output does not replace deterministic batch output or batch
   `LLMSidecarResult` sidecars
-- quality gate and exit code still use deterministic review only; LLM batch
-  execution failure still returns exit code `2`
+- deterministic `--fail-on` still uses deterministic review only
+- explicit `--llm-fail-on`, when set, evaluates batch LLM findings
+  independently and can trigger exit code `1`
+- LLM batch execution failure still returns exit code `2`
 
 Provider notes:
 
@@ -831,12 +865,13 @@ Exit codes:
 
 ```text
 0 = command completed and quality gate passed
-1 = command completed but quality gate failed
-2 = command error, invalid input, invalid profile, file error, or invalid --fail-on value
+1 = command completed but deterministic `--fail-on` or explicit `--llm-fail-on` failed
+2 = command error, invalid input, invalid profile, file error, or invalid `--fail-on` / `--llm-fail-on` value
 ```
 
 If `--fail-on` is omitted, successful commands preserve the existing behavior and exit with code `0` even when findings are present.
 Invalid `--fail-on` values are rejected; valid values are only `info`, `warning`, `error`, and `critical`.
+The same severity values apply to `--llm-fail-on`.
 
 ## CI Usage
 
@@ -862,7 +897,7 @@ Exit code behavior in CI:
 
 ```text
 profile validate: 0 = valid, 2 = invalid or unreadable
-batch with --fail-on: 0 = pass, 1 = quality gate failed, 2 = command or configuration error
+batch with `--fail-on` and optional `--llm-fail-on`: 0 = pass, 1 = deterministic gate failed or explicit LLM gate failed, 2 = command or configuration error
 ```
 
 The example workflow is a deterministic automation example only. It does not

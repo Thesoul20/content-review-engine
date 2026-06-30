@@ -46,11 +46,14 @@ def test_cli_batch_parser_accepts_combined_output_arguments() -> None:
             "batch.combined.md",
             "--combined-output-format",
             "json",
+            "--llm-fail-on",
+            "error",
         ]
     )
 
     assert args.combined_output == "batch.combined.md"
     assert args.combined_output_format == "json"
+    assert args.llm_fail_on == "error"
 
 
 def test_batch_combined_markdown_output_reuses_renderer(
@@ -185,6 +188,7 @@ def test_batch_combined_json_output_reuses_serializer(
     assert payload["batch_review_result"]["schema_version"] == "batch-review-result.v1"
     assert payload["llm"]["summary"]["succeeded_count"] == 3
     assert payload["llm"]["summary"]["failed_count"] == 0
+    assert payload["llm"]["quality_gate"]["enabled"] is False
     assert payload["llm"]["result"]["schema_version"] == "llm-sidecar-result.v2"
     assert payload["llm"]["files"][0]["status"] == "succeeded"
     assert payload["llm"]["files"][0]["finding_candidates"][0]["rule_id"] == "llm.semantic_overclaim"
@@ -222,6 +226,7 @@ def test_batch_combined_output_with_llm_disabled_records_not_run(
     assert exit_code == 0
     assert captured.err == ""
     assert payload["llm"]["result"] is None
+    assert payload["llm"]["quality_gate"]["enabled"] is False
     assert payload["llm"]["summary"]["not_run_count"] == 3
     assert payload["llm"]["summary"]["failed_count"] == 0
     assert all(item["status"] == "not_run" for item in payload["llm"]["files"])
@@ -307,6 +312,7 @@ def test_batch_combined_output_records_partial_failure(
     assert captured.err == ""
     assert payload["llm"]["summary"]["succeeded_count"] == 2
     assert payload["llm"]["summary"]["failed_count"] == 1
+    assert payload["llm"]["quality_gate"]["enabled"] is False
     assert payload["llm"]["summary"]["error_count"] == 1
     assert [item["status"] for item in payload["llm"]["files"]] == [
         "succeeded",
@@ -316,6 +322,89 @@ def test_batch_combined_output_records_partial_failure(
     assert payload["llm"]["files"][1]["error"] == {
         "type": "LLMProviderTimeoutError",
         "message": "Timed out while waiting for semantic review output.",
+    }
+
+
+def test_batch_combined_output_includes_llm_gate_metadata(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    combined_output_path = tmp_path / "batch.combined.json"
+    llm_output_path = tmp_path / "batch.llm.json"
+    monkeypatch.setenv("OPENAI_API_KEY", "test-secret-value")
+    monkeypatch.setattr(
+        "content_review_engine.cli.create_llm_reviewer",
+        lambda *args, **kwargs: _SemanticReviewer(
+            ValidatedLLMSemanticReviewOutput.model_validate(
+                {
+                    "schema_version": "llm-semantic-review-output.v1",
+                    "summary": "One semantic issue found.",
+                    "findings": [
+                        {
+                            "rule_id": "llm.semantic.risky_advice",
+                            "severity": "error",
+                            "line": 1,
+                            "column": 1,
+                            "message": "Possible risky advice.",
+                            "evidence": "绝对安全",
+                            "suggestion": "Use a softer claim.",
+                            "confidence": 0.84,
+                        }
+                    ],
+                }
+            )
+        ),
+    )
+
+    exit_code = main(
+        [
+            "batch",
+            "tests/fixtures/batch/articles",
+            "--profile",
+            "tests/fixtures/batch/profile.yml",
+            "--recursive",
+            "--enable-llm",
+            "--llm-provider",
+            "pydanticai",
+            "--llm-model",
+            "openai:gpt-4o-mini",
+            "--llm-api-key-env",
+            "OPENAI_API_KEY",
+            "--llm-output",
+            str(llm_output_path),
+            "--combined-output",
+            str(combined_output_path),
+            "--combined-output-format",
+            "json",
+            "--llm-fail-on",
+            "error",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    payload = json.loads(combined_output_path.read_text(encoding="utf-8"))
+
+    assert exit_code == 1
+    assert captured.err == ""
+    assert payload["llm"]["quality_gate"] == {
+        "enabled": True,
+        "fail_on": "error",
+        "failed": True,
+        "evaluation_status": "evaluated",
+        "matched_finding_count": 3,
+        "matched_severity_counts": {
+            "info": 0,
+            "warning": 0,
+            "error": 3,
+            "critical": 0,
+        },
+        "matched_file_count": 3,
+        "matched_files": [
+            "tests/fixtures/batch/articles/clean.md",
+            "tests/fixtures/batch/articles/forbidden.md",
+            "tests/fixtures/batch/articles/nested/nested_forbidden.md",
+        ],
     }
 
 

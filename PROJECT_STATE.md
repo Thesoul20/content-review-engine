@@ -108,6 +108,13 @@ through the reports layer with explicit artifact-boundary sections,
 deterministic and LLM section separation, deterministic-only quality-gate
 notes, empty-state handling, and refreshed committed reference artifacts
 without changing combined JSON schemas or CLI exit-code behavior.
+It now also includes a separate explicit LLM quality-gate helper under
+`src/content_review_engine/llm/quality_gate.py`, independent CLI
+`--llm-fail-on` flags for single-file and batch review, combined-envelope
+`llm.quality_gate` metadata, combined Markdown gate display, and explicit
+exit-code `1` support for opt-in LLM gating without changing default
+deterministic quality-gate behavior, deterministic result schemas, raw LLM
+sidecar schemas, or deterministic counts.
 
 ---
 
@@ -177,6 +184,28 @@ without changing combined JSON schemas or CLI exit-code behavior.
 - No active task is recorded in this file.
 
 ## Recent Completion
+
+- TASK-0086 is complete.
+- Added `src/content_review_engine/llm/quality_gate.py` with a separate
+  explicit `LLMQualityGateResult` model plus single-file and batch threshold
+  evaluators, keeping LLM gating logic outside deterministic
+  `content_review_engine.core.quality_gate`.
+- Updated `src/content_review_engine/cli.py`,
+  `src/content_review_engine/llm/combined_result.py`,
+  `src/content_review_engine/llm/batch_combined_result.py`,
+  `src/content_review_engine/llm/combined_envelope.py`,
+  `src/content_review_engine/reports/combined_markdown.py`, and
+  `src/content_review_engine/reports/batch_combined_markdown.py` so explicit
+  `--llm-fail-on` works for single-file and batch review, writes stable
+  `llm.quality_gate` metadata into combined JSON, renders that metadata in
+  combined Markdown, and can trigger exit code `1` independently from
+  deterministic `--fail-on` while keeping default behavior unchanged.
+- Added `tests/test_llm_quality_gate.py`,
+  `tests/test_llm_single_file_quality_gate_cli.py`, and
+  `tests/test_llm_batch_quality_gate_cli.py`, and updated combined CLI /
+  renderer / docs tests so severity-threshold logic, explicit gate CLI
+  behavior, combined metadata, combined Markdown presentation, and docs stay
+  locked to the new explicit LLM gate boundary.
 
 - TASK-0085 is complete.
 - Consolidated combined Markdown report rendering around

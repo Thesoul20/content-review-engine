@@ -8,6 +8,50 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0086
+
+### Added
+
+- Added `src/content_review_engine/llm/quality_gate.py` with explicit
+  `LLMQualityGateResult`, `evaluate_llm_quality_gate(...)`, and
+  `evaluate_batch_llm_quality_gate(...)` helpers for opt-in LLM gating.
+- Added `--llm-fail-on info|warning|error|critical` to both `review` and
+  `batch`.
+- Added `tests/test_llm_quality_gate.py`,
+  `tests/test_llm_single_file_quality_gate_cli.py`, and
+  `tests/test_llm_batch_quality_gate_cli.py`.
+
+### Changed
+
+- Updated `src/content_review_engine/cli.py` so single-file and batch review
+  now evaluate explicit LLM gate failures independently from deterministic
+  `--fail-on`, return exit code `1` when either gate fails, and keep LLM
+  execution failures as exit code `2`.
+- Updated `src/content_review_engine/llm/combined_result.py`,
+  `src/content_review_engine/llm/batch_combined_result.py`, and
+  `src/content_review_engine/llm/combined_envelope.py` so combined JSON can
+  expose stable `llm.quality_gate` metadata without changing deterministic
+  schemas or raw LLM sidecar schemas.
+- Updated `src/content_review_engine/reports/combined_markdown.py` and
+  `src/content_review_engine/reports/batch_combined_markdown.py` so combined
+  Markdown reports show explicit LLM gate behavior and result alongside the
+  existing deterministic-only boundary notes.
+- Updated `docs/CLI.md`, `docs/CI.md`, `docs/ARCHITECTURE.md`,
+  `docs/DATA_MODELS.md`, `docs/LLM_PROVIDER_USAGE.md`, and
+  `PROJECT_STATE.md` to document the new explicit LLM gate boundary.
+- Updated combined CLI, renderer, docs, and result tests for explicit LLM
+  gate metadata and presentation coverage.
+
+### Not Added
+
+- No change to default deterministic quality-gate behavior.
+- No change to deterministic `ReviewResult`, deterministic counts,
+  deterministic `--fail-on`, or deterministic JSON schema.
+- No change to raw `LLMReviewResult` / `LLMSidecarResult` sidecar schemas.
+- No auto-enable behavior for `--combined-output` or `--llm-fail-on`.
+- No provider contract change, no new real provider, and no API / MCP / GUI
+  work.
+
 ## TASK-0085
 
 ### Added

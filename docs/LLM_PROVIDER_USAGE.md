@@ -15,6 +15,8 @@ the deterministic review pipeline.
   but it remains a separate Markdown guide and not a schema-bearing result.
 - LLM findings do not change deterministic JSON, deterministic Markdown
   reports, or `--fail-on` quality-gate behavior.
+- `--llm-fail-on` is a separate explicit LLM quality gate and does not change
+  deterministic `--fail-on` semantics.
 - LLM findings are advisory semantic review suggestions from the LLM layer.
 - LLM advisory severity is display-only and does not change deterministic
   hard-rule outcomes.
@@ -37,13 +39,14 @@ the deterministic review pipeline.
 - The core package now also includes a separate single-file combined-review
   envelope builder that can package deterministic `ReviewResult`, optional raw
   `LLMReviewResult`, adapter-derived candidates, and explicit LLM status/error
-  metadata for future integration work without changing CLI default output or
-  existing sidecar schemas.
+  metadata plus explicit `llm.quality_gate` metadata for future integration
+  work without changing CLI default output or existing sidecar schemas.
 - The core package now also includes a separate batch combined-review envelope
   builder that can package deterministic `BatchReviewResult`, optional raw
   `LLMSidecarResult`, per-file adapter-derived candidates, per-file LLM
-  status/error metadata, and a batch-level LLM summary for future integration
-  work without changing batch CLI output or existing sidecar schemas.
+  status/error metadata, a batch-level LLM summary, and explicit
+  `llm.quality_gate` metadata for future integration work without changing
+  batch CLI output or existing sidecar schemas.
 - The repository also includes committed artifact examples under
   `examples/llm_review_artifacts/` for single-file output, batch output,
   partial failure, advisory policy, manual review checklist output, and report
@@ -65,6 +68,7 @@ Combined-output compatibility rules:
 
 - `--combined-output` is explicit opt-in only
 - `--combined-output` does not enable LLM by itself
+- `--llm-fail-on` does not enable LLM by itself
 - `--combined-output` can be written for both single-file `review` and batch
   `batch`
 - when LLM is not enabled, single-file combined output records
@@ -78,6 +82,8 @@ Combined-output compatibility rules:
 - combined output does not merge LLM findings into deterministic findings
 - combined output does not change deterministic `severity_counts`,
   deterministic `rule_counts`, `--fail-on`, quality gate, or exit code logic
+- combined output can also expose explicit `llm.quality_gate` metadata without
+  changing deterministic schemas or raw sidecar schemas
 - combined JSON output now reuses the shared runtime entrypoint in
   `src/content_review_engine/llm/combined_envelope.py`
 - combined Markdown reports are presentation-only and reuse the deterministic
@@ -102,6 +108,33 @@ Current combined Markdown section contract:
   and failed LLM states render explicit empty-state text instead of
   synthesized findings
 - quality gate still uses deterministic review only
+
+## Explicit LLM Quality Gate
+
+Use `--llm-fail-on <severity>` only when you explicitly want LLM findings to
+participate in CLI exit code `1`.
+
+Current helper boundary:
+
+- `src/content_review_engine/llm/quality_gate.py`
+- `LLMQualityGateResult`
+- `evaluate_llm_quality_gate(...)`
+- `evaluate_batch_llm_quality_gate(...)`
+
+Behavior:
+
+- `--llm-fail-on` evaluates LLM findings only
+- `--llm-fail-on` is independent from deterministic `--fail-on`
+- `--llm-fail-on` does not merge LLM findings into deterministic
+  `ReviewResult.findings`
+- `--llm-fail-on` does not change deterministic `severity_counts`,
+  deterministic `rule_counts`, or deterministic `--fail-on`
+- `--llm-fail-on` without `--enable-llm` is a CLI usage error
+- when omitted, deterministic review remains the only source for exit code `1`
+- when set, combined output can display `llm.quality_gate.enabled`,
+  `fail_on`, `failed`, `evaluation_status`, matched counts, and matched files
+- raw single-file `LLMReviewResult` JSON sidecars are unchanged
+- raw batch `LLMSidecarResult` JSON sidecars are unchanged
 
 ## LLM semantic review prompt contract
 

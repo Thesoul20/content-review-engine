@@ -69,6 +69,7 @@ def test_build_single_file_combined_review_result_succeeded_uses_adapter() -> No
     assert combined.llm_status == "succeeded"
     assert combined.llm_error is None
     assert combined.advisory is True
+    assert combined.llm_quality_gate.enabled is False
     assert len(combined.llm_finding_candidates) == 1
     assert combined.llm_finding_candidates[0].source == "llm"
     assert combined.llm_finding_candidates[0].advisory is True
@@ -86,6 +87,7 @@ def test_build_single_file_combined_review_result_not_run_status() -> None:
     assert combined.llm_error is None
     assert combined.llm_finding_candidates == ()
     assert combined.advisory is True
+    assert combined.llm_quality_gate.evaluation_status == "disabled"
 
 
 def test_build_single_file_combined_review_result_skipped_status() -> None:
@@ -147,6 +149,7 @@ def test_single_file_combined_review_result_serialization_structure_is_stable() 
     assert payload["review_result"]["schema_version"] == "review-result.v1"
     assert payload["llm"]["status"] == "succeeded"
     assert payload["llm"]["advisory"] is True
+    assert payload["llm"]["quality_gate"]["enabled"] is False
     assert payload["llm"]["error"] is None
     assert payload["llm"]["result"]["schema_version"] == "llm-review-result.v1"
     assert payload["llm"]["finding_candidates"][0]["source"] == "llm"
@@ -172,6 +175,7 @@ def test_single_file_combined_review_result_payload_is_json_serializable() -> No
     assert serialized["llm"]["status"] == "failed"
     assert serialized["llm"]["error"]["type"] == "LLMSemanticReviewExecutionError"
     assert serialized["llm"]["finding_candidates"] == []
+    assert serialized["llm"]["quality_gate"]["evaluation_status"] == "disabled"
 
 
 def test_build_single_file_combined_review_result_does_not_mutate_inputs() -> None:

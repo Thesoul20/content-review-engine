@@ -12,6 +12,7 @@ from content_review_engine.llm import (
     LLMSidecarFile,
     LLMSidecarResult,
     LLMSidecarSummary,
+    LLMQualityGateResult,
     LLMReviewFinding,
     LLMReviewResult,
     batch_combined_review_result_to_dict,
@@ -135,6 +136,8 @@ def test_render_batch_combined_markdown_report_for_all_succeeded() -> None:
     assert "| LLM Succeeded | 3 |" in report
     assert "| LLM Failed | 0 |" in report
     assert "| LLM Advisory Findings | 2 |" in report
+    assert "| Explicit LLM Gate | disabled |" in report
+    assert "| LLM Gate Evaluation | disabled |" in report
     assert "| Files With LLM Advisory Findings | 2 |" in report
     assert "| LLM Errors | 0 |" in report
     assert "| z.md | 0 | succeeded | 1 | - |" in report
@@ -149,7 +152,7 @@ def test_render_batch_combined_markdown_report_for_all_succeeded() -> None:
     assert "| LLM-001 | z.md | medium | needs_review | pending | no | Unsafe Medical Claim | line 3, column 4 | Needs manual review. | - |" in report
     assert "| LLM-002 | a.md | high | needs_review | pending | no | llm.semantic.risky_advice | not provided | Potentially risky advice. | - |" in report
     assert "## Quality Gate Behavior" in report
-    assert "Quality gate evaluation remains deterministic-only." in report
+    assert "Deterministic batch quality gate evaluation remains unchanged and still reads deterministic findings only." in report
     assert "## Artifact Notes" in report
 
 
@@ -206,6 +209,62 @@ def test_render_batch_combined_markdown_report_for_partial_failure() -> None:
     assert "partial LLM failure" in report
     assert "## LLM Execution Review Checklist" in report
     assert "| LLM-ERR-001 | a.md | needs_rerun | rerun_llm_review | LLMProviderError | provider unavailable | - |" in report
+
+
+def test_render_batch_combined_markdown_report_displays_explicit_llm_gate_result() -> None:
+    combined = build_batch_combined_review_result(
+        batch_review_result=_build_batch_review_result(),
+        batch_llm_result=LLMSidecarResult(
+            summary=LLMSidecarSummary(
+                file_count=3,
+                succeeded_count=3,
+                failed_count=0,
+                skipped_count=0,
+                finding_count=1,
+            ),
+            files=(
+                LLMSidecarFile(path="z.md", status="success", review=LLMReviewResult()),
+                LLMSidecarFile(
+                    path="a.md",
+                    status="success",
+                    review=LLMReviewResult(
+                        findings=(
+                            LLMReviewFinding(
+                                rule_id="llm.semantic.risky_advice",
+                                severity="error",
+                                message="Error semantic issue.",
+                            ),
+                        )
+                    ),
+                ),
+                LLMSidecarFile(path="m.md", status="success", review=LLMReviewResult()),
+            ),
+        ),
+        llm_quality_gate=LLMQualityGateResult(
+            enabled=True,
+            fail_on="error",
+            failed=True,
+            evaluation_status="evaluated",
+            matched_finding_count=1,
+            matched_severity_counts={
+                "info": 0,
+                "warning": 0,
+                "error": 1,
+                "critical": 0,
+            },
+            matched_file_count=1,
+            matched_files=("a.md",),
+        ),
+    )
+
+    report = render_batch_combined_markdown_report(combined)
+
+    assert "| Explicit LLM Gate | enabled |" in report
+    assert "| LLM Gate Threshold | error |" in report
+    assert "| LLM Gate Status | failed |" in report
+    assert "| LLM Gate Evaluation | evaluated |" in report
+    assert "| LLM Gate Matched Files | 1 |" in report
+    assert "| LLM Gate Matched Findings | 1 |" in report
 
 
 def test_render_batch_combined_markdown_report_for_all_failed() -> None:

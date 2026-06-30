@@ -48,9 +48,12 @@ def test_usage_and_ci_docs_explain_deterministic_only_quality_gate() -> None:
 
     assert "## Deterministic, Sidecar, And Combined Boundaries" in usage
     assert "`--combined-output` does not enable LLM by itself" in usage
+    assert "`--llm-fail-on` does not enable LLM by itself" in usage
+    assert "## Explicit LLM Quality Gate" in usage
     assert "src/content_review_engine/llm/combined_envelope.py" in usage
     assert "src/content_review_engine/reports/combined.py" in usage
     assert "combined output does not change deterministic `severity_counts`" in usage
     assert "CI boundary for combined artifacts" in ci
     assert "`--combined-output` does not auto-enable LLM review" in ci
-    assert "only deterministic findings can trigger exit code `1`" in ci
+    assert "`--llm-fail-on` evaluates LLM findings only" in ci
+    assert "Only deterministic findings can trigger exit code `1` unless" in ci

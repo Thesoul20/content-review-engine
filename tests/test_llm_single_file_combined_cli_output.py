@@ -42,11 +42,14 @@ def test_cli_review_parser_accepts_combined_output_arguments() -> None:
             "combined.md",
             "--combined-output-format",
             "json",
+            "--llm-fail-on",
+            "warning",
         ]
     )
 
     assert args.combined_output == "combined.md"
     assert args.combined_output_format == "json"
+    assert args.llm_fail_on == "warning"
 
 
 def test_single_file_review_combined_markdown_output_reuses_renderer(
@@ -174,6 +177,7 @@ def test_single_file_review_combined_json_output_reuses_serializer(
     assert payload["schema_version"] == "single-file-combined-review-result.v1"
     assert payload["review_result"]["schema_version"] == "review-result.v1"
     assert payload["llm"]["status"] == "succeeded"
+    assert payload["llm"]["quality_gate"]["enabled"] is False
     assert payload["llm"]["result"]["schema_version"] == "llm-review-result.v1"
     assert payload["llm"]["finding_candidates"][0]["rule_id"] == "llm.semantic_overclaim"
 
@@ -209,6 +213,7 @@ def test_single_file_review_combined_output_with_llm_disabled_records_not_run(
     assert exit_code == 0
     assert captured.err == ""
     assert payload["llm"]["status"] == "not_run"
+    assert payload["llm"]["quality_gate"]["enabled"] is False
     assert payload["llm"]["error"] is None
     assert payload["llm"]["result"] is None
     assert payload["llm"]["finding_candidates"] == []
@@ -266,6 +271,7 @@ def test_single_file_review_combined_output_records_failed_llm_status(
     assert exit_code == 2
     assert "Error: Timed out while waiting for semantic review output." in captured.err
     assert payload["llm"]["status"] == "failed"
+    assert payload["llm"]["quality_gate"]["enabled"] is False
     assert payload["llm"]["error"] == {
         "type": "LLMProviderTimeoutError",
         "message": "Timed out while waiting for semantic review output.",
@@ -274,6 +280,84 @@ def test_single_file_review_combined_output_records_failed_llm_status(
     }
     assert payload["llm"]["result"] is None
     assert payload["llm"]["finding_candidates"] == []
+
+
+def test_single_file_review_combined_output_includes_llm_gate_metadata(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    combined_output_path = tmp_path / "review.combined.json"
+    llm_output_path = tmp_path / "review.llm.json"
+    monkeypatch.setenv("OPENAI_API_KEY", "test-secret-value")
+    monkeypatch.setattr(
+        "content_review_engine.cli.create_llm_reviewer",
+        lambda *args, **kwargs: _SemanticReviewer(
+            ValidatedLLMSemanticReviewOutput.model_validate(
+                {
+                    "schema_version": "llm-semantic-review-output.v1",
+                    "summary": "One semantic issue found.",
+                    "findings": [
+                        {
+                            "rule_id": "llm.semantic.risky_advice",
+                            "severity": "error",
+                            "line": 1,
+                            "column": 1,
+                            "message": "Possible risky advice.",
+                            "evidence": "绝对安全",
+                            "suggestion": "Use a softer claim.",
+                            "confidence": 0.84,
+                        }
+                    ],
+                }
+            )
+        ),
+    )
+
+    exit_code = main(
+        [
+            "review",
+            "tests/fixtures/markdown/clean_article.md",
+            "--profile",
+            "tests/fixtures/profiles/default.yml",
+            "--enable-llm",
+            "--llm-provider",
+            "pydanticai",
+            "--llm-model",
+            "openai:gpt-4o-mini",
+            "--llm-api-key-env",
+            "OPENAI_API_KEY",
+            "--llm-output",
+            str(llm_output_path),
+            "--combined-output",
+            str(combined_output_path),
+            "--combined-output-format",
+            "json",
+            "--llm-fail-on",
+            "error",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    payload = json.loads(combined_output_path.read_text(encoding="utf-8"))
+
+    assert exit_code == 1
+    assert captured.err == ""
+    assert payload["llm"]["quality_gate"] == {
+        "enabled": True,
+        "fail_on": "error",
+        "failed": True,
+        "evaluation_status": "evaluated",
+        "matched_finding_count": 1,
+        "matched_severity_counts": {
+            "info": 0,
+            "warning": 0,
+            "error": 1,
+            "critical": 0,
+        },
+        "matched_file_count": 1,
+        "matched_files": [],
+    }
 
 
 def test_single_file_review_outputs_can_coexist_with_combined_output(
