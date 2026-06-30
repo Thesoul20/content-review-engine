@@ -34,6 +34,11 @@ the deterministic review pipeline.
   that can normalize `LLMReviewResult` into `LLMCoreFindingCandidate` values
   for future merge work, while keeping provider behavior, sidecar JSON, CLI
   defaults, and quality-gate behavior unchanged.
+- The core package now also includes a separate single-file combined-review
+  envelope builder that can package deterministic `ReviewResult`, optional raw
+  `LLMReviewResult`, adapter-derived candidates, and explicit LLM status/error
+  metadata for future integration work without changing CLI default output or
+  existing sidecar schemas.
 - The repository also includes committed artifact examples under
   `examples/llm_review_artifacts/` for single-file output, batch output,
   partial failure, advisory policy, manual review checklist output, and report
@@ -281,6 +286,67 @@ Current guarantees:
 - the adapter does not make LLM findings participate in deterministic
   `severity_counts`, `rule_counts`, quality gate, or exit code
 - mock and real-provider integration behavior stays unchanged
+
+## Single-file combined review result envelope
+
+The repository now also includes a separate internal single-file combined
+review envelope in `src/content_review_engine/llm/combined_result.py`.
+
+Current helpers:
+
+- `build_single_file_combined_review_result(...)`
+- `single_file_combined_review_result_to_dict(...)`
+
+Execution flow:
+
+```text
+ReviewResult
+  + optional LLMReviewResult
+  + optional structured LLM error
+  ↓
+build_single_file_combined_review_result()
+  ↓
+SingleFileCombinedReviewResult
+  ↓
+single_file_combined_review_result_to_dict()
+```
+
+Current schema and status rules:
+
+- top-level schema version is `single-file-combined-review-result.v1`
+- `llm.status` is one of `not_run`, `skipped`, `succeeded`, or `failed`
+- `llm.advisory` is always `true`
+- `succeeded` requires raw `LLMReviewResult`
+- `failed` requires structured `llm_error` and keeps
+  `llm.finding_candidates = []`
+- failed `llm_error` can include `type`, `message`, `provider`, and
+  `retryable`
+- the error payload must not include secrets, API keys, or raw sensitive config
+
+Current serialization guarantees:
+
+- nested deterministic data reuses `review_result_to_dict(...)`
+- nested raw LLM data reuses `llm_review_result_to_dict(...)`
+- each candidate is derived through
+  `adapt_llm_review_result_to_core_finding_candidates(...)`
+- candidate `source` is always `llm`
+- candidate `advisory` is always `True`
+- the combined envelope is JSON-compatible
+- deterministic result payloads are preserved unchanged
+- raw single-file `LLMReviewResult` JSON sidecars are unchanged
+- batch `LLMSidecarResult` JSON sidecars are unchanged
+- deterministic JSON and Markdown reports do not include LLM findings
+- quality gate still uses deterministic review only
+
+Current boundary guarantees:
+
+- this envelope is not CLI default output
+- this envelope does not change `ReviewResult.findings`
+- this envelope does not let LLM findings participate in deterministic
+  `severity_counts`, `rule_counts`, quality gates, or exit codes
+- this envelope does not call a provider, does not read `os.environ`, and
+  does not access the network
+- this envelope does not read or write files
 
 ## Single-file CLI LLM integration
 

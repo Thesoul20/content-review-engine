@@ -16,6 +16,15 @@ from content_review_engine.llm.config import (
     validate_llm_provider_name,
 )
 from content_review_engine.llm.config_loader import load_llm_provider_config_file
+from content_review_engine.llm.combined_result import (
+    LLM_SINGLE_FILE_STATUS_VALUES,
+    SINGLE_FILE_COMBINED_REVIEW_RESULT_SCHEMA_VERSION,
+    SingleFileCombinedLLMError,
+    SingleFileCombinedReviewResult,
+    build_single_file_combined_review_result,
+    single_file_combined_review_result_to_dict,
+    single_file_combined_review_result_to_json,
+)
 from content_review_engine.llm.errors import (
     EmptyLLMProviderSecretEnvironmentVariableError,
     LLMProviderAuthError,
@@ -227,6 +236,7 @@ __all__ = [
     "LLMProviderRuntimeError",
     "LLMProviderSecretError",
     "LLMProviderTimeoutError",
+    "LLM_SINGLE_FILE_STATUS_VALUES",
     "MissingLLMProviderSecretReferenceError",
     "MissingLLMProviderSecretEnvironmentVariableError",
     "EmptyLLMProviderSecretEnvironmentVariableError",
@@ -277,6 +287,9 @@ __all__ = [
     "LLMReviewRequest",
     "LLMReviewResult",
     "LLMReviewSummary",
+    "SINGLE_FILE_COMBINED_REVIEW_RESULT_SCHEMA_VERSION",
+    "SingleFileCombinedLLMError",
+    "SingleFileCombinedReviewResult",
     "ValidatedLLMSemanticFinding",
     "ValidatedLLMSemanticReviewOutput",
     "LLMSemanticReviewPromptContract",
@@ -328,6 +341,7 @@ __all__ = [
     "build_llm_finding_display_metadata",
     "build_llm_execution_review_items",
     "build_llm_manual_review_items",
+    "build_single_file_combined_review_result",
     "extract_llm_semantic_review_json",
     "format_llm_confidence_like_value",
     "parse_llm_semantic_review_output",
@@ -347,6 +361,8 @@ __all__ = [
     "llm_sidecar_result_to_dict",
     "llm_sidecar_result_to_json",
     "llm_sidecar_summary_to_dict",
+    "single_file_combined_review_result_to_dict",
+    "single_file_combined_review_result_to_json",
     "merge_llm_provider_config",
     "normalize_llm_core_finding_severity",
     "normalize_llm_finding_rule_id",

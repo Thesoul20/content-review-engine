@@ -13,6 +13,8 @@ Canonical deterministic JSON serialization helpers live in
 `src/content_review_engine/core/serialization.py`.
 Future-facing LLM serialization helpers live in
 `src/content_review_engine/llm/serialization.py`.
+The single-file combined-review envelope helper and serializer live in
+`src/content_review_engine/llm/combined_result.py`.
 
 Committed example artifacts now also live under
 `examples/llm_review_artifacts/`. Those files are documentation and test
@@ -209,6 +211,9 @@ single-file `content-review review` and writes raw `LLMReviewResult` JSON to
 TASK-0071 now also renders `LLMReviewResult` into a separate single-file
 Markdown report through `--llm-report`, again without changing the schema
 itself.
+TASK-0077 now also allows a separate internal
+`SingleFileCombinedReviewResult` envelope to reference `LLMReviewResult`,
+again without changing the `LLMReviewResult` schema itself.
 
 | Field | Required | Description |
 |---|---|---|
@@ -282,6 +287,97 @@ Current report-index guarantees:
   `LLMSidecarResult`
 - the committed files under `examples/llm_review_artifacts/` are example
   artifacts only and do not become canonical result schemas
+
+## SingleFileCombinedLLMError
+
+`SingleFileCombinedLLMError` stores one structured single-file LLM execution
+error for the combined envelope only.
+
+It is not part of the canonical deterministic `ReviewResult`, not part of raw
+single-file `LLMReviewResult`, and not part of the batch `LLMSidecarResult`
+schema.
+
+| Field | Required | Description |
+|---|---|---|
+| `type` | Yes | Stable error type label such as `LLMProviderTimeoutError` |
+| `message` | Yes | Human-readable non-secret error summary |
+| `provider` | No | Optional provider label such as `mock` or `pydanticai` |
+| `retryable` | No | Optional retry hint for callers |
+
+Notes:
+
+- this error shape is specific to the single-file combined envelope
+- it must not include secrets, raw API keys, or raw sensitive config
+- it does not replace existing provider error classes or batch sidecar errors
+
+## SingleFileCombinedReviewResult
+
+`SingleFileCombinedReviewResult` stores one single-file combined review
+envelope for future integration work.
+
+The stable schema version is `single-file-combined-review-result.v1`.
+
+It is distinct from the canonical deterministic `ReviewResult` and from the
+raw single-file `LLMReviewResult`.
+TASK-0077 adds the model and pure builder/serializer helpers only.
+It does not change CLI default output, deterministic Markdown reports, batch
+schemas, sidecar schemas, quality gates, or exit codes.
+
+| Field | Required | Description |
+|---|---|---|
+| `schema_version` | Yes | Stable combined-envelope schema version |
+| `review_result` | Yes | Original deterministic `ReviewResult` |
+| `llm_result` | No | Raw `LLMReviewResult` or `None` |
+| `llm_finding_candidates` | Yes | Tuple of adapted `LLMCoreFindingCandidate` values |
+| `llm_status` | Yes | `not_run`, `skipped`, `succeeded`, or `failed` |
+| `llm_error` | No | Optional `SingleFileCombinedLLMError` |
+| `advisory` | Yes | Always `True` |
+
+Status semantics:
+
+- `not_run`: no `llm_result` and no `llm_error`
+- `skipped`: LLM was intentionally skipped, with no `llm_result`
+- `succeeded`: `llm_result` is present and `llm_error` is absent
+- `failed`: `llm_error` is present, deterministic `review_result` remains
+  present, and `llm_finding_candidates` must be empty
+
+Serialization shape:
+
+```json
+{
+  "schema_version": "single-file-combined-review-result.v1",
+  "review_result": {
+    "...": "existing deterministic ReviewResult JSON"
+  },
+  "llm": {
+    "status": "succeeded",
+    "advisory": true,
+    "error": null,
+    "result": {
+      "...": "existing raw LLMReviewResult JSON"
+    },
+    "finding_candidates": [
+      {
+        "source": "llm",
+        "advisory": true,
+        "rule_id": "llm.misleading_claim"
+      }
+    ]
+  }
+}
+```
+
+Notes:
+
+- nested deterministic serialization reuses `review_result_to_dict(...)`
+- nested raw LLM serialization reuses `llm_review_result_to_dict(...)`
+- `finding_candidates` are JSON-compatible dataclass payloads derived through
+  the adapter only
+- `advisory = true` is explicit at both the envelope LLM section and each
+  candidate
+- this envelope does not merge LLM findings into `ReviewResult.findings`
+- this envelope does not let LLM findings affect severity counts, rule counts,
+  quality gates, or exit codes
 
 ## LLMCoreFindingCandidate
 

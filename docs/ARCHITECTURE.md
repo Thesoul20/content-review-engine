@@ -127,6 +127,12 @@ It now also includes a separate display-only manual-review helper under
 `src/content_review_engine/llm/manual_review.py` that derives checklist
 metadata for LLM Markdown reports and the hybrid report index without changing
 any stored result model or quality-gate behavior.
+It now also includes a separate single-file combined-result helper under
+`src/content_review_engine/llm/combined_result.py` that can build one
+envelope containing the canonical deterministic `ReviewResult`, an optional
+raw `LLMReviewResult`, adapted `LLMCoreFindingCandidate` values, and explicit
+single-file LLM execution status/error metadata without changing CLI default
+output, sidecar schemas, Markdown renderers, or quality-gate behavior.
 It now also includes committed reference artifacts under
 `examples/llm_review_artifacts/` that document the current presentation
 outputs for single-file and batch LLM review without becoming runtime
@@ -258,6 +264,36 @@ Current status:
   `LLMReviewResult` JSON instead of an envelope
 - the CLI can optionally write a separate LLM Markdown report through
   `--llm-report`
+- `src/content_review_engine/llm/combined_result.py` now provides a pure
+  single-file integration-preparation layer:
+
+```text
+ReviewResult
+  + optional LLMReviewResult
+  + optional structured LLM error
+  ↓
+build_single_file_combined_review_result()
+  ↓
+SingleFileCombinedReviewResult
+  ↓
+single_file_combined_review_result_to_dict()
+```
+
+Current guarantees for that envelope:
+
+- it preserves the original deterministic `ReviewResult` unchanged
+- it preserves the raw `LLMReviewResult` or records `None`
+- it derives `LLMCoreFindingCandidate` values only through the TASK-0076
+  adapter layer
+- it records single-file LLM status as `not_run`, `skipped`, `succeeded`, or
+  `failed`
+- it keeps `advisory = True`
+- it supports structured non-secret `llm_error` fields such as `type`,
+  `message`, `provider`, and `retryable`
+- it reuses the existing deterministic and LLM serializers for nested payloads
+- it does not change `ReviewResult.findings`, deterministic counts, quality
+  gates, exit codes, single-file sidecar JSON, batch sidecar JSON, or current
+  Markdown report behavior
 - the CLI can also optionally write a separate hybrid report index through
   `--report-index`
 - LLM presentation now also runs through a separate advisory policy helper in

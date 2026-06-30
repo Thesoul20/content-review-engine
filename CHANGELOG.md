@@ -8,6 +8,41 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0077
+
+### Added
+
+- Added `src/content_review_engine/llm/combined_result.py` with
+  `SingleFileCombinedReviewResult`, `SingleFileCombinedLLMError`, stable
+  single-file LLM status values, a pure combined-result builder, and a
+  JSON-compatible serializer that reuses the deterministic and raw LLM
+  serializers for nested payloads.
+- Added `tests/test_llm_single_file_combined_result.py` for succeeded,
+  not-run, skipped, and failed status coverage, serialization structure,
+  JSON serializability, advisory markers, input immutability, unchanged
+  sidecar serialization, and unchanged deterministic quality-gate boundary
+  coverage.
+
+### Changed
+
+- Updated `src/content_review_engine/llm/__init__.py` to export the new
+  combined-result types, constants, builder, and serializer helpers.
+- Updated `docs/ARCHITECTURE.md`, `docs/DATA_MODELS.md`,
+  `docs/LLM_PROVIDER_USAGE.md`, and `PROJECT_STATE.md` to document the
+  single-file combined envelope as a preparation layer only.
+
+### Not Added
+
+- No `ReviewResult` schema change, no `ReviewResult.findings` merge, no
+  deterministic runner change, no deterministic rule-engine change, and no
+  quality-gate or exit-code change.
+- No CLI flag change, no CLI default behavior change, no Markdown main-report
+  merge, no batch schema change, no batch LLM behavior change, and no sidecar
+  JSON schema change.
+- No provider-contract change, no real API call, no environment-variable
+  dependency, no file I/O in the builder, and no runtime dependency on
+  `examples/`.
+
 ## TASK-0076
 
 ### Added

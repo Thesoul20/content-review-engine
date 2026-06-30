@@ -59,6 +59,12 @@ It now also includes a separate LLM-to-core finding adapter that normalizes
 `LLMReviewResult` findings into internal `LLMCoreFindingCandidate` values as
 preparation for future merge work, while keeping LLM findings out of the main
 `ReviewResult`, deterministic counts, quality gate, and CLI default behavior.
+It now also includes a separate single-file combined review-result envelope
+that can preserve deterministic `ReviewResult`, preserve raw
+`LLMReviewResult` or `None`, derive adapted `LLMCoreFindingCandidate` values,
+and record explicit LLM execution status/error metadata without changing the
+deterministic review pipeline, CLI default behavior, sidecar schemas, or
+quality-gate behavior.
 
 ---
 
@@ -128,6 +134,23 @@ preparation for future merge work, while keeping LLM findings out of the main
 - No active task is recorded in this file.
 
 ## Recent Completion
+
+- TASK-0077 is complete.
+- Added `src/content_review_engine/llm/combined_result.py` with
+  `SingleFileCombinedReviewResult`, `SingleFileCombinedLLMError`, stable
+  single-file LLM status values, a pure combined-result builder, and a
+  JSON-compatible serializer that reuses the existing deterministic and raw
+  LLM serializers.
+- Added `tests/test_llm_single_file_combined_result.py` for succeeded,
+  not-run, skipped, and failed status coverage, serialization structure,
+  JSON serializability, advisory policy, input immutability, unchanged
+  sidecar serialization, and unchanged deterministic quality-gate boundary
+  coverage.
+- Updated `docs/ARCHITECTURE.md`, `docs/DATA_MODELS.md`, and
+  `docs/LLM_PROVIDER_USAGE.md` to document the single-file combined envelope
+  as a preparation layer only.
+- Updated `CHANGELOG.md` to record TASK-0077 and its unchanged runtime
+  boundaries.
 
 - TASK-0076 is complete.
 - Added `src/content_review_engine/llm/finding_adapter.py` with
