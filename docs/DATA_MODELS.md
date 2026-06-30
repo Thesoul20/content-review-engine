@@ -320,6 +320,8 @@ The stable schema version is `single-file-combined-review-result.v1`.
 It is distinct from the canonical deterministic `ReviewResult` and from the
 raw single-file `LLMReviewResult`.
 TASK-0077 adds the model and pure builder/serializer helpers only.
+TASK-0078 adds a separate renderer-layer Markdown report for this envelope
+only.
 It does not change CLI default output, deterministic Markdown reports, batch
 schemas, sidecar schemas, quality gates, or exit codes.
 
@@ -378,6 +380,9 @@ Notes:
 - this envelope does not merge LLM findings into `ReviewResult.findings`
 - this envelope does not let LLM findings affect severity counts, rule counts,
   quality gates, or exit codes
+- `src/content_review_engine/reports/combined_markdown.py` can render this
+  envelope to human-readable Markdown, but that renderer does not add or
+  persist any new schema fields
 
 ## LLMCoreFindingCandidate
 

@@ -65,6 +65,12 @@ that can preserve deterministic `ReviewResult`, preserve raw
 and record explicit LLM execution status/error metadata without changing the
 deterministic review pipeline, CLI default behavior, sidecar schemas, or
 quality-gate behavior.
+It now also includes a separate single-file combined Markdown report renderer
+that accepts `SingleFileCombinedReviewResult`, reuses the deterministic
+Markdown report unchanged, and appends presentation-only LLM status,
+advisory findings, failed-error display, manual review workflow, and
+deterministic-only quality-gate boundary text without changing CLI defaults
+or schemas.
 
 ---
 
@@ -134,6 +140,22 @@ quality-gate behavior.
 - No active task is recorded in this file.
 
 ## Recent Completion
+
+- TASK-0078 is complete.
+- Added `src/content_review_engine/reports/combined_markdown.py` with pure
+  `render_single_file_combined_markdown_report(...)` rendering for
+  `SingleFileCombinedReviewResult`, including deterministic report reuse,
+  LLM status, advisory policy, adapted advisory findings, failed LLM error
+  display, manual review workflow, checklist rendering, and deterministic-only
+  quality-gate boundary text.
+- Added `tests/test_llm_single_file_combined_markdown_report.py` for
+  succeeded, succeeded-without-findings, not-run, skipped, failed, structured
+  error display, deterministic report preservation, advisory boundary,
+  quality-gate boundary, and Markdown escaping coverage.
+- Updated `docs/ARCHITECTURE.md`, `docs/DATA_MODELS.md`,
+  `docs/LLM_PROVIDER_USAGE.md`, `docs/CLI.md`, and `CHANGELOG.md` to
+  document the renderer-layer combined Markdown report and its unchanged CLI /
+  schema / quality-gate boundaries.
 
 - TASK-0077 is complete.
 - Added `src/content_review_engine/llm/combined_result.py` with

@@ -1,3 +1,6 @@
+from content_review_engine.reports.combined_markdown import (
+    render_single_file_combined_markdown_report,
+)
 from content_review_engine.reports.markdown import (
     render_batch_markdown_report,
     render_markdown_report,
@@ -17,5 +20,6 @@ __all__ = [
     "render_llm_review_markdown",
     "render_llm_sidecar_markdown",
     "render_markdown_report",
+    "render_single_file_combined_markdown_report",
     "render_single_file_report_index",
 ]

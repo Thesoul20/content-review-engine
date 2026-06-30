@@ -108,10 +108,14 @@ def test_usage_docs_exist_and_cover_required_provider_flags_and_boundaries() -> 
     assert "Single-file combined review result envelope" in content
     assert "build_single_file_combined_review_result" in content
     assert "single-file-combined-review-result.v1" in content
+    assert "render_single_file_combined_markdown_report" in content
     assert "`llm.status` is one of `not_run`, `skipped`, `succeeded`, or `failed`" in content
     assert "`llm.advisory` is always `true`" in content
     assert "failed `llm_error` can include `type`, `message`, `provider`, and" in content
     assert "raw single-file `LLMReviewResult` JSON sidecars are unchanged" in content
+    assert "failed `llm_error` display" in content
+    assert "manual review workflow" in content
+    assert "deterministic-only quality-gate boundary" in content
     assert "Single-file CLI LLM integration" in content
     assert "--llm-output` writes raw `LLMReviewResult` JSON" in content
     assert "--llm-report` writes a separate Markdown report rendered from the same" in content
@@ -192,8 +196,10 @@ def test_docs_and_fixtures_do_not_require_real_network_or_real_api_key() -> None
     assert "candidate `advisory` is always `True`" in usage_doc
     assert "unknown, blank, or missing severity falls back to `warning`" in usage_doc
     assert "this envelope is not CLI default output" in usage_doc
+    assert "this combined Markdown report is also not CLI default output" in usage_doc
     assert "this envelope does not change `ReviewResult.findings`" in usage_doc
     assert "this envelope does not read or write files" in usage_doc
+    assert "the combined Markdown renderer is pure" in usage_doc
     assert "provider execution reuses the shared prompt contract" in usage_doc
     assert "provider execution reuses `parse_llm_semantic_review_output()`" in usage_doc
     assert "Single-file `content-review review --enable-llm --llm-output ...` now writes" in usage_doc

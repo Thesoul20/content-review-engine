@@ -133,6 +133,11 @@ envelope containing the canonical deterministic `ReviewResult`, an optional
 raw `LLMReviewResult`, adapted `LLMCoreFindingCandidate` values, and explicit
 single-file LLM execution status/error metadata without changing CLI default
 output, sidecar schemas, Markdown renderers, or quality-gate behavior.
+It now also includes a separate combined Markdown renderer under
+`src/content_review_engine/reports/combined_markdown.py` that accepts
+`SingleFileCombinedReviewResult`, reuses the existing deterministic Markdown
+report as-is, and appends presentation-only LLM status, advisory findings,
+manual review workflow, and deterministic-only quality-gate boundary text.
 It now also includes committed reference artifacts under
 `examples/llm_review_artifacts/` that document the current presentation
 outputs for single-file and batch LLM review without becoming runtime
@@ -294,6 +299,24 @@ Current guarantees for that envelope:
 - it does not change `ReviewResult.findings`, deterministic counts, quality
   gates, exit codes, single-file sidecar JSON, batch sidecar JSON, or current
   Markdown report behavior
+- `src/content_review_engine/reports/combined_markdown.py` now provides a
+  pure renderer-layer Markdown view for that envelope:
+
+```text
+SingleFileCombinedReviewResult
+  ↓
+render_single_file_combined_markdown_report()
+  ↓
+human-readable Markdown
+```
+
+- the combined Markdown report reuses the existing deterministic Markdown
+  report unchanged as the canonical review body
+- it adds separate presentation-only sections for LLM execution status,
+  advisory policy, adapted advisory findings, structured LLM error display,
+  manual review workflow, and deterministic-only quality-gate boundary text
+- it does not read or write files, does not call providers, does not call the
+  CLI, and does not become the CLI default output path
 - the CLI can also optionally write a separate hybrid report index through
   `--report-index`
 - LLM presentation now also runs through a separate advisory policy helper in

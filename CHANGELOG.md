@@ -8,6 +8,42 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0078
+
+### Added
+
+- Added `src/content_review_engine/reports/combined_markdown.py` with
+  `render_single_file_combined_markdown_report(...)`, a pure renderer for
+  `SingleFileCombinedReviewResult` that reuses the existing deterministic
+  Markdown report and adds LLM status, advisory findings, failed-error
+  display, manual review workflow, checklist output, and deterministic-only
+  quality-gate boundary text.
+- Added `tests/test_llm_single_file_combined_markdown_report.py` for
+  succeeded, succeeded-without-findings, not-run, skipped, failed,
+  structured-error display, deterministic report preservation, advisory
+  policy, quality-gate boundary, and Markdown escaping coverage.
+
+### Changed
+
+- Updated `src/content_review_engine/reports/__init__.py` to export
+  `render_single_file_combined_markdown_report(...)`.
+- Updated `docs/ARCHITECTURE.md`, `docs/DATA_MODELS.md`,
+  `docs/LLM_PROVIDER_USAGE.md`, `docs/CLI.md`, and `PROJECT_STATE.md` to
+  document the combined Markdown renderer as a presentation-only layer for
+  the existing single-file combined result envelope.
+
+### Not Added
+
+- No `ReviewResult` schema change, no `ReviewResult.findings` merge, no
+  deterministic runner change, no deterministic rule-engine change, and no
+  quality-gate or exit-code change.
+- No CLI flag change, no CLI default behavior change, no batch combined
+  report, no batch schema change, no batch LLM behavior change, and no
+  sidecar JSON schema change.
+- No provider-contract change, no real API call, no environment-variable
+  dependency, no file I/O in the renderer, and no runtime dependency on
+  `examples/`.
+
 ## TASK-0077
 
 ### Added

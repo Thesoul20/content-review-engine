@@ -296,6 +296,7 @@ Current helpers:
 
 - `build_single_file_combined_review_result(...)`
 - `single_file_combined_review_result_to_dict(...)`
+- `render_single_file_combined_markdown_report(...)`
 
 Execution flow:
 
@@ -309,6 +310,8 @@ build_single_file_combined_review_result()
 SingleFileCombinedReviewResult
   ↓
 single_file_combined_review_result_to_dict()
+  ↓ optional presentation
+render_single_file_combined_markdown_report()
 ```
 
 Current schema and status rules:
@@ -337,16 +340,23 @@ Current serialization guarantees:
 - batch `LLMSidecarResult` JSON sidecars are unchanged
 - deterministic JSON and Markdown reports do not include LLM findings
 - quality gate still uses deterministic review only
+- the combined Markdown report reuses the deterministic Markdown report
+  unchanged and adds separate sections for LLM status, advisory findings,
+  failed `llm_error` display, manual review workflow, and the
+  deterministic-only quality-gate boundary
 
 Current boundary guarantees:
 
 - this envelope is not CLI default output
+- this combined Markdown report is also not CLI default output
 - this envelope does not change `ReviewResult.findings`
 - this envelope does not let LLM findings participate in deterministic
   `severity_counts`, `rule_counts`, quality gates, or exit codes
 - this envelope does not call a provider, does not read `os.environ`, and
   does not access the network
 - this envelope does not read or write files
+- the combined Markdown renderer is pure, does not read or write files, does
+  not call the CLI, and does not read `examples/`
 
 ## Single-file CLI LLM integration
 

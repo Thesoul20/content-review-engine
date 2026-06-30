@@ -66,6 +66,9 @@ Current guarantees:
 - `--report-index` does not replace `--output`, `--llm-output`, or
   `--llm-report`
 - the index is a human-readable guide only and is not a full combined report
+- the repository now also has a package-level combined Markdown renderer for
+  `SingleFileCombinedReviewResult`, but it is not wired into any CLI default
+  path and does not add a new CLI flag
 - quality gate still reads deterministic findings only
 - when LLM output is present, the index marks it as `source = llm`,
   `advisory = yes`, and `quality gate participation = no`
@@ -325,6 +328,8 @@ Batch behavior guarantees:
 - `--format json` does not add an `llm_review` field
 - the report index explains output relationships but does not merge deterministic
   and LLM reports into a single combined report
+- the package-level single-file combined Markdown renderer remains outside the
+  batch CLI path and does not produce a batch combined report
 - `--format markdown` does not add a `## LLM Review` section
 - batch summary counts do not include LLM findings
 - batch LLM report and report index use the same advisory display policy as
