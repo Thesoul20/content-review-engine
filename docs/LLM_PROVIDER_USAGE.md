@@ -39,6 +39,11 @@ the deterministic review pipeline.
   `LLMReviewResult`, adapter-derived candidates, and explicit LLM status/error
   metadata for future integration work without changing CLI default output or
   existing sidecar schemas.
+- The core package now also includes a separate batch combined-review envelope
+  builder that can package deterministic `BatchReviewResult`, optional raw
+  `LLMSidecarResult`, per-file adapter-derived candidates, per-file LLM
+  status/error metadata, and a batch-level LLM summary for future integration
+  work without changing batch CLI output or existing sidecar schemas.
 - The repository also includes committed artifact examples under
   `examples/llm_review_artifacts/` for single-file output, batch output,
   partial failure, advisory policy, manual review checklist output, and report
@@ -258,6 +263,53 @@ list[LLMCoreFindingCandidate]
 ```
 
 Current mapping rules:
+
+## Batch combined review result envelope
+
+The repository now also includes an internal batch combined envelope in
+`src/content_review_engine/llm/batch_combined_result.py`.
+
+Current helpers:
+
+- `build_batch_combined_review_result(...)`
+- `batch_combined_review_result_to_dict(...)`
+- `batch_combined_review_result_to_json(...)`
+
+Current schema and status rules:
+
+- top-level schema version is `batch-combined-review-result.v1`
+- each per-file `status` is one of `not_run`, `skipped`, `succeeded`, or
+  `failed`
+- top-level `llm.advisory` is always `true`
+- each per-file `advisory` is always `true`
+- each adapted candidate keeps `source = llm` and `advisory = true`
+- `llm.summary` includes `total_files`, `succeeded_count`, `failed_count`,
+  `skipped_count`, `not_run_count`, `advisory_finding_count`,
+  `files_with_advisory_findings`, and `error_count`
+- partial failure is represented by mixing succeeded and failed per-file
+  records in one deterministic-file-aligned `llm.files` list
+
+Current guarantees:
+
+- this envelope is integration-only and is not a replacement for
+  `LLMSidecarResult`
+- this envelope is not exposed by the batch CLI
+- the batch CLI does not expose a combined-output flag
+- this envelope reuses the existing deterministic batch serializer
+- this envelope reuses the existing batch `LLMSidecarResult` serializer
+- this envelope reuses the existing nested `LLMReviewResult` serializer
+- this envelope does not change `BatchReviewResult`
+- this envelope does not change `ReviewResult`
+- this envelope does not merge LLM findings into deterministic findings
+- this envelope does not change deterministic `severity_counts`,
+  `rule_counts`, quality gate, or exit code behavior
+- this envelope does not call a provider, does not read `os.environ`, does not
+  read `.env`, and does not access the network
+- failed combined-file `llm_error` values are structured and sanitized; they
+  do not retain traceback output, raw API keys, or env-var names
+- files are ordered by deterministic `BatchReviewResult.results`
+- sidecar-only extra files that do not exist in deterministic batch results
+  are ignored by the builder
 
 - provider output remains `LLMReviewResult`
 - the adapter can normalize that `LLMReviewResult` into internal candidates

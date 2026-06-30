@@ -43,6 +43,9 @@ article content, loading a review profile, or writing sidecars.
 The committed files under `examples/llm_review_artifacts/` are reference
 artifacts only. They do not change CLI behavior, enable LLM review, or
 replace the canonical deterministic JSON schemas.
+The package now also has an internal batch combined-result envelope builder,
+but the batch CLI does not expose a combined-output flag and current batch
+default output remains unchanged.
 
 ## Review Output Index
 
@@ -69,6 +72,8 @@ Current guarantees:
 - the repository now also has a package-level combined single-file output
   path behind explicit `--combined-output`, but it does not change any CLI
   default output
+- there is still no batch `--combined-output`; batch combined results remain
+  internal package helpers only
 - quality gate still reads deterministic findings only
 - when LLM output is present, the index marks it as `source = llm`,
   `advisory = yes`, and `quality gate participation = no`
@@ -257,6 +262,16 @@ Provider notes:
   values
 - real `pydanticai` usage is intended for explicit manual verification, not
   default tests or CI; use `mock` for no-network automation coverage
+
+Batch CLI boundary:
+
+- `content-review batch` still writes canonical `BatchReviewResult` through
+  `--output`
+- `content-review batch --llm-output` still writes canonical
+  `LLMSidecarResult`
+- no batch CLI flag writes `batch-combined-review-result.v1`
+- no batch CLI flag changes `--output`, `--llm-output`, or `--format`
+  semantics
 
 ## Experimental Batch LLM Sidecar Review
 

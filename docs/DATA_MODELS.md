@@ -15,6 +15,8 @@ Future-facing LLM serialization helpers live in
 `src/content_review_engine/llm/serialization.py`.
 The single-file combined-review envelope helper and serializer live in
 `src/content_review_engine/llm/combined_result.py`.
+The batch combined-review envelope helper and serializer live in
+`src/content_review_engine/llm/batch_combined_result.py`.
 
 Committed example artifacts now also live under
 `examples/llm_review_artifacts/`. Those files are documentation and test
@@ -214,6 +216,118 @@ itself.
 TASK-0077 now also allows a separate internal
 `SingleFileCombinedReviewResult` envelope to reference `LLMReviewResult`,
 again without changing the `LLMReviewResult` schema itself.
+TASK-0080 now also allows a separate internal `BatchCombinedReviewResult`
+envelope to reference nested per-file `LLMReviewResult` values through the
+existing `LLMSidecarResult`, again without changing the `LLMReviewResult`
+schema itself.
+
+---
+
+## BatchCombinedLLMError
+
+`BatchCombinedLLMError` stores one structured per-file LLM execution error for
+the internal batch combined envelope.
+
+It is not part of the canonical `BatchReviewResult` schema and it is not a
+replacement for `LLMSidecarError`.
+
+| Field | Required | Description |
+|---|---|---|
+| `type` | Yes | Stable error type label |
+| `message` | Yes | Sanitized non-secret message |
+| `provider` | No | Optional provider label |
+| `retryable` | No | Optional retry hint |
+
+Notes:
+
+- traceback text is not retained here
+- secret-like values and env-var references are redacted here
+- raw batch `LLMSidecarResult` serialization remains unchanged
+
+---
+
+## BatchCombinedFileResult
+
+`BatchCombinedFileResult` stores one deterministic-file-aligned LLM view for
+the internal batch combined envelope.
+
+| Field | Required | Description |
+|---|---|---|
+| `file` | Yes | Deterministic batch file identifier |
+| `llm_status` | Yes | `not_run`, `skipped`, `succeeded`, or `failed` |
+| `llm_error` | No | Structured `BatchCombinedLLMError` for failed files |
+| `llm_result` | No | Raw `LLMReviewResult` for succeeded files when present |
+| `llm_finding_candidates` | Yes | Tuple of adapted `LLMCoreFindingCandidate` values |
+| `advisory` | Yes | Always `True` |
+
+Notes:
+
+- file ordering follows deterministic `BatchReviewResult.results`
+- failed files keep empty `llm_finding_candidates`
+- deterministic findings are not copied into this model
+
+---
+
+## BatchCombinedLLMSummary
+
+`BatchCombinedLLMSummary` stores one batch-level summary for the internal
+batch combined envelope.
+
+| Field | Required | Description |
+|---|---|---|
+| `total_files` | Yes | Total combined file records |
+| `succeeded_count` | Yes | Files with `llm_status = succeeded` |
+| `failed_count` | Yes | Files with `llm_status = failed` |
+| `skipped_count` | Yes | Files with `llm_status = skipped` |
+| `not_run_count` | Yes | Files with `llm_status = not_run` |
+| `advisory_finding_count` | Yes | Sum of adapted LLM candidates |
+| `files_with_advisory_findings` | Yes | Files whose candidates are non-empty |
+| `error_count` | Yes | Files whose `llm_error` is present |
+
+---
+
+## BatchCombinedReviewResult
+
+`BatchCombinedReviewResult` stores one internal batch combined-review
+envelope.
+
+The stable schema version is `batch-combined-review-result.v1`.
+
+It is an integration envelope only:
+
+- canonical deterministic batch JSON remains `BatchReviewResult`
+- canonical batch LLM sidecar JSON remains `LLMSidecarResult`
+- this envelope does not change batch CLI default output
+- this envelope does not change deterministic counts, quality gates, or exit
+  codes
+
+| Field | Required | Description |
+|---|---|---|
+| `schema_version` | Yes | Stable batch combined schema version |
+| `batch_review_result` | Yes | Raw deterministic `BatchReviewResult` |
+| `batch_llm_result` | No | Raw `LLMSidecarResult` or `None` |
+| `files` | Yes | Tuple of `BatchCombinedFileResult` |
+| `llm_summary` | Yes | `BatchCombinedLLMSummary` |
+| `advisory` | Yes | Always `True` |
+
+Serializer shape:
+
+```text
+schema_version
+batch_review_result
+llm.advisory
+llm.summary
+llm.result
+llm.files[]
+```
+
+Notes:
+
+- serializer reuses the existing deterministic batch serializer
+- serializer reuses the existing batch `LLMSidecarResult` serializer
+- serializer reuses the existing nested `LLMReviewResult` serializer
+- extra sidecar-only files that are absent from deterministic batch results are
+  ignored by the combined envelope builder
 
 | Field | Required | Description |
 |---|---|---|

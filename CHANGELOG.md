@@ -8,6 +8,40 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0080
+
+### Added
+
+- Added `src/content_review_engine/llm/batch_combined_result.py` with
+  `BatchCombinedReviewResult`, `BatchCombinedFileResult`,
+  `BatchCombinedLLMSummary`, `BatchCombinedLLMError`, stable batch LLM status
+  values, a pure builder, JSON-compatible serializer helpers, and structured
+  error sanitization for the internal batch combined envelope.
+- Added `tests/test_llm_batch_combined_result.py` for all-succeeded,
+  partial-failure, all-failed, not-run, skipped, serializer structure, JSON
+  serializability, deterministic ordering, advisory markers, unchanged
+  serializer boundaries, unchanged quality-gate behavior, and secret-redaction
+  coverage.
+
+### Changed
+
+- Updated `src/content_review_engine/llm/__init__.py` to export the new batch
+  combined-result types, constants, builder, and serializer helpers.
+- Updated `docs/CLI.md`, `docs/ARCHITECTURE.md`, `docs/DATA_MODELS.md`,
+  `docs/LLM_PROVIDER_USAGE.md`, and `PROJECT_STATE.md` to document the new
+  internal batch combined envelope and its unchanged batch CLI boundaries.
+
+### Not Added
+
+- No `BatchReviewResult` schema change, no `ReviewResult` schema change, and
+  no merge of LLM findings into deterministic findings.
+- No deterministic batch runner change, no deterministic rule-engine change,
+  no batch CLI flag change, no batch combined Markdown renderer, no sidecar
+  schema change, and no quality-gate or exit-code behavior change.
+- No provider-contract change, no real API call, no environment-variable or
+  file-I/O dependency in the builder, and no runtime dependency on
+  `examples/`.
+
 ## TASK-0079
 
 ### Added

@@ -65,6 +65,13 @@ that can preserve deterministic `ReviewResult`, preserve raw
 and record explicit LLM execution status/error metadata without changing the
 deterministic review pipeline, CLI default behavior, sidecar schemas, or
 quality-gate behavior.
+It now also includes a separate batch combined review-result envelope that can
+preserve deterministic `BatchReviewResult`, preserve raw `LLMSidecarResult`
+or `None`, derive per-file adapted `LLMCoreFindingCandidate` values, record
+per-file `not_run` / `skipped` / `succeeded` / `failed` LLM status plus
+structured error metadata, and compute a batch-level LLM summary without
+changing the deterministic batch pipeline, batch CLI default behavior,
+sidecar schemas, or quality-gate behavior.
 It now also includes a separate single-file combined Markdown report renderer
 that accepts `SingleFileCombinedReviewResult`, reuses the deterministic
 Markdown report unchanged, and appends presentation-only LLM status,
@@ -144,6 +151,23 @@ behavior, quality gates, and exit codes unchanged.
 - No active task is recorded in this file.
 
 ## Recent Completion
+
+- TASK-0080 is complete.
+- Added `src/content_review_engine/llm/batch_combined_result.py` with
+  `BatchCombinedReviewResult`, `BatchCombinedFileResult`,
+  `BatchCombinedLLMSummary`, `BatchCombinedLLMError`, stable batch LLM status
+  values, a pure builder, structured error sanitization, and a
+  JSON-compatible serializer that reuses the deterministic batch serializer,
+  raw batch sidecar serializer, and nested raw `LLMReviewResult` serializer.
+- Added `tests/test_llm_batch_combined_result.py` for all-succeeded,
+  partial-failure, all-failed, not-run, skipped, serialization structure,
+  JSON serializability, advisory policy, deterministic ordering, unchanged
+  serializer boundaries, unchanged quality-gate behavior, and no-secret
+  leakage coverage.
+- Updated `docs/ARCHITECTURE.md`, `docs/DATA_MODELS.md`,
+  `docs/LLM_PROVIDER_USAGE.md`, `docs/CLI.md`, and `CHANGELOG.md` to
+  document the internal batch combined envelope as preparation-only and to
+  preserve current batch CLI behavior.
 
 - TASK-0079 is complete.
 - Updated `src/content_review_engine/cli.py` so single-file
