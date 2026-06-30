@@ -109,6 +109,8 @@ def test_usage_docs_exist_and_cover_required_provider_flags_and_boundaries() -> 
     assert "build_single_file_combined_review_result" in content
     assert "single-file-combined-review-result.v1" in content
     assert "render_single_file_combined_markdown_report" in content
+    assert "--combined-output" in content
+    assert "--combined-output-format" in content
     assert "`llm.status` is one of `not_run`, `skipped`, `succeeded`, or `failed`" in content
     assert "`llm.advisory` is always `true`" in content
     assert "failed `llm_error` can include `type`, `message`, `provider`, and" in content
@@ -205,6 +207,8 @@ def test_docs_and_fixtures_do_not_require_real_network_or_real_api_key() -> None
     assert "Single-file `content-review review --enable-llm --llm-output ...` now writes" in usage_doc
     assert "raw `LLMReviewResult` JSON" in usage_doc
     assert "`--llm-report` writes a separate Markdown report rendered from the same" in usage_doc
+    assert "`--combined-output` is explicit opt-in only" in usage_doc
+    assert "`--combined-output-format` supports `markdown` and `json`" in usage_doc
     assert "`--report-index` can summarize deterministic output plus optional LLM output" in usage_doc
     assert "quality gate still uses deterministic review only" in usage_doc
     assert "LLM findings are advisory semantic review suggestions" in usage_doc

@@ -34,9 +34,14 @@ from content_review_engine.llm import (
     BatchLLMReviewItem,
     LLMSidecarResult,
     LLMProviderConfig,
+    LLMProviderNetworkError,
+    LLMProviderRateLimitError,
     LLMReviewError,
     LLMReviewResult,
+    LLMProviderRetryExhaustedError,
+    LLMProviderTimeoutError,
     build_llm_review_request,
+    build_single_file_combined_review_result,
     llm_review_result_to_json,
     llm_sidecar_result_to_json,
     run_batch_llm_review,
@@ -48,6 +53,7 @@ from content_review_engine.llm import (
     render_llm_smoke_check_result,
     run_llm_smoke_check,
     run_single_file_llm_review,
+    single_file_combined_review_result_to_json,
 )
 from content_review_engine.parser import read_markdown
 from content_review_engine.reports import (
@@ -56,6 +62,7 @@ from content_review_engine.reports import (
     render_llm_review_markdown,
     render_llm_sidecar_markdown,
     render_markdown_report,
+    render_single_file_combined_markdown_report,
     render_single_file_report_index,
 )
 from content_review_engine.review import review_document, review_markdown_directory
@@ -239,6 +246,16 @@ def build_parser() -> argparse.ArgumentParser:
     review_parser.add_argument(
         "--llm-report",
         help="Write the experimental LLM Markdown report to a file.",
+    )
+    review_parser.add_argument(
+        "--combined-output",
+        help="Write an explicit single-file combined review result to a file.",
+    )
+    review_parser.add_argument(
+        "--combined-output-format",
+        choices=["json", "markdown"],
+        default="markdown",
+        help="Output format for --combined-output.",
     )
     review_parser.add_argument(
         "--include-llm-report",
@@ -921,6 +938,68 @@ def _write_llm_review_markdown_report(
         ) from exc
 
 
+def _build_single_file_combined_llm_error(
+    exc: Exception,
+    *,
+    reviewer=None,
+    args: argparse.Namespace | None = None,
+) -> dict[str, object]:
+    provider = None
+    reviewer_config = getattr(reviewer, "config", None)
+    if reviewer_config is not None:
+        provider = getattr(reviewer_config, "provider", None)
+    if provider is None:
+        provider = getattr(reviewer, "provider", None)
+    if provider is None and args is not None and args.enable_llm:
+        if args.llm_provider is not None:
+            provider = args.llm_provider.strip().lower()
+        else:
+            provider = _build_llm_provider_config(args).provider
+
+    return {
+        "type": exc.__class__.__name__,
+        "message": str(exc),
+        "provider": provider,
+        "retryable": isinstance(
+            exc,
+            (
+                LLMProviderTimeoutError,
+                LLMProviderNetworkError,
+                LLMProviderRateLimitError,
+                LLMProviderRetryExhaustedError,
+            ),
+        ),
+    }
+
+
+def _write_single_file_combined_output(
+    *,
+    review_result: ReviewResult,
+    output_path: str,
+    output_format: str,
+    llm_result: LLMReviewResult | None = None,
+    llm_status: str | None = None,
+    llm_error: dict[str, object] | None = None,
+) -> None:
+    combined_result = build_single_file_combined_review_result(
+        review_result=review_result,
+        llm_result=llm_result,
+        llm_status=llm_status,
+        llm_error=llm_error,
+    )
+    combined_path = Path(output_path)
+    if output_format == "json":
+        combined_text = single_file_combined_review_result_to_json(combined_result)
+    else:
+        combined_text = render_single_file_combined_markdown_report(combined_result)
+    try:
+        combined_path.write_text(combined_text, encoding="utf-8")
+    except OSError as exc:
+        raise ValueError(
+            f"Failed to write combined review output: {combined_path}: {exc}"
+        ) from exc
+
+
 def _write_llm_sidecar_markdown_report(
     *,
     sidecar_result: LLMSidecarResult,
@@ -1002,24 +1081,55 @@ def _run_review_command(args: argparse.Namespace) -> int:
     if output_exit_code != 0:
         return output_exit_code
     llm_result: LLMReviewResult | None = None
+    llm_status = "not_run"
+    llm_error: dict[str, object] | None = None
     if args.enable_llm:
-        llm_result = _run_llm_review(
-            markdown_text=markdown_text,
-            markdown_path=args.markdown_file,
-            profile_name=profile.name,
-            reviewer=llm_reviewer,
+        try:
+            llm_result = _run_llm_review(
+                markdown_text=markdown_text,
+                markdown_path=args.markdown_file,
+                profile_name=profile.name,
+                reviewer=llm_reviewer,
+            )
+            llm_status = "succeeded"
+            if args.llm_output is not None:
+                _write_llm_review_result(
+                    review_result=llm_result,
+                    output_path=args.llm_output,
+                )
+            if args.llm_report is not None:
+                _write_llm_review_markdown_report(
+                    review_result=llm_result,
+                    output_path=args.llm_report,
+                    file_path=args.markdown_file,
+                )
+        except LLMReviewError as exc:
+            llm_status = "failed"
+            llm_error = _build_single_file_combined_llm_error(
+                exc,
+                reviewer=llm_reviewer,
+                args=args,
+            )
+            if args.combined_output is not None:
+                _write_single_file_combined_output(
+                    review_result=review_result,
+                    output_path=args.combined_output,
+                    output_format=args.combined_output_format,
+                    llm_status=llm_status,
+                    llm_error=llm_error,
+                )
+            raise
+    elif args.combined_output is not None:
+        llm_status = "not_run"
+    if args.combined_output is not None and llm_status != "failed":
+        _write_single_file_combined_output(
+            review_result=review_result,
+            output_path=args.combined_output,
+            output_format=args.combined_output_format,
+            llm_result=llm_result,
+            llm_status=llm_status,
+            llm_error=llm_error,
         )
-        if args.llm_output is not None:
-            _write_llm_review_result(
-                review_result=llm_result,
-                output_path=args.llm_output,
-            )
-        if args.llm_report is not None:
-            _write_llm_review_markdown_report(
-                review_result=llm_result,
-                output_path=args.llm_report,
-                file_path=args.markdown_file,
-            )
     if args.report_index is not None:
         _write_report_index(
             markdown_text=render_single_file_report_index(

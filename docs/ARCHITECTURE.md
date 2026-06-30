@@ -138,6 +138,10 @@ It now also includes a separate combined Markdown renderer under
 `SingleFileCombinedReviewResult`, reuses the existing deterministic Markdown
 report as-is, and appends presentation-only LLM status, advisory findings,
 manual review workflow, and deterministic-only quality-gate boundary text.
+The single-file CLI adapter can now also explicitly write that combined
+envelope or combined Markdown report through `--combined-output`, while
+keeping the main deterministic output, batch command, and quality gate
+behavior unchanged.
 It now also includes committed reference artifacts under
 `examples/llm_review_artifacts/` that document the current presentation
 outputs for single-file and batch LLM review without becoming runtime
@@ -317,6 +321,10 @@ human-readable Markdown
   manual review workflow, and deterministic-only quality-gate boundary text
 - it does not read or write files, does not call providers, does not call the
   CLI, and does not become the CLI default output path
+- the CLI may now explicitly opt into this renderer or the paired combined
+  JSON serializer through `content-review review --combined-output ...`
+- `--combined-output` remains single-file only and does not change batch
+  behavior
 - the CLI can also optionally write a separate hybrid report index through
   `--report-index`
 - LLM presentation now also runs through a separate advisory policy helper in

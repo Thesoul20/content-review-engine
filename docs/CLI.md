@@ -23,7 +23,7 @@ suppression comments, counts, and quality gates, see
 ## Current Command
 
 ```bash
-uv run content-review review <markdown_file> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--report-index <file>] [--fail-on info|warning|error|critical] [--enable-llm [--llm-output <file>] [--llm-report <file>] [--llm-config <path>] [--llm-provider mock|pydanticai|pydantic-ai-testmodel] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>] [--llm-timeout-seconds <seconds>] [--llm-retry-attempts <count>] [--llm-retry-backoff-seconds <seconds>] [--llm-min-request-interval-seconds <seconds>]]
+uv run content-review review <markdown_file> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--report-index <file>] [--combined-output <file>] [--combined-output-format json|markdown] [--fail-on info|warning|error|critical] [--enable-llm [--llm-output <file>] [--llm-report <file>] [--llm-config <path>] [--llm-provider mock|pydanticai|pydantic-ai-testmodel] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>] [--llm-timeout-seconds <seconds>] [--llm-retry-attempts <count>] [--llm-retry-backoff-seconds <seconds>] [--llm-min-request-interval-seconds <seconds>]]
 uv run content-review batch <input_dir> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--report-index <file>] [--recursive] [--pattern "*.md"] [--fail-on info|warning|error|critical] [--enable-llm [--llm-output <file>] [--llm-report <file>] [--llm-config <path>] [--llm-provider mock|pydanticai|pydantic-ai-testmodel] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>] [--llm-timeout-seconds <seconds>] [--llm-retry-attempts <count>] [--llm-retry-backoff-seconds <seconds>] [--llm-min-request-interval-seconds <seconds>]]
 uv run content-review llm-check [--provider mock|pydantic-ai-testmodel] [--llm-config <path>] [--llm-provider mock|pydanticai] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>] [--llm-timeout-seconds <seconds>] [--llm-retry-attempts <count>] [--llm-retry-backoff-seconds <seconds>] [--llm-min-request-interval-seconds <seconds>] [--live|--runtime]
 uv run content-review profile validate <profile_file> [--format text|json]
@@ -66,9 +66,9 @@ Current guarantees:
 - `--report-index` does not replace `--output`, `--llm-output`, or
   `--llm-report`
 - the index is a human-readable guide only and is not a full combined report
-- the repository now also has a package-level combined Markdown renderer for
-  `SingleFileCombinedReviewResult`, but it is not wired into any CLI default
-  path and does not add a new CLI flag
+- the repository now also has a package-level combined single-file output
+  path behind explicit `--combined-output`, but it does not change any CLI
+  default output
 - quality gate still reads deterministic findings only
 - when LLM output is present, the index marks it as `source = llm`,
   `advisory = yes`, and `quality gate participation = no`
@@ -147,6 +147,8 @@ uv run content-review review article.md --profile profile.yaml --enable-llm --ll
 uv run content-review review article.md --profile profile.yaml --enable-llm --llm-provider pydanticai --llm-model openai:gpt-4o-mini --llm-api-key-env OPENAI_API_KEY --llm-output article.llm.json
 uv run content-review review article.md --profile profile.yaml --enable-llm --llm-config examples/llm/pydanticai/llm-provider.yml --llm-output article.llm.json
 uv run content-review review article.md --profile profile.yaml --enable-llm --llm-output article.llm.json --llm-report article.llm.md --report-index article.index.md
+uv run content-review review article.md --profile profile.yaml --combined-output article.combined.md
+uv run content-review review article.md --profile profile.yaml --enable-llm --llm-output article.llm.json --combined-output article.combined.json --combined-output-format json
 ```
 
 Single-file `review` constraints:
@@ -195,6 +197,20 @@ Single-file sidecar shape:
   severity-derived manual-review priority
 - `--llm-output` and `--llm-report` can be used together
 - `--llm-report` can be used without `--llm-output`
+- `--combined-output` is explicit opt-in and does not enable LLM review by itself
+- `--combined-output-format` supports `markdown` and `json`, and defaults to `markdown`
+- `--combined-output` can be used without `--enable-llm`; in that case the
+  combined result records `llm.status = not_run`
+- when single-file LLM review fails and `--combined-output` is set, the
+  combined file still records `llm.status = failed` plus structured
+  `llm.error`, while command exit code stays `2`
+- combined Markdown output reuses
+  `render_single_file_combined_markdown_report(...)`
+- combined JSON output reuses
+  `single_file_combined_review_result_to_dict(...)` /
+  `single_file_combined_review_result_to_json(...)`
+- `--output`, `--llm-output`, and `--combined-output` are independent and may
+  be used together
 - `--report-index` writes a separate Markdown index that lists deterministic output, optional LLM output, optional LLM report, the report-index path itself, deterministic summary, optional LLM summary, canonical status, and the rule that quality gate uses deterministic review only
 - the report index also repeats the LLM advisory boundary so `critical` or
   `error` LLM findings are not misread as deterministic gate failures
@@ -204,9 +220,11 @@ Single-file sidecar shape:
 Current behavior guarantees:
 
 - default CLI behavior is unchanged when LLM flags are omitted
+- default CLI behavior is unchanged when `--combined-output` is omitted
 - the main deterministic review output remains the canonical `ReviewResult`
 - `--format json` does not add an `llm_review` field
 - `--format markdown` does not append an LLM section for single-file review
+- combined output does not replace `--output` or `--llm-output`
 - quality-gate evaluation still reads only deterministic findings
 - ordinary tests for this path use fake/stub reviewers and must not access the real network or require a real API key
 

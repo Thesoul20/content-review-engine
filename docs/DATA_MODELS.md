@@ -322,6 +322,9 @@ raw single-file `LLMReviewResult`.
 TASK-0077 adds the model and pure builder/serializer helpers only.
 TASK-0078 adds a separate renderer-layer Markdown report for this envelope
 only.
+TASK-0079 allows the single-file CLI adapter to write this envelope or the
+paired combined Markdown report only when `--combined-output` is explicitly
+requested.
 It does not change CLI default output, deterministic Markdown reports, batch
 schemas, sidecar schemas, quality gates, or exit codes.
 
@@ -373,10 +376,16 @@ Notes:
 
 - nested deterministic serialization reuses `review_result_to_dict(...)`
 - nested raw LLM serialization reuses `llm_review_result_to_dict(...)`
+- single-file `--combined-output-format json` reuses
+  `single_file_combined_review_result_to_dict(...)`
+- single-file `--combined-output-format markdown` reuses
+  `render_single_file_combined_markdown_report(...)`
 - `finding_candidates` are JSON-compatible dataclass payloads derived through
   the adapter only
 - `advisory = true` is explicit at both the envelope LLM section and each
   candidate
+- omitting `--combined-output` leaves existing `--format`, `--output`,
+  `--llm-output`, and `--llm-report` behavior unchanged
 - this envelope does not merge LLM findings into `ReviewResult.findings`
 - this envelope does not let LLM findings affect severity counts, rule counts,
   quality gates, or exit codes

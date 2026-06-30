@@ -358,6 +358,45 @@ Current boundary guarantees:
 - the combined Markdown renderer is pure, does not read or write files, does
   not call the CLI, and does not read `examples/`
 
+## Single-file combined CLI output
+
+Single-file `content-review review` now also supports an explicit combined
+output path:
+
+```bash
+uv run content-review review article.md --profile profile.yaml --combined-output article.combined.md
+uv run content-review review article.md --profile profile.yaml --combined-output article.combined.json --combined-output-format json
+uv run content-review review article.md --profile profile.yaml --enable-llm --llm-output article.llm.json --combined-output article.combined.md
+```
+
+Current guarantees:
+
+- `--combined-output` is explicit opt-in only
+- `--combined-output-format` supports `markdown` and `json`, and defaults to
+  `markdown`
+- `--combined-output` does not enable LLM review by itself
+- when LLM is not enabled, combined output records `llm.status = not_run`
+- when LLM succeeds, combined Markdown output reuses
+  `render_single_file_combined_markdown_report(...)`
+- when LLM succeeds, combined JSON output reuses
+  `single_file_combined_review_result_to_dict(...)`
+- when LLM fails and `--combined-output` is set, the combined file still
+  records `llm.status = failed` plus structured `llm.error`
+- failed combined `llm.error` remains non-secret and may include `type`,
+  `message`, `provider`, and `retryable`
+- `--output`, `--llm-output`, and `--combined-output` are independent and may
+  all be written in one run
+- omitting `--combined-output` leaves existing CLI behavior unchanged
+- combined output does not replace raw `LLMReviewResult` JSON sidecars
+- combined output does not replace deterministic JSON or deterministic
+  Markdown output
+- quality gate still uses deterministic review only
+- batch `content-review batch` does not support combined output
+- default `pytest` or CI must continue using fake/stub reviewers and must not
+  call a real provider
+- the CLI combined writer still does not read `examples/llm_review_artifacts/`
+  as a runtime dependency
+
 ## Single-file CLI LLM integration
 
 Single-file `content-review review` now has a dedicated LLM runner path:
@@ -384,10 +423,13 @@ Current guarantees:
 - `--llm-output` writes raw `LLMReviewResult` JSON, not `LLMSidecarResult`
 - `--llm-report` writes a separate Markdown report rendered from the same
   `LLMReviewResult`
+- `--combined-output` writes a separate single-file combined output and does
+  not replace `--llm-output` or `--llm-report`
 - `--report-index` may be written with or without LLM enabled, but it never
   enables LLM review by itself
 - `--report-index` does not replace `--llm-output` or `--llm-report`
 - `--llm-output` and `--llm-report` can be used together
+- `--output`, `--llm-output`, and `--combined-output` can be used together
 - `--llm-report` can also be used without `--llm-output`
 - the sidecar JSON does not include secrets, prompt text, or raw provider output
 - deterministic stdout does not include LLM findings

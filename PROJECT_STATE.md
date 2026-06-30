@@ -71,6 +71,10 @@ Markdown report unchanged, and appends presentation-only LLM status,
 advisory findings, failed-error display, manual review workflow, and
 deterministic-only quality-gate boundary text without changing CLI defaults
 or schemas.
+Single-file `content-review review` now also supports explicit opt-in
+`--combined-output` writing for that combined envelope in Markdown or JSON,
+while keeping deterministic stdout, `--output`, `--llm-output`, batch
+behavior, quality gates, and exit codes unchanged.
 
 ---
 
@@ -140,6 +144,24 @@ or schemas.
 - No active task is recorded in this file.
 
 ## Recent Completion
+
+- TASK-0079 is complete.
+- Updated `src/content_review_engine/cli.py` so single-file
+  `content-review review` now accepts explicit `--combined-output` and
+  `--combined-output-format {json,markdown}`, writes combined output only on
+  opt-in, reuses the existing single-file combined builder/serializer and
+  combined Markdown renderer, preserves deterministic quality-gate behavior,
+  and records `not_run`, `succeeded`, or structured `failed` LLM status in
+  the combined file without changing default output paths.
+- Added `tests/test_llm_single_file_combined_cli_output.py` for combined
+  Markdown output, combined JSON output, LLM-disabled `not_run`, LLM-failed
+  structured error output, coexistence with `--output` and `--llm-output`,
+  unchanged default behavior, unchanged quality gate, parser coverage, and
+  invalid combined-output format coverage.
+- Updated `docs/CLI.md`, `docs/ARCHITECTURE.md`, `docs/DATA_MODELS.md`,
+  `docs/LLM_PROVIDER_USAGE.md`, and `CHANGELOG.md` to document the explicit
+  single-file combined CLI output path and its unchanged deterministic
+  boundaries.
 
 - TASK-0078 is complete.
 - Added `src/content_review_engine/reports/combined_markdown.py` with pure
