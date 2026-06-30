@@ -30,6 +30,10 @@ the deterministic review pipeline.
   `LLM Execution Review Checklist` with stable IDs such as `LLM-ERR-001`,
   default `needs_rerun` status, and default suggested action
   `rerun_llm_review`.
+- The core package now also includes an internal LLM-to-core finding adapter
+  that can normalize `LLMReviewResult` into `LLMCoreFindingCandidate` values
+  for future merge work, while keeping provider behavior, sidecar JSON, CLI
+  defaults, and quality-gate behavior unchanged.
 - The repository also includes committed artifact examples under
   `examples/llm_review_artifacts/` for single-file output, batch output,
   partial failure, advisory policy, manual review checklist output, and report
@@ -225,6 +229,58 @@ Current guarantees:
   `content-review batch`
 - this conversion layer still does not change deterministic Quality Gate
   behavior
+
+## LLMReviewResult to core finding candidate adaptation
+
+The repository now also includes a separate adapter layer in
+`src/content_review_engine/llm/finding_adapter.py`.
+
+Current helpers:
+
+- `adapt_llm_review_result_to_core_finding_candidates(result)`
+- `adapt_llm_finding_to_core_finding_candidate(finding, *, original_index=None)`
+- `build_llm_core_rule_id(value, *, fallback_value=None)`
+- `normalize_llm_core_finding_severity(value)`
+
+Execution flow:
+
+```text
+LLMReviewResult
+  ↓
+adapt_llm_review_result_to_core_finding_candidates()
+  ↓
+list[LLMCoreFindingCandidate]
+```
+
+Current mapping rules:
+
+- provider output remains `LLMReviewResult`
+- the adapter can normalize that `LLMReviewResult` into internal candidates
+- candidate `source` is always `llm`
+- candidate `advisory` is always `True`
+- candidate `rule_id` always starts with `llm.`
+- canonical severities stay the same
+- `high -> error`
+- `medium -> warning`
+- `low -> info`
+- unknown, blank, or missing severity falls back to `warning`
+- `message`, `suggestion`, `line`, `column`, `matched_text`, `category`, and
+  original finding order are preserved when present
+- current adapter context is copied from `LLMReviewFinding.rationale`
+
+Current guarantees:
+
+- the adapter is a pure conversion layer
+- the adapter does not call a provider
+- the adapter does not change the provider contract
+- the adapter does not change raw `LLMReviewResult` JSON sidecars
+- the adapter does not change `LLMSidecarResult`
+- the adapter does not change deterministic JSON or deterministic Markdown
+  reports
+- the adapter does not merge LLM findings into `ReviewResult.findings`
+- the adapter does not make LLM findings participate in deterministic
+  `severity_counts`, `rule_counts`, quality gate, or exit code
+- mock and real-provider integration behavior stays unchanged
 
 ## Single-file CLI LLM integration
 

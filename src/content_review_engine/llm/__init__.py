@@ -48,6 +48,15 @@ from content_review_engine.llm.factory import (
     get_registered_llm_provider_names,
     get_supported_llm_reviewer_provider_names,
 )
+from content_review_engine.llm.finding_adapter import (
+    LLM_CORE_FINDING_DEFAULT_RULE_ID,
+    LLM_CORE_FINDING_DEFAULT_SEVERITY,
+    LLMCoreFindingCandidate,
+    adapt_llm_finding_to_core_finding_candidate,
+    adapt_llm_review_result_to_core_finding_candidates,
+    build_llm_core_rule_id,
+    normalize_llm_core_finding_severity,
+)
 from content_review_engine.llm.mock import MockLLMReviewer
 from content_review_engine.llm.manual_review import (
     LLMBatchManualReviewItem,
@@ -247,7 +256,10 @@ __all__ = [
     "LLM_FINDING_SEVERITY_ORDER",
     "LLM_FINDING_SOURCE",
     "LLM_FINDING_UNKNOWN_SEVERITY",
+    "LLM_CORE_FINDING_DEFAULT_RULE_ID",
+    "LLM_CORE_FINDING_DEFAULT_SEVERITY",
     "LLMBatchManualReviewItem",
+    "LLMCoreFindingCandidate",
     "LLMExecutionReviewItem",
     "LLMSidecarError",
     "LLMSidecarFile",
@@ -312,6 +324,7 @@ __all__ = [
     "build_llm_semantic_review_system_prompt",
     "build_llm_semantic_review_user_prompt",
     "build_batch_llm_manual_review_items",
+    "build_llm_core_rule_id",
     "build_llm_finding_display_metadata",
     "build_llm_execution_review_items",
     "build_llm_manual_review_items",
@@ -335,6 +348,7 @@ __all__ = [
     "llm_sidecar_result_to_json",
     "llm_sidecar_summary_to_dict",
     "merge_llm_provider_config",
+    "normalize_llm_core_finding_severity",
     "normalize_llm_finding_rule_id",
     "normalize_llm_finding_severity",
     "normalize_llm_provider_name",
@@ -351,6 +365,8 @@ __all__ = [
     "resolve_llm_provider_secret",
     "render_llm_smoke_check_result",
     "raise_pydanticai_not_implemented",
+    "adapt_llm_finding_to_core_finding_candidate",
+    "adapt_llm_review_result_to_core_finding_candidates",
     "run_pydanticai_live_check_agent",
     "run_pydanticai_runtime_agent",
     "run_pydanticai_semantic_review_agent",

@@ -284,6 +284,10 @@ Current status:
   conversion helper that maps `ValidatedLLMSemanticReviewOutput` into
   `LLMReviewResult` without calling a provider, reading environment
   variables, or changing sidecar or deterministic-review behavior
+- `src/content_review_engine/llm/finding_adapter.py` now defines a separate
+  pure adapter that maps `LLMReviewResult` findings into internal
+  `LLMCoreFindingCandidate` values for future merge work, without changing
+  provider contracts, sidecar JSON, CLI behavior, or quality-gate behavior
 - the canonical deterministic JSON output schema remains unchanged
 
 Current provider-contract boundary:
@@ -357,6 +361,33 @@ convert_validated_semantic_output_to_llm_review_result()
   ↓
 LLMReviewResult
 ```
+
+Current LLM-to-core finding adapter boundary:
+
+```text
+LLMReviewResult
+  ↓
+adapt_llm_review_result_to_core_finding_candidates()
+  ↓
+LLMCoreFindingCandidate
+  ↓
+future combined ReviewResult integration
+```
+
+Current adapter guarantees:
+
+- the adapter is a pure conversion layer under `src/content_review_engine/llm/`
+- the adapter does not call a provider
+- the adapter does not read `.env` or `os.environ`
+- the adapter does not access the network
+- the adapter does not read example artifacts as runtime inputs
+- the adapter does not change `LLMReviewResult`, `ReviewResult`, or
+  `BatchReviewResult`
+- the adapter does not write candidates into `ReviewResult.findings`
+- the adapter does not change CLI flags, CLI defaults, Markdown report
+  rendering, or quality-gate behavior
+- the adapter keeps LLM findings advisory and outside deterministic summary
+  counts, rule counts, exit codes, and quality gates
 
 Current prompt-contract guarantees:
 

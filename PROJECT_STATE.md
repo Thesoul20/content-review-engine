@@ -55,6 +55,10 @@ It now also includes committed reference artifacts under
 reports, LLM sidecars, LLM Markdown reports, report indexes, advisory policy,
 manual review checklist output, and batch partial failure presentation without
 changing runtime behavior.
+It now also includes a separate LLM-to-core finding adapter that normalizes
+`LLMReviewResult` findings into internal `LLMCoreFindingCandidate` values as
+preparation for future merge work, while keeping LLM findings out of the main
+`ReviewResult`, deterministic counts, quality gate, and CLI default behavior.
 
 ---
 
@@ -124,6 +128,22 @@ changing runtime behavior.
 - No active task is recorded in this file.
 
 ## Recent Completion
+
+- TASK-0076 is complete.
+- Added `src/content_review_engine/llm/finding_adapter.py` with
+  `LLMCoreFindingCandidate`, centralized severity normalization, centralized
+  `llm.` rule-id normalization, and pure conversion helpers from
+  `LLMReviewResult` to ordered candidate lists.
+- Added `tests/test_llm_finding_adapter.py` for single-finding conversion,
+  multi-finding ordering, empty-result handling, advisory/source markers,
+  severity normalization, rule-id normalization, field preservation, input
+  immutability, unchanged sidecar serialization, and deterministic
+  quality-gate boundary coverage.
+- Updated `docs/ARCHITECTURE.md`, `docs/DATA_MODELS.md`, and
+  `docs/LLM_PROVIDER_USAGE.md` to document the new adapter layer as
+  preparation for future combined review-result integration only.
+- Updated `CHANGELOG.md` to record TASK-0076 and its unchanged runtime
+  boundaries.
 
 - TASK-0075 is complete.
 - Added `examples/llm_review_artifacts/README.md` plus committed single-file

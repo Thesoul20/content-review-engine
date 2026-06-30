@@ -99,6 +99,12 @@ def test_usage_docs_exist_and_cover_required_provider_flags_and_boundaries() -> 
     assert "ValidatedLLMSemanticReviewOutput" in content
     assert "convert_validated_semantic_output_to_llm_review_result" in content
     assert "Validated LLM semantic output to LLMReviewResult conversion" in content
+    assert "LLMReviewResult to core finding candidate adaptation" in content
+    assert "adapt_llm_review_result_to_core_finding_candidates" in content
+    assert "LLMCoreFindingCandidate" in content
+    assert "the adapter does not change the provider contract" in content
+    assert "the adapter does not change raw `LLMReviewResult` JSON sidecars" in content
+    assert "the adapter does not merge LLM findings into `ReviewResult.findings`" in content
     assert "Single-file CLI LLM integration" in content
     assert "--llm-output` writes raw `LLMReviewResult` JSON" in content
     assert "--llm-report` writes a separate Markdown report rendered from the same" in content
@@ -174,6 +180,10 @@ def test_docs_and_fixtures_do_not_require_real_network_or_real_api_key() -> None
     assert "prompt construction remains separate from output parsing, output validation," in usage_doc
     assert "the validated output is not the same thing as `LLMReviewResult`" in usage_doc
     assert "The conversion helper does not call a provider, does not read `os.environ`, and does not access the network." in usage_doc
+    assert "The core package now also includes an internal LLM-to-core finding adapter" in usage_doc
+    assert "candidate `source` is always `llm`" in usage_doc
+    assert "candidate `advisory` is always `True`" in usage_doc
+    assert "unknown, blank, or missing severity falls back to `warning`" in usage_doc
     assert "provider execution reuses the shared prompt contract" in usage_doc
     assert "provider execution reuses `parse_llm_semantic_review_output()`" in usage_doc
     assert "Single-file `content-review review --enable-llm --llm-output ...` now writes" in usage_doc

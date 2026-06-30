@@ -8,6 +8,39 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0076
+
+### Added
+
+- Added `src/content_review_engine/llm/finding_adapter.py` with
+  `LLMCoreFindingCandidate`, pure single-finding and result-level adapter
+  functions, centralized severity normalization for core candidates, and
+  centralized `llm.` rule-id normalization.
+- Added `tests/test_llm_finding_adapter.py` for single and multi-finding
+  conversion, empty-result handling, field preservation, advisory/source
+  markers, severity normalization, rule-id normalization, input immutability,
+  unchanged sidecar serialization, and deterministic quality-gate boundary
+  coverage.
+
+### Changed
+
+- Updated `src/content_review_engine/llm/__init__.py` to export the new
+  adapter types, constants, and helper functions.
+- Updated `docs/ARCHITECTURE.md`, `docs/DATA_MODELS.md`,
+  `docs/LLM_PROVIDER_USAGE.md`, and `PROJECT_STATE.md` to document the
+  adapter layer as preparation for future merged-review work only.
+
+### Not Added
+
+- No `ReviewResult`, `BatchReviewResult`, `LLMReviewResult`, or
+  `LLMSidecarResult` schema change.
+- No merge of LLM findings into deterministic findings, no deterministic
+  runner change, no deterministic rule-engine change, no CLI flag or default
+  behavior change, no Markdown report merge, no batch schema change, and no
+  quality-gate or exit-code behavior change.
+- No provider-contract change, no sidecar JSON change, no real API call, and
+  no runtime dependency on `examples/`.
+
 ## TASK-0075
 
 ### Added

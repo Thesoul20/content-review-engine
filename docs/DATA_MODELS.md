@@ -283,6 +283,48 @@ Current report-index guarantees:
 - the committed files under `examples/llm_review_artifacts/` are example
   artifacts only and do not become canonical result schemas
 
+## LLMCoreFindingCandidate
+
+`LLMCoreFindingCandidate` is an internal adapter-local data structure in
+`src/content_review_engine/llm/finding_adapter.py`.
+
+It is not part of the canonical `ReviewResult`, `BatchReviewResult`,
+`LLMReviewResult`, or `LLMSidecarResult` schemas.
+It exists only as a stable intermediate candidate for future merge tasks that
+may later combine advisory LLM findings with the main review pipeline.
+
+| Field | Required | Description |
+|---|---|---|
+| `source` | Yes | Stable source marker, always `llm` |
+| `advisory` | Yes | Stable advisory marker, always `True` |
+| `rule_id` | Yes | Normalized candidate rule ID that always starts with `llm.` |
+| `severity` | Yes | Canonical severity normalized to `info`, `warning`, `error`, or `critical` |
+| `message` | Yes | Human-readable finding summary |
+| `suggestion` | No | Optional remediation or rewrite suggestion |
+| `line` | No | Optional 1-based start line |
+| `column` | No | Optional 1-based start column |
+| `matched_text` | No | Optional evidence text copied from the LLM finding |
+| `context` | No | Optional adapter context, currently copied from LLM rationale when present |
+| `category` | No | Optional semantic category copied from the LLM finding |
+| `original_llm_rule_id` | No | Original `LLMReviewFinding.rule_id` before adapter normalization |
+| `original_index` | No | Original finding order index from `LLMReviewResult.findings` |
+
+Current adapter rules:
+
+- `source` is always `llm`
+- `advisory` is always `True`
+- `rule_id` always uses the `llm.` prefix, with fallback
+  `llm.semantic_review`
+- severity normalization keeps canonical values as-is, maps `high -> error`,
+  `medium -> warning`, `low -> info`, and falls back to `warning` for
+  unknown, empty, or missing values
+- the adapter preserves finding order and stores `original_index`
+- the adapter is pure and does not call a provider, read environment
+  variables, or access the network
+- candidates are not persisted into `ReviewResult.findings`
+- candidates do not participate in `severity_counts`, `rule_counts`, quality
+  gates, or exit-code behavior in the current task
+
 Current validated semantic-output conversion boundary:
 
 ```text
