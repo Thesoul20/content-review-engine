@@ -110,6 +110,7 @@ def test_usage_docs_exist_and_cover_required_provider_flags_and_boundaries() -> 
     assert "advisory semantic review suggestions" in content
     assert "Manual Review Checklist" in content
     assert "LLM Execution Review Checklist" in content
+    assert "examples/llm_review_artifacts/" in content
     assert "needs_review" in content
     assert "pending" in content
     assert "needs_rerun" in content
@@ -181,6 +182,8 @@ def test_docs_and_fixtures_do_not_require_real_network_or_real_api_key() -> None
     assert "`--report-index` can summarize deterministic output plus optional LLM output" in usage_doc
     assert "quality gate still uses deterministic review only" in usage_doc
     assert "LLM findings are advisory semantic review suggestions" in usage_doc
+    assert "committed artifact examples under" in usage_doc
+    assert "`examples/llm_review_artifacts/`" in usage_doc
     assert "Batch `--llm-output` writes one aggregate `LLMSidecarResult` JSON sidecar" in usage_doc
     assert "default `pytest` or CI" in usage_doc
     assert "YOUR_OPENAI_API_KEY_HERE" in env_example

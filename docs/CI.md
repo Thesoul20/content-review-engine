@@ -6,6 +6,11 @@ For the complete local setup flow before CI, see
 For explicit real-provider manual verification guidance, see
 [docs/LLM_PROVIDER_USAGE.md](./LLM_PROVIDER_USAGE.md).
 
+For committed example CI-style review artifacts that show deterministic output,
+LLM sidecars, advisory Markdown reports, report indexes, manual review
+checklists, and batch partial failure handling, see
+[`examples/llm_review_artifacts/README.md`](../examples/llm_review_artifacts/README.md).
+
 For the rule-system reference behind `--fail-on`, suppression comments, and
 severity ordering, see [docs/RULES.md](./RULES.md), the canonical rule
 reference.
@@ -197,6 +202,9 @@ CI boundary for providers:
   the default CI workflow
 - manual `pydanticai` verification belongs in a local developer workflow, not
   in the default workflow example
+- if you need a committed reference for artifact layout or manual reviewer
+  expectations, inspect `examples/llm_review_artifacts/` rather than treating
+  generated Markdown artifacts as schema definitions
 
 In GitHub Actions, exit code `0` passes the step. Exit code `1` or `2` fails
 the step.

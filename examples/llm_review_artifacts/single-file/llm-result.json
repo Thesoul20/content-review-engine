@@ -1,0 +1,38 @@
+{
+  "schema_version": "llm-review-result.v1",
+  "provider": "mock",
+  "model": "mock-llm-v1",
+  "prompt_version": "llm-semantic-review-prompt.v1",
+  "profile_name": "artifact-single-file",
+  "findings": [
+    {
+      "rule_id": "llm.semantic.unsupported_claim",
+      "severity": "warning",
+      "message": "The success promise sounds stronger than the evidence shown in the draft.",
+      "suggestion": "Narrow the promise and add concrete onboarding evidence.",
+      "confidence": 0.82,
+      "line": 5,
+      "column": 12,
+      "end_line": 5,
+      "end_column": 16,
+      "matched_text": "保证成功"
+    },
+    {
+      "rule_id": "llm.semantic.needs_human_review",
+      "severity": "error",
+      "message": "The draft asks readers to trust an operational result without explaining scope, reviewers, or exceptions.",
+      "suggestion": "Have a human reviewer confirm the rollout scope and exception handling before publishing.",
+      "rationale": "Readers may interpret the claim as a universal outcome.",
+      "category": "review_required"
+    }
+  ],
+  "summary": {
+    "overall_risk": "medium",
+    "summary": "One unsupported promise and one follow-up item need human review.",
+    "recommended_action": "Revise the success claim and complete a manual review before publication.",
+    "confidence": 0.78
+  },
+  "metadata": {
+    "semantic_output_schema_version": "llm-semantic-review-output.v1"
+  }
+}

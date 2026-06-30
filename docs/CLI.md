@@ -10,6 +10,12 @@ runtime troubleshooting, see [docs/LLM_PROVIDER_USAGE.md](./LLM_PROVIDER_USAGE.m
 For a committed runnable demo workspace using the current CLI contract, see
 [`examples/demo/README.md`](../examples/demo/README.md).
 
+For committed single-file and batch LLM artifact examples that show
+deterministic reports, LLM sidecars, LLM Markdown reports, report indexes,
+advisory policy, manual review checklists, and batch partial failure
+presentation, see
+[`examples/llm_review_artifacts/README.md`](../examples/llm_review_artifacts/README.md).
+
 For rule-system details such as supported `rule_id` values, severity ordering,
 suppression comments, counts, and quality gates, see
 [docs/RULES.md](./RULES.md), the canonical rule reference.
@@ -34,6 +40,9 @@ The profile list command exposes the same built-in template registry used by `pr
 The `llm-check` command validates LLM provider config, secret resolution,
 provider construction, and optional runtime reachability without reading
 article content, loading a review profile, or writing sidecars.
+The committed files under `examples/llm_review_artifacts/` are reference
+artifacts only. They do not change CLI behavior, enable LLM review, or
+replace the canonical deterministic JSON schemas.
 
 ## Review Output Index
 

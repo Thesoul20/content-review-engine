@@ -14,6 +14,11 @@ Canonical deterministic JSON serialization helpers live in
 Future-facing LLM serialization helpers live in
 `src/content_review_engine/llm/serialization.py`.
 
+Committed example artifacts now also live under
+`examples/llm_review_artifacts/`. Those files are documentation and test
+fixtures for current output relationships only. They do not define or extend
+the canonical schemas described here.
+
 Current built-in rule metadata is centralized in
 `src/content_review_engine/core/rule_registry.py`.
 That registry is internal metadata only. It is not a field in the canonical
@@ -275,6 +280,8 @@ Current report-index guarantees:
 - manual review checklist status and decision values are renderer-layer
   defaults only and are not persisted into `LLMReviewResult` or
   `LLMSidecarResult`
+- the committed files under `examples/llm_review_artifacts/` are example
+  artifacts only and do not become canonical result schemas
 
 Current validated semantic-output conversion boundary:
 

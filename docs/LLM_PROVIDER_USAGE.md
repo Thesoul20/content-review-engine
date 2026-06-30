@@ -30,6 +30,10 @@ the deterministic review pipeline.
   `LLM Execution Review Checklist` with stable IDs such as `LLM-ERR-001`,
   default `needs_rerun` status, and default suggested action
   `rerun_llm_review`.
+- The repository also includes committed artifact examples under
+  `examples/llm_review_artifacts/` for single-file output, batch output,
+  partial failure, advisory policy, manual review checklist output, and report
+  index interpretation.
 
 ## LLM semantic review prompt contract
 
@@ -258,6 +262,9 @@ Current guarantees:
 - deterministic JSON and Markdown reports do not include LLM findings
 - the report index states explicitly that quality gate still uses deterministic
   review only
+- the committed examples in `examples/llm_review_artifacts/` are reference
+  artifacts only; they do not add fields to `LLMReviewResult`,
+  `LLMSidecarResult`, `ReviewResult`, or `BatchReviewResult`
 - quality gate still uses deterministic review only
 - the separate LLM Markdown report now marks each finding with
   `source = llm`, `advisory = yes`, and `quality gate participation = no`

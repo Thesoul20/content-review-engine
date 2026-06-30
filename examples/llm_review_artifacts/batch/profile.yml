@@ -1,0 +1,35 @@
+name: artifact-batch
+target_platform: general
+tone: practical and reviewable
+max_title_length: 56
+max_paragraph_length: 220
+
+enabled_rules:
+  - absolute_claims
+
+rules:
+  - id: forbidden_terms
+    enabled: true
+    severity: error
+    terms:
+      - 违规词
+      - 敏感词
+      - 禁用词
+    allow_terms: []
+
+  - id: absolute_claims
+    enabled: true
+    severity: warning
+    terms:
+      - 马上交付
+      - 完全适用
+      - 永远不会出错
+    allow_terms: []
+
+regex_rules:
+  - id: missing_evidence_note
+    pattern: "补充数据|待补数据"
+    severity: info
+    message: "This draft still contains an evidence placeholder."
+    suggestion: "补充数据来源或删除占位说明。"
+    case_sensitive: false

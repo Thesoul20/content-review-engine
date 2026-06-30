@@ -1,0 +1,78 @@
+{
+  "schema_version": "llm-sidecar-result.v2",
+  "llm_provider": "mock",
+  "llm_provider_source": "config",
+  "summary": {
+    "file_count": 3,
+    "succeeded_count": 2,
+    "failed_count": 1,
+    "skipped_count": 0,
+    "finding_count": 2
+  },
+  "files": [
+    {
+      "path": "examples/llm_review_artifacts/batch/input/article-a.md",
+      "status": "success",
+      "finding_count": 1,
+      "review": {
+        "schema_version": "llm-review-result.v1",
+        "provider": "mock",
+        "model": "mock-llm-v1",
+        "profile_name": "artifact-batch",
+        "findings": [
+          {
+            "rule_id": "llm.semantic.overclaim",
+            "severity": "warning",
+            "message": "The onboarding benefit sounds broader than the draft supports.",
+            "suggestion": "Describe the rollout conditions and expected audience more precisely.",
+            "line": 3,
+            "column": 14,
+            "end_line": 3,
+            "end_column": 18,
+            "matched_text": "马上交付"
+          }
+        ],
+        "summary": {
+          "overall_risk": "medium",
+          "summary": "One overclaim needs revision.",
+          "recommended_action": "Revise the promise and confirm expected scope."
+        }
+      }
+    },
+    {
+      "path": "examples/llm_review_artifacts/batch/input/article-b.md",
+      "status": "success",
+      "finding_count": 1,
+      "review": {
+        "schema_version": "llm-review-result.v1",
+        "provider": "mock",
+        "model": "mock-llm-v1",
+        "profile_name": "artifact-batch",
+        "findings": [
+          {
+            "rule_id": "llm.semantic.needs_human_review",
+            "severity": "critical",
+            "message": "The process recommendation needs a human check because it implies a broad staffing conclusion without review evidence.",
+            "suggestion": "Ask an editor or operations owner to confirm the staffing claim before reuse.",
+            "confidence": 0.74,
+            "category": "review_required"
+          }
+        ],
+        "summary": {
+          "overall_risk": "high",
+          "summary": "The draft needs human confirmation before reuse.",
+          "recommended_action": "Route to manual review and collect reviewer notes."
+        }
+      }
+    },
+    {
+      "path": "examples/llm_review_artifacts/batch/input/article-with-llm-error.md",
+      "status": "failed",
+      "finding_count": 0,
+      "error": {
+        "error_type": "RuntimeError",
+        "message": "provider timeout during semantic review"
+      }
+    }
+  ]
+}

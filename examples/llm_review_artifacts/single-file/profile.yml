@@ -1,0 +1,35 @@
+name: artifact-single-file
+target_platform: general
+tone: clear and practical
+max_title_length: 48
+max_paragraph_length: 220
+
+enabled_rules:
+  - absolute_claims
+
+rules:
+  - id: forbidden_terms
+    enabled: true
+    severity: error
+    terms:
+      - 违规词
+      - 敏感词
+      - 禁用词
+    allow_terms: []
+
+  - id: absolute_claims
+    enabled: true
+    severity: warning
+    terms:
+      - 保证成功
+      - 全员适用
+      - 永远有效
+    allow_terms: []
+
+regex_rules:
+  - id: unfinished_example
+    pattern: "待补案例|待补证据"
+    severity: info
+    message: "This draft still references an unfinished example or evidence note."
+    suggestion: "补充案例或删除占位说明。"
+    case_sensitive: false

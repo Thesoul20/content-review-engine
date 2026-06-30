@@ -50,6 +50,11 @@ derives stable presentation-only checklist metadata for LLM findings and
 batch execution failures across the dedicated LLM Markdown report and hybrid
 report index, without changing any stored result schema, provider path, or
 quality-gate behavior.
+It now also includes committed reference artifacts under
+`examples/llm_review_artifacts/` that show single-file and batch deterministic
+reports, LLM sidecars, LLM Markdown reports, report indexes, advisory policy,
+manual review checklist output, and batch partial failure presentation without
+changing runtime behavior.
 
 ---
 
@@ -116,9 +121,25 @@ quality-gate behavior.
 
 ## In Progress
 
-- TASK-0074: Add LLM manual review checklist.
+- No active task is recorded in this file.
 
 ## Recent Completion
+
+- TASK-0075 is complete.
+- Added `examples/llm_review_artifacts/README.md` plus committed single-file
+  and batch example inputs, profiles, deterministic reports, LLM JSON
+  sidecars, LLM Markdown reports, and report indexes.
+- Added a batch partial-failure example that keeps deterministic output stable
+  while showing aggregate LLM failure recording plus
+  `LLM Execution Review Checklist` presentation.
+- Added `tests/test_llm_artifact_examples.py` and updated
+  `tests/test_llm_provider_usage_docs.py` for example-file existence, JSON
+  parsing, advisory-policy sections, manual review workflow text, partial
+  failure coverage, and placeholder-safety assertions.
+- Updated `docs/CLI.md`, `docs/LLM_PROVIDER_USAGE.md`,
+  `docs/DATA_MODELS.md`, `docs/ARCHITECTURE.md`, `docs/CI.md`, and
+  `CHANGELOG.md` to document the committed artifact examples and their
+  canonical-versus-presentation boundary.
 
 - TASK-0074 is complete.
 - Added `src/content_review_engine/llm/manual_review.py` with stable

@@ -8,6 +8,38 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0075
+
+### Added
+
+- Added `examples/llm_review_artifacts/README.md` plus committed single-file
+  and batch example inputs, profiles, deterministic reports, LLM JSON
+  sidecars, LLM Markdown reports, and report indexes.
+- Added `tests/test_llm_artifact_examples.py` for example root coverage,
+  artifact presence, JSON parsing, advisory-policy sections, manual review
+  checklist sections, batch execution review checklist coverage, manual review
+  workflow text, README boundary assertions, and placeholder-safety checks.
+
+### Changed
+
+- Updated `tests/test_llm_provider_usage_docs.py` so the LLM usage docs now
+  also assert the committed artifact-example references and interpretation
+  boundary text.
+- Updated `docs/CLI.md`, `docs/LLM_PROVIDER_USAGE.md`,
+  `docs/DATA_MODELS.md`, `docs/ARCHITECTURE.md`, `docs/CI.md`, and
+  `PROJECT_STATE.md` to document the committed artifact examples as
+  reference-only outputs, including advisory policy, deterministic-only
+  quality gate behavior, checklist non-persistence, and batch partial failure
+  interpretation.
+
+### Not Added
+
+- No `ReviewResult`, `BatchReviewResult`, `LLMReviewResult`, or
+  `LLMSidecarResult` schema change.
+- No renderer change, no CLI flag change, no new provider, no real API call,
+- no real-key requirement, no review-state persistence, and no quality-gate or
+  exit-code behavior change.
+
 ## TASK-0074
 
 ### Added

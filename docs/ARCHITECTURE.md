@@ -127,6 +127,10 @@ It now also includes a separate display-only manual-review helper under
 `src/content_review_engine/llm/manual_review.py` that derives checklist
 metadata for LLM Markdown reports and the hybrid report index without changing
 any stored result model or quality-gate behavior.
+It now also includes committed reference artifacts under
+`examples/llm_review_artifacts/` that document the current presentation
+outputs for single-file and batch LLM review without becoming runtime
+dependencies or schema sources.
 
 Current deterministic rules:
 
