@@ -25,6 +25,9 @@ Committed example artifacts now also live under
 `examples/llm_review_artifacts/`. Those files are documentation and test
 fixtures for current output relationships only. They do not define or extend
 the canonical schemas described here.
+The combined Markdown report is a presentation artifact derived from the combined envelope
+through `src/content_review_engine/reports/combined.py`.
+It is not a separate schema and it does not replace canonical JSON output.
 
 Current built-in rule metadata is centralized in
 `src/content_review_engine/core/rule_registry.py`.
@@ -57,6 +60,8 @@ Compatibility rules:
 - LLM findings never enter deterministic `findings`, deterministic
   `severity_counts`, deterministic `rule_counts`, `--fail-on`, quality gate,
   or exit code behavior
+- combined Markdown report is a presentation artifact derived from the combined envelope
+  and keeps the same artifact boundary
 
 ---
 

@@ -146,13 +146,19 @@ def test_combined_markdown_examples_contain_required_headings() -> None:
     batch_report = _read(BATCH_COMBINED_REPORT)
 
     assert "# Combined Content Review Report" in single_report
-    assert "## Summary" in single_report
-    assert "## Quality Gate Boundary" in single_report
-    assert "## Deterministic Review" in single_report
+    assert "## Artifact Boundary" in single_report
+    assert "## Deterministic Review Summary" in single_report
+    assert "## LLM Review Summary" in single_report
+    assert "## Quality Gate Behavior" in single_report
+    assert "## Artifact Notes" in single_report
     assert "# Batch Combined Content Review Report" in batch_report
-    assert "## LLM Summary" in batch_report
-    assert "## Quality Gate Boundary" in batch_report
-    assert "## Deterministic Review" in batch_report
+    assert "## Artifact Boundary" in batch_report
+    assert "## Deterministic Batch Summary" in batch_report
+    assert "## LLM Batch Summary" in batch_report
+    assert "## Combined File Results" in batch_report
+    assert "## LLM Findings by File" in batch_report
+    assert "## Quality Gate Behavior" in batch_report
+    assert "## Artifact Notes" in batch_report
 
 
 def test_report_indexes_contain_manual_review_workflow() -> None:
@@ -193,3 +199,10 @@ def test_example_files_do_not_contain_api_key_secret_or_traceback_text() -> None
     for path in _iter_example_files():
         content = _read(path)
         assert not any(pattern.search(content) for pattern in banned_patterns), path
+
+
+def test_combined_markdown_examples_do_not_contain_local_absolute_paths() -> None:
+    for path in (SINGLE_COMBINED_REPORT, BATCH_COMBINED_REPORT):
+        content = _read(path)
+        assert "/Users/" not in content
+        assert "C:\\" not in content

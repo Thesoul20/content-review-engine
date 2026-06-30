@@ -81,11 +81,27 @@ Combined-output compatibility rules:
 - combined JSON output now reuses the shared runtime entrypoint in
   `src/content_review_engine/llm/combined_envelope.py`
 - combined Markdown reports are presentation-only and reuse the deterministic
-  report before appending LLM sections
+  combined envelope through `src/content_review_engine/reports/combined.py`
 - combined Markdown dispatch now also reuses
   `src/content_review_engine/reports/combined.py`
 - committed combined artifacts in `examples/llm_review_artifacts/` are
   reference-only examples and do not become runtime dependencies
+
+Current combined Markdown section contract:
+
+- single-file combined Markdown includes `Artifact Boundary`,
+  `Deterministic Review Summary`, `Deterministic Findings`,
+  `LLM Review Summary`, `LLM Findings`, manual review workflow/checklist,
+  `Quality Gate Behavior`, and `Artifact Notes`
+- batch combined Markdown includes `Artifact Boundary`,
+  `Deterministic Batch Summary`, `LLM Batch Summary`,
+  `Combined File Results`, `Deterministic Findings by File`,
+  `LLM Findings by File`, manual review workflow/checklist, optional
+  execution checklist, `Quality Gate Behavior`, and `Artifact Notes`
+- empty deterministic findings, empty LLM findings, `not_run`, `skipped`,
+  and failed LLM states render explicit empty-state text instead of
+  synthesized findings
+- quality gate still uses deterministic review only
 
 ## LLM semantic review prompt contract
 

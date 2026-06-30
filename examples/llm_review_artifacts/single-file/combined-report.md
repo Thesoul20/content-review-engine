@@ -1,28 +1,46 @@
 # Combined Content Review Report
 
-## Summary
+## Artifact Boundary
+
+- This file is an explicit combined artifact rendered from `SingleFileCombinedReviewResult`.
+- It preserves deterministic review data and optional LLM review data in one human-readable report, but it does not replace canonical deterministic `--output` or raw `--llm-output` artifacts.
+- LLM findings remain advisory and presentation-only in this report.
+
+## Deterministic Review Summary
 
 | Field | Value |
 | --- | --- |
 | File | examples/llm_review_artifacts/single-file/input.md |
 | Profile | artifact-single-file |
-| Deterministic Findings | 2 |
-| LLM Status | succeeded |
-| LLM Advisory Findings | 2 |
-| LLM Advisory Policy | yes |
-| Quality Gate Scope | deterministic-only |
-| LLM Error | none |
+| Total Findings | 2 |
+| Severity Counts | info=1, warning=1, error=0, critical=0 |
+| Rule Counts | absolute_claims=1, unfinished_example=1 |
+| Quality Gate Source | deterministic findings only |
 
-## LLM Execution
+## Deterministic Findings
+
+| Severity | Rule | Line | Column | Message | Suggestion |
+| --- | --- | ---: | ---: | --- | --- |
+| warning | absolute_claims | 7 | 17 | 发现可能存在绝对化表述：保证成功 | 建议改为更审慎的表述，例如“较强”“表现较好”“在特定条件下有效”，或补充支撑该结论的证据。 |
+| info | unfinished_example | 11 | 6 | This draft still references an unfinished example or evidence note. | 补充案例或删除占位说明。 |
+
+## LLM Review Summary
 
 | Field | Value |
 | --- | --- |
 | Status | succeeded |
+| Schema Version | llm-review-result.v1 |
+| Provider | mock |
+| Model | mock-llm-v1 |
+| Prompt Version | llm-semantic-review-prompt.v1 |
+| Profile Name | artifact-single-file |
+| Advisory Findings | 2 |
 | Advisory | yes |
 | Quality Gate Participation | no |
 | Policy Note | LLM findings are advisory semantic review suggestions from the LLM layer. They do not participate in deterministic finding counts, fail-on, or quality gate. |
+| LLM Error | - |
 
-## LLM Advisory Findings
+## LLM Findings
 
 | Severity | Rule | Source | Advisory | Quality Gate | Confidence | Location | Message | Suggestion |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -43,68 +61,14 @@
 | LLM-001 | medium | needs_review | pending | no | llm.semantic.unsupported_claim | line 5, column 12 to line 5, column 16 | The success promise sounds stronger than the evidence shown in the draft. | - |
 | LLM-002 | high | needs_review | pending | no | llm.semantic.needs_human_review | not provided | The draft asks readers to trust an operational result without explaining scope, reviewers, or exceptions. | - |
 
-## Quality Gate Boundary
+## Quality Gate Behavior
 
 - Quality gate evaluation remains deterministic-only.
 - LLM advisory findings do not participate in severity counts, rule counts, fail-on, quality gate, or exit code.
-- Use the deterministic report below as the canonical audit record for automation and compliance checks.
+- Only deterministic findings can affect `--fail-on`, quality gate, or CLI exit code.
 
-## Deterministic Review
+## Artifact Notes
 
-# Content Review Report
-
-## Summary
-
-| Field | Value |
-| --- | --- |
-| File | `examples/llm_review_artifacts/single-file/input.md` |
-| Profile | `artifact-single-file` |
-| Total Findings | 2 |
-| Quality Gate | Not configured |
-
-## Severity Counts
-
-| Severity | Count |
-| --- | ---: |
-| critical | 0 |
-| error | 0 |
-| warning | 1 |
-| info | 1 |
-
-## Rule Counts
-
-| Rule | Count |
-| --- | ---: |
-| absolute_claims | 1 |
-| unfinished_example | 1 |
-
-## Findings
-
-| Severity | Rule | Line | Column | Message | Suggestion |
-| --- | --- | ---: | ---: | --- | --- |
-| warning | absolute_claims | 7 | 17 | 发现可能存在绝对化表述：保证成功 | 建议改为更审慎的表述，例如“较强”“表现较好”“在特定条件下有效”，或补充支撑该结论的证据。 |
-| info | unfinished_example | 11 | 6 | This draft still references an unfinished example or evidence note. | 补充案例或删除占位说明。 |
-
-## Detailed Findings
-
-### absolute_claims
-
-- Severity: warning
-- Message: 发现可能存在绝对化表述：保证成功
-- Matched Term: `保证成功`
-- Line: 7
-- Column: 17
-- Context: ...清单，方便团队内部复用。<br><br>这份 onboarding 清单保证成功，任何新同事照着做都能马上交付。<br><br>发布说明：请在正式对外前...
-- Matched Text: `保证成功`
-- Suggestion: 建议改为更审慎的表述，例如“较强”“表现较好”“在特定条件下有效”，或补充支撑该结论的证据。
-
-### unfinished_example
-
-- Severity: info
-- Message: This draft still references an unfinished example or evidence note.
-- Matched Term: `待补案例|待补证据`
-- Line: 11
-- Column: 6
-- Context: ...说明：请在正式对外前补充适用范围和负责人备注。<br><br>证据部分：待补案例。<br>
-- Matched Text: `待补案例`
-- Suggestion: 补充案例或删除占位说明。
+- `--output`, `--llm-output`, and `--combined-output` can coexist in the same run.
+- Use deterministic `--output` as the canonical automation artifact and raw `--llm-output` as the canonical machine-readable LLM artifact.
+- This combined Markdown report is a presentation artifact derived from the combined envelope and does not replace either JSON contract.

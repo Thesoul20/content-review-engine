@@ -1,22 +1,24 @@
 # Batch Combined Content Review Report
 
-## Summary
+## Artifact Boundary
+
+- This file is an explicit batch combined artifact rendered from `BatchCombinedReviewResult`.
+- It packages deterministic batch review data with optional batch LLM data for browsing, but it does not replace deterministic batch `--output` or raw batch `--llm-output`.
+- LLM findings remain advisory and presentation-only in this report.
+
+## Deterministic Batch Summary
 
 | Field | Value |
 | --- | --- |
+| Files Discovered | 3 |
 | Files Reviewed | 3 |
-| Deterministic Findings | 2 |
-| LLM Total Files | 3 |
-| LLM Succeeded | 2 |
-| LLM Failed | 1 |
-| LLM Skipped | 0 |
-| LLM Not Run | 0 |
-| LLM Advisory Findings | 2 |
-| Files With LLM Advisory Findings | 2 |
-| LLM Errors | 1 |
-| Quality Gate Scope | deterministic-only |
+| Files With Findings | 2 |
+| Total Findings | 2 |
+| Severity Counts | info=1, warning=1, error=0, critical=0 |
+| Rule Counts | absolute_claims=1, missing_evidence_note=1 |
+| Quality Gate Source | deterministic findings only |
 
-## LLM Summary
+## LLM Batch Summary
 
 | Field | Value |
 | --- | --- |
@@ -35,15 +37,33 @@
 | Quality Gate Participation | no |
 | Policy Note | LLM findings are advisory semantic review suggestions from the LLM layer. They do not participate in deterministic finding counts, fail-on, or quality gate. |
 
-## File Status Summary
+## Combined File Results
 
-| File | Status | Advisory Findings | Error |
-| --- | --- | ---: | --- |
-| examples/llm_review_artifacts/batch/input/article-a.md | succeeded | 1 | - |
-| examples/llm_review_artifacts/batch/input/article-b.md | succeeded | 1 | - |
-| examples/llm_review_artifacts/batch/input/article-with-llm-error.md | failed | 0 | RuntimeError: provider timeout during semantic review |
+| File | Deterministic Findings | LLM Status | LLM Advisory Findings | LLM Error |
+| --- | ---: | --- | ---: | --- |
+| examples/llm_review_artifacts/batch/input/article-a.md | 1 | succeeded | 1 | - |
+| examples/llm_review_artifacts/batch/input/article-b.md | 1 | succeeded | 1 | - |
+| examples/llm_review_artifacts/batch/input/article-with-llm-error.md | 0 | failed | 0 | RuntimeError: provider timeout during semantic review |
 
-## LLM Advisory Findings
+## Deterministic Findings by File
+
+### examples/llm_review_artifacts/batch/input/article-a.md
+
+| Severity | Rule | Line | Column | Message | Suggestion |
+| --- | --- | ---: | ---: | --- | --- |
+| warning | absolute_claims | 5 | 13 | 发现可能存在绝对化表述：马上交付 | 建议改为更审慎的表述，例如“较强”“表现较好”“在特定条件下有效”，或补充支撑该结论的证据。 |
+
+### examples/llm_review_artifacts/batch/input/article-b.md
+
+| Severity | Rule | Line | Column | Message | Suggestion |
+| --- | --- | ---: | ---: | --- | --- |
+| info | missing_evidence_note | 7 | 4 | This draft still contains an evidence placeholder. | 补充数据来源或删除占位说明。 |
+
+### examples/llm_review_artifacts/batch/input/article-with-llm-error.md
+
+No deterministic findings.
+
+## LLM Findings by File
 
 | File | Severity | Rule | Source | Advisory | Quality Gate | Confidence | Location | Message | Suggestion |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -77,99 +97,14 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | LLM-ERR-001 | examples/llm_review_artifacts/batch/input/article-with-llm-error.md | needs_rerun | rerun_llm_review | RuntimeError | provider timeout during semantic review | - |
 
-## Quality Gate Boundary
+## Quality Gate Behavior
 
 - Quality gate evaluation remains deterministic-only.
 - LLM advisory findings do not participate in severity counts, rule counts, fail-on, quality gate, or exit code.
-- Use the deterministic batch report below as the canonical audit record for automation and compliance checks.
+- Only deterministic findings can affect batch `--fail-on`, quality gate, or CLI exit code.
 
-## Deterministic Review
+## Artifact Notes
 
-# Batch Content Review Report
-
-## Summary
-
-| Field | Value |
-| --- | --- |
-| Files Discovered | 3 |
-| Files Reviewed | 3 |
-| Files With Findings | 2 |
-| Total Findings | 2 |
-| Quality Gate | Not configured |
-
-## Severity Counts
-
-| Severity | Count |
-| --- | ---: |
-| critical | 0 |
-| error | 0 |
-| warning | 1 |
-| info | 1 |
-
-## Rule Counts
-
-| Rule | Count |
-| --- | ---: |
-| absolute_claims | 1 |
-| missing_evidence_note | 1 |
-
-## Files With Findings
-
-| File | Findings | Highest Severity |
-| --- | ---: | --- |
-| `examples/llm_review_artifacts/batch/input/article-a.md` | 1 | warning |
-| `examples/llm_review_artifacts/batch/input/article-b.md` | 1 | info |
-
-## Findings by File
-
-### `examples/llm_review_artifacts/batch/input/article-a.md`
-
-#### Findings
-
-| Severity | Rule | Line | Column | Message | Suggestion |
-| --- | --- | ---: | ---: | --- | --- |
-| warning | absolute_claims | 5 | 13 | 发现可能存在绝对化表述：马上交付 | 建议改为更审慎的表述，例如“较强”“表现较好”“在特定条件下有效”，或补充支撑该结论的证据。 |
-
-#### Detailed Findings
-
-### absolute_claims
-
-- Severity: warning
-- Message: 发现可能存在绝对化表述：马上交付
-- Matched Term: `马上交付`
-- Line: 5
-- Column: 13
-- Context: ...h LLM artifacts。<br><br>这份 SOP 能让新同事马上交付。<br><br>如果团队准备复用，请在正式发布前补充适用范围。<br>
-- Matched Text: `马上交付`
-- Suggestion: 建议改为更审慎的表述，例如“较强”“表现较好”“在特定条件下有效”，或补充支撑该结论的证据。
-
-### `examples/llm_review_artifacts/batch/input/article-b.md`
-
-#### Findings
-
-| Severity | Rule | Line | Column | Message | Suggestion |
-| --- | --- | ---: | ---: | --- | --- |
-| info | missing_evidence_note | 7 | 4 | This draft still contains an evidence placeholder. | 补充数据来源或删除占位说明。 |
-
-#### Detailed Findings
-
-### missing_evidence_note
-
-- Severity: info
-- Message: This draft still contains an evidence placeholder.
-- Matched Term: `补充数据|待补数据`
-- Line: 7
-- Column: 4
-- Context: ...并存。<br><br>文中建议把流程复盘模板发给更多团队参考。<br><br>备注：补充数据。<br>
-- Matched Text: `补充数据`
-- Suggestion: 补充数据来源或删除占位说明。
-
-### `examples/llm_review_artifacts/batch/input/article-with-llm-error.md`
-
-#### Findings
-
-No findings.
-
-#### Detailed Findings
-
-No findings.
+- `--output`, `--llm-output`, and `--combined-output` can coexist in the same batch run.
+- Use deterministic batch `--output` as the canonical automation artifact and raw batch `--llm-output` as the canonical machine-readable LLM artifact.
+- This combined Markdown report is a presentation artifact derived from the combined envelope and does not replace either JSON contract.

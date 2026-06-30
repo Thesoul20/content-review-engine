@@ -113,6 +113,7 @@ def test_batch_combined_markdown_output_reuses_renderer(
     assert exit_code == 0
     assert captured.err == ""
     assert report.startswith("# Batch Combined Content Review Report\n")
+    assert "## Artifact Boundary" in report
     assert "| LLM Batch Status | all_succeeded |" in report
     assert "| LLM Provider | pydanticai |" in report
     assert "| LLM Succeeded | 3 |" in report
@@ -368,6 +369,7 @@ def test_batch_combined_output_records_all_failed(
 
     assert exit_code == 2
     assert captured.err == ""
+    assert "## Artifact Boundary" in report
     assert "| LLM Batch Status | all_failed |" in report
     assert "| LLM Failed | 3 |" in report
     assert "| LLM Errors | 3 |" in report

@@ -8,6 +8,46 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0085
+
+### Added
+
+- Added `tests/test_llm_combined_markdown_report.py` for the shared combined
+  Markdown dispatch entrypoint and stable single-file / batch section
+  coverage.
+
+### Changed
+
+- Updated `src/content_review_engine/reports/combined.py` and
+  `src/content_review_engine/reports/__init__.py` so the reports layer now
+  exposes explicit shared combined Markdown entrypoints for single-file,
+  batch, and dispatch rendering.
+- Updated `src/content_review_engine/reports/combined_markdown.py` so the
+  single-file combined Markdown report now renders a stable section contract
+  for artifact boundary, deterministic summary/findings, LLM summary/findings,
+  manual review workflow, checklist, deterministic-only quality-gate
+  behavior, and artifact notes while reusing `SingleFileCombinedReviewResult`.
+- Updated `src/content_review_engine/reports/batch_combined_markdown.py` so
+  the batch combined Markdown report now renders a stable section contract
+  for artifact boundary, deterministic batch summary, combined file results,
+  deterministic findings by file, LLM findings by file, checklist workflow,
+  deterministic-only quality-gate behavior, and artifact notes while
+  reusing `BatchCombinedReviewResult`.
+- Refreshed
+  `examples/llm_review_artifacts/single-file/combined-report.md`,
+  `examples/llm_review_artifacts/batch/batch-combined-report.md`, and the
+  related docs/tests to lock the new combined Markdown presentation contract
+  and artifact-boundary wording.
+
+### Not Added
+
+- No change to the combined JSON envelope schema or to the canonical
+  deterministic / raw LLM output schemas.
+- No change to `--output`, `--llm-output`, or explicit `--combined-output`
+  opt-in behavior.
+- No change to deterministic counts, `--fail-on`, quality-gate behavior, or
+  CLI exit codes, and no provider-interface or real-provider work.
+
 ## TASK-0084
 
 ### Added

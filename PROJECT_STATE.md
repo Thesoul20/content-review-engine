@@ -102,6 +102,12 @@ dispatches single-file and batch builders plus JSON serialization, and a
 small combined Markdown dispatch helper, so `--combined-output` reuses one
 explicit internal builder/serializer path without changing deterministic
 output semantics, sidecar semantics, quality gates, or exit codes.
+It now also includes a stabilized combined Markdown report contract for both
+single-file and batch output, rendered from the shared combined envelope
+through the reports layer with explicit artifact-boundary sections,
+deterministic and LLM section separation, deterministic-only quality-gate
+notes, empty-state handling, and refreshed committed reference artifacts
+without changing combined JSON schemas or CLI exit-code behavior.
 
 ---
 
@@ -171,6 +177,24 @@ output semantics, sidecar semantics, quality gates, or exit codes.
 - No active task is recorded in this file.
 
 ## Recent Completion
+
+- TASK-0085 is complete.
+- Consolidated combined Markdown report rendering around
+  `src/content_review_engine/reports/combined.py` plus the existing
+  single-file and batch renderers, so `--combined-output ...md` stays in the
+  reports layer and continues to consume the shared combined envelope rather
+  than reassembling business data in the CLI.
+- Updated `src/content_review_engine/reports/combined_markdown.py` and
+  `src/content_review_engine/reports/batch_combined_markdown.py` so
+  single-file and batch combined Markdown now expose stable section
+  structures for artifact boundary, deterministic summaries/findings, LLM
+  summaries/findings, checklist workflow, deterministic-only quality-gate
+  behavior, and artifact notes, while also handling empty findings and
+  redacting absolute-path / traceback-like display content in Markdown.
+- Added `tests/test_llm_combined_markdown_report.py`, updated the existing
+  combined Markdown CLI / renderer / example tests, and refreshed committed
+  combined Markdown reference artifacts and docs so section drift, artifact
+  boundary drift, and deterministic-only quality-gate drift are now covered.
 
 - TASK-0084 is complete.
 - Added `src/content_review_engine/llm/combined_envelope.py` as the stable

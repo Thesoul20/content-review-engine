@@ -1,7 +1,11 @@
 from content_review_engine.reports.batch_combined_markdown import (
     render_batch_combined_markdown_report,
 )
-from content_review_engine.reports.combined import render_combined_markdown_report
+from content_review_engine.reports.combined import (
+    render_batch_combined_markdown,
+    render_combined_markdown_report,
+    render_single_file_combined_markdown,
+)
 from content_review_engine.reports.combined_markdown import (
     render_single_file_combined_markdown_report,
 )
@@ -20,12 +24,14 @@ from content_review_engine.reports.report_index import (
 
 __all__ = [
     "render_batch_combined_markdown_report",
+    "render_batch_combined_markdown",
     "render_batch_report_index",
     "render_batch_markdown_report",
     "render_combined_markdown_report",
     "render_llm_review_markdown",
     "render_llm_sidecar_markdown",
     "render_markdown_report",
+    "render_single_file_combined_markdown",
     "render_single_file_combined_markdown_report",
     "render_single_file_report_index",
 ]

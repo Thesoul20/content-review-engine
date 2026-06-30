@@ -19,7 +19,6 @@ from content_review_engine.llm import (
 )
 from content_review_engine.reports import (
     render_batch_combined_markdown_report,
-    render_batch_markdown_report,
 )
 
 
@@ -124,8 +123,13 @@ def test_render_batch_combined_markdown_report_for_all_succeeded() -> None:
     report = render_batch_combined_markdown_report(combined)
 
     assert report.startswith("# Batch Combined Content Review Report\n")
+    assert "## Artifact Boundary" in report
+    assert "## Deterministic Batch Summary" in report
+    assert "## Combined File Results" in report
+    assert "## Deterministic Findings by File" in report
+    assert "## LLM Findings by File" in report
     assert "| Files Reviewed | 3 |" in report
-    assert "| Deterministic Findings | 2 |" in report
+    assert "| Total Findings | 2 |" in report
     assert "| LLM Batch Status | all_succeeded |" in report
     assert "| LLM Provider | mock |" in report
     assert "| LLM Succeeded | 3 |" in report
@@ -133,9 +137,9 @@ def test_render_batch_combined_markdown_report_for_all_succeeded() -> None:
     assert "| LLM Advisory Findings | 2 |" in report
     assert "| Files With LLM Advisory Findings | 2 |" in report
     assert "| LLM Errors | 0 |" in report
-    assert "| z.md | succeeded | 1 | - |" in report
-    assert "| a.md | succeeded | 1 | - |" in report
-    assert "| m.md | succeeded | 0 | - |" in report
+    assert "| z.md | 0 | succeeded | 1 | - |" in report
+    assert "| a.md | 1 | succeeded | 1 | - |" in report
+    assert "| m.md | 1 | succeeded | 0 | - |" in report
     assert "| z.md | warning | llm.unsafe_medical_claim | llm | yes | no | not provided | 3:4 | Needs manual review. | Add evidence. |" in report
     assert "| a.md | error | llm.semantic_risky_advice | llm | yes | no | not provided | - | Potentially risky advice. | - |" in report
     assert "## LLM Error Summary" in report
@@ -144,8 +148,9 @@ def test_render_batch_combined_markdown_report_for_all_succeeded() -> None:
     assert "## Manual Review Checklist" in report
     assert "| LLM-001 | z.md | medium | needs_review | pending | no | Unsafe Medical Claim | line 3, column 4 | Needs manual review. | - |" in report
     assert "| LLM-002 | a.md | high | needs_review | pending | no | llm.semantic.risky_advice | not provided | Potentially risky advice. | - |" in report
-    assert "## Quality Gate Boundary" in report
+    assert "## Quality Gate Behavior" in report
     assert "Quality gate evaluation remains deterministic-only." in report
+    assert "## Artifact Notes" in report
 
 
 def test_render_batch_combined_markdown_report_for_partial_failure() -> None:
@@ -194,9 +199,9 @@ def test_render_batch_combined_markdown_report_for_partial_failure() -> None:
     assert "| LLM Failed | 1 |" in report
     assert "| LLM Skipped | 1 |" in report
     assert "| LLM Errors | 1 |" in report
-    assert "| z.md | succeeded | 1 | - |" in report
-    assert "| a.md | failed | 0 | LLMProviderError: provider unavailable |" in report
-    assert "| m.md | skipped | 0 | - |" in report
+    assert "| z.md | 0 | succeeded | 1 | - |" in report
+    assert "| a.md | 1 | failed | 0 | LLMProviderError: provider unavailable |" in report
+    assert "| m.md | 1 | skipped | 0 | - |" in report
     assert "| a.md | LLMProviderError | provider unavailable | - | - |" in report
     assert "partial LLM failure" in report
     assert "## LLM Execution Review Checklist" in report
@@ -239,7 +244,7 @@ def test_render_batch_combined_markdown_report_for_all_failed() -> None:
     assert "| LLM Batch Status | all_failed |" in report
     assert "| LLM Failed | 3 |" in report
     assert report.count("| RuntimeError |") >= 3
-    assert "No LLM advisory findings." in report
+    assert "No LLM advisory findings across reviewed files." in report
     assert "All LLM review attempts failed in this batch" in report
     assert "No manual review checklist items." in report
     assert "| LLM-ERR-003 | m.md | needs_rerun | rerun_llm_review | RuntimeError | third failed | - |" in report
@@ -255,7 +260,7 @@ def test_render_batch_combined_markdown_report_for_not_run() -> None:
     assert "| LLM Batch Status | not_run |" in report
     assert "| LLM Not Run | 3 |" in report
     assert "| LLM Provider | - |" in report
-    assert report.count("No LLM advisory findings.") == 1
+    assert report.count("No LLM advisory findings across reviewed files.") == 1
     assert "No LLM review was run for this batch" in report
     assert "No manual review checklist items." in report
     assert "## LLM Execution Review Checklist" not in report
@@ -272,19 +277,17 @@ def test_render_batch_combined_markdown_report_for_skipped() -> None:
     assert "| LLM Batch Status | skipped |" in report
     assert "| LLM Skipped | 3 |" in report
     assert "LLM review was skipped for this batch" in report
-    assert "No LLM advisory findings." in report
+    assert "No LLM advisory findings across reviewed files." in report
 
 
 def test_render_batch_combined_markdown_report_preserves_deterministic_report_content() -> None:
-    batch_review_result = _build_batch_review_result()
-    deterministic_report = render_batch_markdown_report(batch_review_result)
-
     report = render_batch_combined_markdown_report(
-        build_batch_combined_review_result(batch_review_result=batch_review_result)
+        build_batch_combined_review_result(batch_review_result=_build_batch_review_result())
     )
 
-    assert "## Deterministic Review\n\n# Batch Content Review Report" in report
-    assert deterministic_report in report
+    assert "## Deterministic Findings by File" in report
+    assert "### a.md" in report
+    assert "| warning | forbidden_terms | - | - | Contains forbidden term. | - |" in report
 
 
 def test_render_batch_combined_markdown_report_escapes_markdown_table_cells() -> None:
@@ -328,7 +331,7 @@ def test_render_batch_combined_markdown_report_escapes_markdown_table_cells() ->
 
     report = render_batch_combined_markdown_report(combined)
 
-    assert r"| article\|one.md | succeeded | 1 | - |" in report
+    assert r"| article\|one.md | 0 | succeeded | 1 | - |" in report
     assert r"| article\|one.md | warning | llm.unsafe_claim | llm | yes | no | not provided | 4:2 | Line 1 \| claim<br>Line 2 | Rewrite \| carefully<br>now |" in report
 
 
@@ -376,3 +379,20 @@ def test_render_batch_combined_markdown_report_does_not_change_serializer_output
 
     assert report.endswith("\n")
     assert batch_combined_review_result_to_dict(combined) == payload_before
+
+
+def test_render_batch_combined_markdown_report_redacts_absolute_paths() -> None:
+    batch_review_result = BatchReviewResult.from_results(
+        [
+            _build_review_result("/Users/example/workspace/article-a.md"),
+        ],
+        file_count=1,
+    )
+
+    report = render_batch_combined_markdown_report(
+        build_batch_combined_review_result(batch_review_result=batch_review_result)
+    )
+
+    assert "/Users/example/workspace/article-a.md" not in report
+    assert "| article-a.md | 0 | not_run | 0 | - |" in report
+    assert "### article-a.md" in report

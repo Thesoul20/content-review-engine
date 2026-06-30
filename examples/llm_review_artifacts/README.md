@@ -87,6 +87,10 @@ The canonical combined-output data models remain
 The Markdown files in this directory are presentation artifacts derived from
 those models. They are examples for browsing and review, not replacement
 schemas.
+The combined Markdown examples also show the current stable section contract
+for `Artifact Boundary`, deterministic summary/findings, LLM summary/findings,
+manual review workflow, deterministic-only `Quality Gate Behavior`, and
+`Artifact Notes`.
 
 ## Deterministic And LLM Boundary
 
@@ -123,6 +127,8 @@ the LLM execution failure separately and add an execution review checklist item
 for rerun handling.
 
 The committed JSON examples are parseable reference artifacts. The committed
-combined Markdown examples include `## Summary`, `## Quality Gate Boundary`,
-and deterministic-review sections so tests can verify the current presentation
-contract without making `examples/` part of runtime behavior.
+combined Markdown examples include `## Artifact Boundary`,
+`## Deterministic Review Summary` or `## Deterministic Batch Summary`,
+`## Quality Gate Behavior`, and artifact-notes sections so tests can verify
+the current presentation contract without making `examples/` part of runtime
+behavior.

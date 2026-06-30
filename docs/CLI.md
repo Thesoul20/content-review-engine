@@ -94,11 +94,34 @@ Interpretation:
   plus optional canonical `LLMReviewResult`
 - batch combined JSON is an envelope around canonical `BatchReviewResult`
   plus optional canonical `LLMSidecarResult`
-- combined Markdown is presentation-only and reuses the deterministic Markdown
-  report before appending LLM sections
+- combined Markdown is presentation-only and is rendered from the same
+  combined envelope through `src/content_review_engine/reports/combined.py`
 - LLM findings shown in combined output are advisory only and do not enter
   deterministic `findings`, severity counts, rule counts, `--fail-on`, or
   exit code evaluation
+
+## Combined Markdown Report Sections
+
+Current combined Markdown section contract:
+
+- single-file combined Markdown starts with `# Combined Content Review Report`
+  and includes `Artifact Boundary`, `Deterministic Review Summary`,
+  `Deterministic Findings`, `LLM Review Summary`, `LLM Findings`,
+  `Manual Review Workflow`, `Manual Review Checklist`,
+  `Quality Gate Behavior`, and `Artifact Notes`
+- batch combined Markdown starts with
+  `# Batch Combined Content Review Report` and includes
+  `Artifact Boundary`, `Deterministic Batch Summary`,
+  `LLM Batch Summary`, `Combined File Results`,
+  `Deterministic Findings by File`, `LLM Findings by File`,
+  `Manual Review Workflow`, `Manual Review Checklist`,
+  optional `LLM Execution Review Checklist`,
+  `Quality Gate Behavior`, and `Artifact Notes`
+- both combined Markdown reports are explicit browsing artifacts only
+- both reports state the artifact boundary and deterministic-only quality-gate
+  behavior directly in the Markdown body
+- empty deterministic findings, empty LLM findings, and LLM-not-run states are
+  rendered as explicit empty-state text instead of synthesized findings
 
 ## Review Output Index
 

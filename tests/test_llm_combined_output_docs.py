@@ -21,6 +21,8 @@ def test_cli_docs_define_output_boundaries_and_behavior_matrix() -> None:
     assert "writes combined output with `llm.status = not_run`" in content
     assert "writes combined output with per-file `status = not_run`" in content
     assert "deterministic-only" in content
+    assert "Artifact Boundary" in content
+    assert "Quality Gate Behavior" in content
 
 
 def test_architecture_and_data_model_docs_keep_combined_boundaries_aligned() -> None:
@@ -30,10 +32,12 @@ def test_architecture_and_data_model_docs_keep_combined_boundaries_aligned() -> 
     assert "## Output Artifact Relationship" in architecture
     assert "SingleFileCombinedReviewResult / BatchCombinedReviewResult" in architecture
     assert "src/content_review_engine/llm/combined_envelope.py" in architecture
+    assert "src/content_review_engine/reports/combined.py" in architecture
     assert "deterministic quality-gate evaluation remains upstream" in architecture
     assert "## Artifact Boundary Matrix" in data_models
     assert "| Combined output | `SingleFileCombinedReviewResult` | `BatchCombinedReviewResult` | `--combined-output` |" in data_models
     assert "src/content_review_engine/llm/combined_envelope.py" in data_models
+    assert "combined Markdown report is a presentation artifact derived from the combined envelope" in data_models
     assert "when LLM is not enabled, combined output records `not_run` status" in data_models
     assert "LLM findings never enter deterministic `findings`" in data_models
 
@@ -45,6 +49,7 @@ def test_usage_and_ci_docs_explain_deterministic_only_quality_gate() -> None:
     assert "## Deterministic, Sidecar, And Combined Boundaries" in usage
     assert "`--combined-output` does not enable LLM by itself" in usage
     assert "src/content_review_engine/llm/combined_envelope.py" in usage
+    assert "src/content_review_engine/reports/combined.py" in usage
     assert "combined output does not change deterministic `severity_counts`" in usage
     assert "CI boundary for combined artifacts" in ci
     assert "`--combined-output` does not auto-enable LLM review" in ci

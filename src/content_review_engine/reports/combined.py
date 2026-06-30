@@ -11,14 +11,30 @@ from content_review_engine.reports.combined_markdown import (
 )
 
 
+def render_single_file_combined_markdown(
+    result: SingleFileCombinedReviewResult,
+) -> str:
+    return render_single_file_combined_markdown_report(result)
+
+
+def render_batch_combined_markdown(
+    result: BatchCombinedReviewResult,
+) -> str:
+    return render_batch_combined_markdown_report(result)
+
+
 def render_combined_markdown_report(result: CombinedReviewEnvelope) -> str:
     if isinstance(result, SingleFileCombinedReviewResult):
-        return render_single_file_combined_markdown_report(result)
+        return render_single_file_combined_markdown(result)
     if isinstance(result, BatchCombinedReviewResult):
-        return render_batch_combined_markdown_report(result)
+        return render_batch_combined_markdown(result)
     raise TypeError(
         "result must be a SingleFileCombinedReviewResult or BatchCombinedReviewResult"
     )
 
 
-__all__ = ["render_combined_markdown_report"]
+__all__ = [
+    "render_batch_combined_markdown",
+    "render_combined_markdown_report",
+    "render_single_file_combined_markdown",
+]

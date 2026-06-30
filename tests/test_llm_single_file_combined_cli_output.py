@@ -106,9 +106,10 @@ def test_single_file_review_combined_markdown_output_reuses_renderer(
     assert exit_code == 0
     assert captured.err == ""
     assert report.startswith("# Combined Content Review Report\n")
-    assert "| LLM Status | succeeded |" in report
+    assert "## Artifact Boundary" in report
+    assert "| Status | succeeded |" in report
     assert "| warning | llm.unsafe_medical_claim | llm | yes | no | 0.84 | 1:1 | Possible overclaim. | Use a softer claim. |" in report
-    assert "## Deterministic Review" in report
+    assert "## Deterministic Findings" in report
 
 
 def test_single_file_review_combined_json_output_reuses_serializer(

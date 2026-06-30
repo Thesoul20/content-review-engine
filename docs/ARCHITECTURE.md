@@ -159,7 +159,10 @@ and deterministic-only quality-gate boundary text.
 It now also includes a tiny Markdown dispatch helper under
 `src/content_review_engine/reports/combined.py` so combined Markdown output
 can reuse one stable renderer entrypoint for both envelope types without
-changing report sections or quality-gate semantics.
+changing quality-gate semantics, and the single-file / batch renderers now
+emit a stable section contract around artifact boundary, deterministic
+summary, LLM summary, findings, checklist workflow, and deterministic-only
+quality-gate notes.
 The single-file CLI adapter can now also explicitly write that combined
 envelope or combined Markdown report through `--combined-output`, while
 keeping the main deterministic output, batch command, and quality gate
@@ -219,8 +222,11 @@ Current compatibility boundary:
 - combined output does not auto-enable the optional LLM review path
 - combined output reuses existing deterministic results and existing LLM
   results; it does not replace either schema
-- combined Markdown rendering is presentation-only and appends LLM sections
-  after the deterministic report
+- combined Markdown rendering is presentation-only and is derived from the
+  combined envelope through `src/content_review_engine/reports/combined.py`
+- combined Markdown rendering has a stable section contract for artifact
+  boundary, deterministic findings, LLM findings, manual review workflow,
+  and deterministic-only quality-gate behavior
 - deterministic quality-gate evaluation remains upstream of all combined
   rendering and still reads deterministic findings only
 - LLM findings remain advisory and do not enter deterministic findings,
