@@ -1,0 +1,134 @@
+{
+  "schema_version": "single-file-combined-review-result.v1",
+  "review_result": {
+    "schema_version": "review-result.v1",
+    "summary": {
+      "finding_count": 2,
+      "severity_counts": {
+        "info": 1,
+        "warning": 1,
+        "error": 0,
+        "critical": 0
+      }
+    },
+    "findings": [
+      {
+        "rule_id": "absolute_claims",
+        "severity": "warning",
+        "message": "发现可能存在绝对化表述：保证成功",
+        "matched_term": "保证成功",
+        "suggestion": "建议改为更审慎的表述，例如“较强”“表现较好”“在特定条件下有效”，或补充支撑该结论的证据。",
+        "matched_text": "保证成功",
+        "location": {
+          "start_line": 7,
+          "start_column": 17,
+          "end_line": 7,
+          "end_column": 21,
+          "start_offset": 124,
+          "end_offset": 128,
+          "matched_text": "保证成功",
+          "context": "...清单，方便团队内部复用。\n\n这份 onboarding 清单保证成功，任何新同事照着做都能马上交付。\n\n发布说明：请在正式对外前..."
+        }
+      },
+      {
+        "rule_id": "unfinished_example",
+        "severity": "info",
+        "message": "This draft still references an unfinished example or evidence note.",
+        "matched_term": "待补案例|待补证据",
+        "suggestion": "补充案例或删除占位说明。",
+        "matched_text": "待补案例",
+        "location": {
+          "start_line": 11,
+          "start_column": 6,
+          "end_line": 11,
+          "end_column": 10,
+          "start_offset": 178,
+          "end_offset": 182,
+          "matched_text": "待补案例",
+          "context": "...说明：请在正式对外前补充适用范围和负责人备注。\n\n证据部分：待补案例。\n"
+        }
+      }
+    ],
+    "document": {
+      "path": "examples/llm_review_artifacts/single-file/input.md"
+    },
+    "profile": {
+      "name": "artifact-single-file"
+    }
+  },
+  "llm": {
+    "status": "succeeded",
+    "advisory": true,
+    "error": null,
+    "result": {
+      "schema_version": "llm-review-result.v1",
+      "provider": "mock",
+      "model": "mock-llm-v1",
+      "prompt_version": "llm-semantic-review-prompt.v1",
+      "profile_name": "artifact-single-file",
+      "findings": [
+        {
+          "rule_id": "llm.semantic.unsupported_claim",
+          "severity": "warning",
+          "message": "The success promise sounds stronger than the evidence shown in the draft.",
+          "suggestion": "Narrow the promise and add concrete onboarding evidence.",
+          "confidence": 0.82,
+          "line": 5,
+          "column": 12,
+          "end_line": 5,
+          "end_column": 16,
+          "matched_text": "保证成功"
+        },
+        {
+          "rule_id": "llm.semantic.needs_human_review",
+          "severity": "error",
+          "message": "The draft asks readers to trust an operational result without explaining scope, reviewers, or exceptions.",
+          "suggestion": "Have a human reviewer confirm the rollout scope and exception handling before publishing.",
+          "rationale": "Readers may interpret the claim as a universal outcome.",
+          "category": "review_required"
+        }
+      ],
+      "summary": {
+        "overall_risk": "medium",
+        "summary": "One unsupported promise and one follow-up item need human review.",
+        "recommended_action": "Revise the success claim and complete a manual review before publication.",
+        "confidence": 0.78
+      },
+      "metadata": {
+        "semantic_output_schema_version": "llm-semantic-review-output.v1"
+      }
+    },
+    "finding_candidates": [
+      {
+        "source": "llm",
+        "advisory": true,
+        "rule_id": "llm.semantic_unsupported_claim",
+        "severity": "warning",
+        "message": "The success promise sounds stronger than the evidence shown in the draft.",
+        "suggestion": "Narrow the promise and add concrete onboarding evidence.",
+        "line": 5,
+        "column": 12,
+        "matched_text": "保证成功",
+        "context": null,
+        "category": null,
+        "original_llm_rule_id": "llm.semantic.unsupported_claim",
+        "original_index": 0
+      },
+      {
+        "source": "llm",
+        "advisory": true,
+        "rule_id": "llm.semantic_needs_human_review",
+        "severity": "error",
+        "message": "The draft asks readers to trust an operational result without explaining scope, reviewers, or exceptions.",
+        "suggestion": "Have a human reviewer confirm the rollout scope and exception handling before publishing.",
+        "line": null,
+        "column": null,
+        "matched_text": null,
+        "context": "Readers may interpret the claim as a universal outcome.",
+        "category": "review_required",
+        "original_llm_rule_id": "llm.semantic.needs_human_review",
+        "original_index": 1
+      }
+    ]
+  }
+}

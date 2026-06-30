@@ -120,6 +120,11 @@ def test_usage_docs_exist_and_cover_required_provider_flags_and_boundaries() -> 
     assert "render_single_file_combined_markdown_report" in content
     assert "--combined-output" in content
     assert "--combined-output-format" in content
+    assert "Deterministic, Sidecar, And Combined Boundaries" in content
+    assert "deterministic output: the main `--output` artifact" in content
+    assert "raw LLM sidecar output: the `--llm-output` artifact" in content
+    assert "combined output: the explicit opt-in `--combined-output` artifact" in content
+    assert "`--combined-output` does not enable LLM by itself" in content
     assert "`llm.status` is one of `not_run`, `skipped`, `succeeded`, or `failed`" in content
     assert "`llm.advisory` is always `true`" in content
     assert "failed `llm_error` can include `type`, `message`, `provider`, and" in content
@@ -226,6 +231,9 @@ def test_docs_and_fixtures_do_not_require_real_network_or_real_api_key() -> None
     assert "`--llm-report` writes a separate Markdown report rendered from the same" in usage_doc
     assert "`--combined-output` is explicit opt-in only" in usage_doc
     assert "`--combined-output-format` supports `markdown` and `json`" in usage_doc
+    assert "when LLM is not enabled, single-file combined output records" in usage_doc
+    assert "batch combined output records per-file" in usage_doc
+    assert "combined output does not merge LLM findings into deterministic findings" in usage_doc
     assert "`--report-index` can summarize deterministic output plus optional LLM output" in usage_doc
     assert "Batch combined CLI output" in usage_doc
     assert "when batch LLM is not enabled, combined output records per-file" in usage_doc

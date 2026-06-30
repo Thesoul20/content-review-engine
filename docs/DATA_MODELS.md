@@ -31,6 +31,30 @@ The deterministic execution registry in
 `src/content_review_engine/rules/registry.py` also does not change the JSON
 schema; it only decides which deterministic rule implementations run.
 
+## Artifact Boundary Matrix
+
+The current CLI exposes three separate output families, each with a different
+model boundary.
+
+| Artifact family | Single-file model | Batch model | Primary writer | Notes |
+| --- | --- | --- | --- | --- |
+| Deterministic output | `ReviewResult` | `BatchReviewResult` | `--output` or stdout | Canonical deterministic output. Quality gate reads only this layer. |
+| Raw LLM sidecar output | `LLMReviewResult` | `LLMSidecarResult` | `--llm-output` | Canonical LLM-layer machine-readable output. Advisory only. |
+| Combined output | `SingleFileCombinedReviewResult` | `BatchCombinedReviewResult` | `--combined-output` | Explicit opt-in integration artifact. Preserves deterministic output and raw LLM output without changing either schema. |
+
+Compatibility rules:
+
+- combined output does not change `ReviewResult`, `BatchReviewResult`,
+  `LLMReviewResult`, or `LLMSidecarResult`
+- combined output does not auto-enable LLM review
+- when LLM is not enabled, combined output records `not_run` status rather
+  than synthesizing LLM findings
+- when LLM fails, combined output records structured error metadata rather
+  than writing LLM findings into deterministic findings
+- LLM findings never enter deterministic `findings`, deterministic
+  `severity_counts`, deterministic `rule_counts`, `--fail-on`, quality gate,
+  or exit code behavior
+
 ---
 
 ## ReviewIssue

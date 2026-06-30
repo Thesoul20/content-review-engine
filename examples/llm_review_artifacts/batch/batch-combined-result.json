@@ -1,0 +1,313 @@
+{
+  "schema_version": "batch-combined-review-result.v1",
+  "batch_review_result": {
+    "schema_version": "batch-review-result.v1",
+    "summary": {
+      "file_count": 3,
+      "reviewed_count": 3,
+      "finding_count": 2,
+      "files_with_findings": 2,
+      "severity_counts": {
+        "info": 1,
+        "warning": 1,
+        "error": 0,
+        "critical": 0
+      }
+    },
+    "results": [
+      {
+        "schema_version": "review-result.v1",
+        "summary": {
+          "finding_count": 1,
+          "severity_counts": {
+            "info": 0,
+            "warning": 1,
+            "error": 0,
+            "critical": 0
+          }
+        },
+        "findings": [
+          {
+            "rule_id": "absolute_claims",
+            "severity": "warning",
+            "message": "发现可能存在绝对化表述：马上交付",
+            "matched_term": "马上交付",
+            "suggestion": "建议改为更审慎的表述，例如“较强”“表现较好”“在特定条件下有效”，或补充支撑该结论的证据。",
+            "matched_text": "马上交付",
+            "location": {
+              "start_line": 5,
+              "start_column": 13,
+              "end_line": 5,
+              "end_column": 17,
+              "start_offset": 98,
+              "end_offset": 102,
+              "matched_text": "马上交付",
+              "context": "...h LLM artifacts。\n\n这份 SOP 能让新同事马上交付。\n\n如果团队准备复用，请在正式发布前补充适用范围。\n"
+            }
+          }
+        ],
+        "document": {
+          "path": "examples/llm_review_artifacts/batch/input/article-a.md"
+        },
+        "profile": {
+          "name": "artifact-batch",
+          "path": "examples/llm_review_artifacts/batch/profile.yml"
+        }
+      },
+      {
+        "schema_version": "review-result.v1",
+        "summary": {
+          "finding_count": 1,
+          "severity_counts": {
+            "info": 1,
+            "warning": 0,
+            "error": 0,
+            "critical": 0
+          }
+        },
+        "findings": [
+          {
+            "rule_id": "missing_evidence_note",
+            "severity": "info",
+            "message": "This draft still contains an evidence placeholder.",
+            "matched_term": "补充数据|待补数据",
+            "suggestion": "补充数据来源或删除占位说明。",
+            "matched_text": "补充数据",
+            "location": {
+              "start_line": 7,
+              "start_column": 4,
+              "end_line": 7,
+              "end_column": 8,
+              "start_offset": 99,
+              "end_offset": 103,
+              "matched_text": "补充数据",
+              "context": "...并存。\n\n文中建议把流程复盘模板发给更多团队参考。\n\n备注：补充数据。\n"
+            }
+          }
+        ],
+        "document": {
+          "path": "examples/llm_review_artifacts/batch/input/article-b.md"
+        },
+        "profile": {
+          "name": "artifact-batch",
+          "path": "examples/llm_review_artifacts/batch/profile.yml"
+        }
+      },
+      {
+        "schema_version": "review-result.v1",
+        "summary": {
+          "finding_count": 0,
+          "severity_counts": {
+            "info": 0,
+            "warning": 0,
+            "error": 0,
+            "critical": 0
+          }
+        },
+        "findings": [],
+        "document": {
+          "path": "examples/llm_review_artifacts/batch/input/article-with-llm-error.md"
+        },
+        "profile": {
+          "name": "artifact-batch",
+          "path": "examples/llm_review_artifacts/batch/profile.yml"
+        }
+      }
+    ]
+  },
+  "llm": {
+    "advisory": true,
+    "summary": {
+      "total_files": 3,
+      "succeeded_count": 2,
+      "failed_count": 1,
+      "skipped_count": 0,
+      "not_run_count": 0,
+      "advisory_finding_count": 2,
+      "files_with_advisory_findings": 2,
+      "error_count": 1
+    },
+    "result": {
+      "schema_version": "llm-sidecar-result.v2",
+      "llm_provider": "mock",
+      "llm_provider_source": "config",
+      "summary": {
+        "file_count": 3,
+        "succeeded_count": 2,
+        "failed_count": 1,
+        "skipped_count": 0,
+        "finding_count": 2
+      },
+      "files": [
+        {
+          "path": "examples/llm_review_artifacts/batch/input/article-a.md",
+          "status": "success",
+          "finding_count": 1,
+          "review": {
+            "schema_version": "llm-review-result.v1",
+            "provider": "mock",
+            "model": "mock-llm-v1",
+            "profile_name": "artifact-batch",
+            "findings": [
+              {
+                "rule_id": "llm.semantic.overclaim",
+                "severity": "warning",
+                "message": "The onboarding benefit sounds broader than the draft supports.",
+                "suggestion": "Describe the rollout conditions and expected audience more precisely.",
+                "line": 3,
+                "column": 14,
+                "end_line": 3,
+                "end_column": 18,
+                "matched_text": "马上交付"
+              }
+            ],
+            "summary": {
+              "overall_risk": "medium",
+              "summary": "One overclaim needs revision.",
+              "recommended_action": "Revise the promise and confirm expected scope."
+            }
+          }
+        },
+        {
+          "path": "examples/llm_review_artifacts/batch/input/article-b.md",
+          "status": "success",
+          "finding_count": 1,
+          "review": {
+            "schema_version": "llm-review-result.v1",
+            "provider": "mock",
+            "model": "mock-llm-v1",
+            "profile_name": "artifact-batch",
+            "findings": [
+              {
+                "rule_id": "llm.semantic.needs_human_review",
+                "severity": "critical",
+                "message": "The process recommendation needs a human check because it implies a broad staffing conclusion without review evidence.",
+                "suggestion": "Ask an editor or operations owner to confirm the staffing claim before reuse.",
+                "confidence": 0.74,
+                "category": "review_required"
+              }
+            ],
+            "summary": {
+              "overall_risk": "high",
+              "summary": "The draft needs human confirmation before reuse.",
+              "recommended_action": "Route to manual review and collect reviewer notes."
+            }
+          }
+        },
+        {
+          "path": "examples/llm_review_artifacts/batch/input/article-with-llm-error.md",
+          "status": "failed",
+          "finding_count": 0,
+          "error": {
+            "error_type": "RuntimeError",
+            "message": "provider timeout during semantic review"
+          }
+        }
+      ]
+    },
+    "files": [
+      {
+        "file": "examples/llm_review_artifacts/batch/input/article-a.md",
+        "status": "succeeded",
+        "advisory": true,
+        "error": null,
+        "result": {
+          "schema_version": "llm-review-result.v1",
+          "provider": "mock",
+          "model": "mock-llm-v1",
+          "profile_name": "artifact-batch",
+          "findings": [
+            {
+              "rule_id": "llm.semantic.overclaim",
+              "severity": "warning",
+              "message": "The onboarding benefit sounds broader than the draft supports.",
+              "suggestion": "Describe the rollout conditions and expected audience more precisely.",
+              "line": 3,
+              "column": 14,
+              "end_line": 3,
+              "end_column": 18,
+              "matched_text": "马上交付"
+            }
+          ],
+          "summary": {
+            "overall_risk": "medium",
+            "summary": "One overclaim needs revision.",
+            "recommended_action": "Revise the promise and confirm expected scope."
+          }
+        },
+        "finding_candidates": [
+          {
+            "source": "llm",
+            "advisory": true,
+            "rule_id": "llm.semantic_overclaim",
+            "severity": "warning",
+            "message": "The onboarding benefit sounds broader than the draft supports.",
+            "suggestion": "Describe the rollout conditions and expected audience more precisely.",
+            "line": 3,
+            "column": 14,
+            "matched_text": "马上交付",
+            "context": null,
+            "category": null,
+            "original_llm_rule_id": "llm.semantic.overclaim",
+            "original_index": 0
+          }
+        ]
+      },
+      {
+        "file": "examples/llm_review_artifacts/batch/input/article-b.md",
+        "status": "succeeded",
+        "advisory": true,
+        "error": null,
+        "result": {
+          "schema_version": "llm-review-result.v1",
+          "provider": "mock",
+          "model": "mock-llm-v1",
+          "profile_name": "artifact-batch",
+          "findings": [
+            {
+              "rule_id": "llm.semantic.needs_human_review",
+              "severity": "critical",
+              "message": "The process recommendation needs a human check because it implies a broad staffing conclusion without review evidence.",
+              "suggestion": "Ask an editor or operations owner to confirm the staffing claim before reuse.",
+              "confidence": 0.74,
+              "category": "review_required"
+            }
+          ],
+          "summary": {
+            "overall_risk": "high",
+            "summary": "The draft needs human confirmation before reuse.",
+            "recommended_action": "Route to manual review and collect reviewer notes."
+          }
+        },
+        "finding_candidates": [
+          {
+            "source": "llm",
+            "advisory": true,
+            "rule_id": "llm.semantic_needs_human_review",
+            "severity": "critical",
+            "message": "The process recommendation needs a human check because it implies a broad staffing conclusion without review evidence.",
+            "suggestion": "Ask an editor or operations owner to confirm the staffing claim before reuse.",
+            "line": null,
+            "column": null,
+            "matched_text": null,
+            "context": null,
+            "category": "review_required",
+            "original_llm_rule_id": "llm.semantic.needs_human_review",
+            "original_index": 0
+          }
+        ]
+      },
+      {
+        "file": "examples/llm_review_artifacts/batch/input/article-with-llm-error.md",
+        "status": "failed",
+        "advisory": true,
+        "error": {
+          "type": "RuntimeError",
+          "message": "provider timeout during semantic review"
+        },
+        "result": null,
+        "finding_candidates": []
+      }
+    ]
+  }
+}

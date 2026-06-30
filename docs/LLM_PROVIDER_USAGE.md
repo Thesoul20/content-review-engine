@@ -49,6 +49,40 @@ the deterministic review pipeline.
   partial failure, advisory policy, manual review checklist output, and report
   index interpretation.
 
+## Deterministic, Sidecar, And Combined Boundaries
+
+Use the three output families for different purposes:
+
+- deterministic output: the main `--output` artifact and the only source for
+  deterministic counts, `--fail-on`, quality gate, and exit code `1`
+- raw LLM sidecar output: the `--llm-output` artifact that preserves the raw
+  `LLMReviewResult` or `LLMSidecarResult` contract
+- combined output: the explicit opt-in `--combined-output` artifact that
+  packages deterministic output plus optional LLM output without changing
+  either canonical schema
+
+Combined-output compatibility rules:
+
+- `--combined-output` is explicit opt-in only
+- `--combined-output` does not enable LLM by itself
+- `--combined-output` can be written for both single-file `review` and batch
+  `batch`
+- when LLM is not enabled, single-file combined output records
+  `llm.status = not_run` and batch combined output records per-file
+  `status = not_run`
+- when single-file LLM review fails, combined output still records structured
+  `llm.error` and the command still exits `2`
+- when batch LLM review partially fails, combined output still records
+  succeeded files, failed files, structured per-file errors, and a
+  partial-failure summary
+- combined output does not merge LLM findings into deterministic findings
+- combined output does not change deterministic `severity_counts`,
+  deterministic `rule_counts`, `--fail-on`, quality gate, or exit code logic
+- combined Markdown reports are presentation-only and reuse the deterministic
+  report before appending LLM sections
+- committed combined artifacts in `examples/llm_review_artifacts/` are
+  reference-only examples and do not become runtime dependencies
+
 ## LLM semantic review prompt contract
 
 The repository now also includes an internal LLM semantic review prompt

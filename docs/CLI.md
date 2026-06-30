@@ -48,6 +48,51 @@ plus a separate internal batch combined Markdown renderer, and the batch CLI
 can now explicitly write them through `--combined-output` without changing
 current batch default output.
 
+## Output Artifact Boundaries
+
+The CLI has three separate output families:
+
+- `--output`: deterministic main output. This writes the canonical
+  `ReviewResult` for `review` or `BatchReviewResult` for `batch`.
+- `--llm-output`: raw LLM sidecar output. This writes the canonical
+  `LLMReviewResult` for single-file `review` or `LLMSidecarResult` for
+  `batch`.
+- `--combined-output`: combined output. This writes
+  `SingleFileCombinedReviewResult` or `BatchCombinedReviewResult` in JSON, or
+  the corresponding combined Markdown report in Markdown format.
+
+Boundary rules:
+
+- `--combined-output` is explicit opt-in.
+- `--combined-output` does not auto-enable LLM review.
+- `--combined-output` does not replace `--output` or `--llm-output`.
+- `--output`, `--llm-output`, and `--combined-output` may be used together.
+- deterministic output remains the canonical automation output.
+- raw LLM sidecars remain the canonical LLM-layer machine-readable output.
+- combined output is an integration artifact that packages deterministic
+  output plus optional LLM output without changing either runtime contract.
+
+## Combined Output Behavior Matrix
+
+This behavior matrix is the canonical CLI reference for combined output.
+
+| Command | Flag | Formats | LLM required | When LLM is disabled | When LLM succeeds | When LLM fails | Quality gate |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `review` | `--combined-output` | `markdown` or `json` via `--combined-output-format` | no | writes combined output with `llm.status = not_run` | writes combined output with `llm.status = succeeded` plus raw nested `LLMReviewResult` and adapted advisory findings | writes combined output with `llm.status = failed` plus structured `llm.error`; command still exits `2` | deterministic-only |
+| `batch` | `--combined-output` | `markdown` or `json` via `--combined-output-format` | no | writes combined output with per-file `status = not_run` | writes combined output with per-file `status = succeeded`, raw nested `LLMSidecarResult`, and adapted advisory findings | writes combined output with partial-failure or all-failed status summary plus structured per-file errors; command still exits `2` on LLM failure | deterministic-only |
+
+Interpretation:
+
+- single-file combined JSON is an envelope around canonical `ReviewResult`
+  plus optional canonical `LLMReviewResult`
+- batch combined JSON is an envelope around canonical `BatchReviewResult`
+  plus optional canonical `LLMSidecarResult`
+- combined Markdown is presentation-only and reuses the deterministic Markdown
+  report before appending LLM sections
+- LLM findings shown in combined output are advisory only and do not enter
+  deterministic `findings`, severity counts, rule counts, `--fail-on`, or
+  exit code evaluation
+
 ## Review Output Index
 
 `review` and `batch` now also support `--report-index <path>`.

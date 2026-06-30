@@ -8,6 +8,44 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0083
+
+### Added
+
+- Added committed reference-only combined artifacts under
+  `examples/llm_review_artifacts/` for both single-file and batch output:
+  `combined-result.json`, `combined-report.md`,
+  `batch-combined-result.json`, and `batch-combined-report.md`.
+- Added `tests/test_llm_combined_output_docs.py` for consolidated assertions
+  across CLI, architecture, data-model, provider-usage, and CI docs.
+
+### Changed
+
+- Updated `docs/CLI.md` to consolidate single-file and batch combined-output
+  usage, document the boundary between `--output`, `--llm-output`, and
+  `--combined-output`, and add the combined-output behavior matrix.
+- Updated `docs/ARCHITECTURE.md`, `docs/DATA_MODELS.md`,
+  `docs/LLM_PROVIDER_USAGE.md`, and `docs/CI.md` to keep deterministic
+  output, raw LLM sidecars, combined output, and deterministic-only
+  quality-gate behavior aligned.
+- Updated `examples/llm_review_artifacts/README.md` and example tests so the
+  committed artifact set now documents combined output as reference-only,
+  parseable JSON, Markdown heading requirements, and no secret or traceback
+  leakage.
+- Updated `PROJECT_STATE.md` to record the combined-output documentation and
+  compatibility consolidation milestone.
+
+### Not Added
+
+- No CLI flag addition, no CLI semantic change, and no default-output change
+  for single-file or batch review.
+- No `ReviewResult`, `BatchReviewResult`, `SingleFileCombinedReviewResult`,
+  `BatchCombinedReviewResult`, provider contract, sidecar schema, or quality
+  gate behavior change.
+- No merge of LLM findings into deterministic findings, no deterministic
+  runner or rule-engine change, no real-provider integration, and no runtime
+  dependency on `examples/`.
+
 ## TASK-0082
 
 ### Added

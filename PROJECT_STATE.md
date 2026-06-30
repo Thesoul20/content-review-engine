@@ -93,6 +93,10 @@ Batch `content-review batch` now also supports explicit opt-in
 Markdown or JSON, while keeping deterministic stdout, `--output`,
 `--llm-output`, default batch behavior, sidecar semantics, quality gates, and
 exit codes unchanged.
+The combined-output stage now also has consolidated documentation across CLI,
+architecture, data-model, provider-usage, CI, and committed reference
+artifacts so single-file and batch behavior boundaries stay aligned without
+changing runtime behavior.
 
 ---
 
@@ -162,6 +166,23 @@ exit codes unchanged.
 - No active task is recorded in this file.
 
 ## Recent Completion
+
+- TASK-0083 is complete.
+- Consolidated single-file and batch combined-output documentation across
+  `docs/CLI.md`, `docs/ARCHITECTURE.md`, `docs/DATA_MODELS.md`,
+  `docs/LLM_PROVIDER_USAGE.md`, `docs/CI.md`, and
+  `examples/llm_review_artifacts/README.md`, including explicit output-family
+  boundaries for `--output`, `--llm-output`, and `--combined-output`, plus a
+  combined-output behavior matrix and deterministic-only quality-gate
+  compatibility notes.
+- Added committed reference-only combined artifacts under
+  `examples/llm_review_artifacts/` for both single-file and batch output in
+  JSON and Markdown form, without making `examples/` a runtime dependency.
+- Updated `tests/test_llm_provider_usage_docs.py`,
+  `tests/test_llm_artifact_examples.py`, `tests/test_ci_docs.py`, and added
+  `tests/test_llm_combined_output_docs.py` so docs and examples now assert
+  combined-output boundaries, example-file presence, parseable combined JSON,
+  required combined Markdown headings, and no secret or traceback leakage.
 
 - TASK-0082 is complete.
 - Updated `src/content_review_engine/cli.py` so batch

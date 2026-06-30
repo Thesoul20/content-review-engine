@@ -179,6 +179,44 @@ batch combined Markdown renderer
 explicit batch CLI output
 ```
 
+## Output Artifact Relationship
+
+The current architecture keeps deterministic output, raw LLM sidecars, and
+combined output as three separate artifact families.
+
+```text
+Deterministic review pipeline
+  ↓
+ReviewResult / BatchReviewResult
+  ↓
+--output or stdout
+
+Optional LLM review pipeline
+  ↓
+LLMReviewResult / LLMSidecarResult
+  ↓
+--llm-output
+
+Deterministic result + optional LLM result
+  ↓
+SingleFileCombinedReviewResult / BatchCombinedReviewResult
+  ↓
+--combined-output
+```
+
+Current compatibility boundary:
+
+- combined output is explicit opt-in at the CLI adapter layer
+- combined output does not auto-enable the optional LLM review path
+- combined output reuses existing deterministic results and existing LLM
+  results; it does not replace either schema
+- combined Markdown rendering is presentation-only and appends LLM sections
+  after the deterministic report
+- deterministic quality-gate evaluation remains upstream of all combined
+  rendering and still reads deterministic findings only
+- LLM findings remain advisory and do not enter deterministic findings,
+  severity counts, rule counts, `--fail-on`, or exit code logic
+
 Current deterministic rules:
 
 - `forbidden_terms`

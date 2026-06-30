@@ -121,6 +121,26 @@ uv run content-review batch content/posts --profile profiles/my-wechat.yaml --re
 uv run content-review batch docs/articles --profile profiles/examples/general-basic.yaml --recursive --fail-on error
 ```
 
+If you also want one explicit opt-in combined artifact for later manual
+inspection, write it separately:
+
+```bash
+uv run content-review review article.md --profile profiles/my-wechat.yaml --combined-output artifacts/review-combined.md
+uv run content-review batch articles --profile profiles/my-wechat.yaml --recursive --combined-output artifacts/batch-combined.json --combined-output-format json
+```
+
+CI boundary for combined artifacts:
+
+- `--combined-output` does not auto-enable LLM review
+- combined output is optional documentation or inspection output, not the
+  canonical gating output
+- combined output may coexist with `--output`, `--llm-output`, and
+  `--report-index`
+- when LLM is disabled, combined output records `not_run` status instead of
+  generating LLM findings
+- when LLM fails, combined output may still be written with structured error
+  metadata, but deterministic gating behavior stays unchanged
+
 ## Customize Paths
 
 Two paths usually need customization:
@@ -176,6 +196,10 @@ When LLM output artifacts are written in CI, treat every LLM finding as
 `source = llm`, `advisory = yes`, and `quality gate participation = no`.
 Advisory LLM severities such as `critical` or `error` remain display-only and
 do not change deterministic gate semantics.
+The same rule applies to combined output: combined artifacts can display
+advisory findings, partial failures, and structured LLM errors, but only
+deterministic findings can trigger exit code `1`.
+In other words, only deterministic findings can trigger exit code `1`.
 The same rule applies to the LLM Markdown `Manual Review Checklist` and the
 batch `LLM Execution Review Checklist`: their default `needs_review`,
 `pending`, `needs_rerun`, and `rerun_llm_review` values are presentation-only
