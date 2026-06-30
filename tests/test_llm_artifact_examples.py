@@ -103,6 +103,8 @@ def test_single_file_combined_json_is_parseable() -> None:
     assert data["review_result"]["schema_version"] == "review-result.v1"
     assert data["llm"]["status"] == "succeeded"
     assert data["llm"]["advisory"] is True
+    assert data["llm"]["quality_gate"]["enabled"] is False
+    assert data["llm"]["quality_gate"]["evaluation_status"] == "disabled"
     assert len(data["llm"]["finding_candidates"]) == 2
 
 
@@ -113,6 +115,8 @@ def test_batch_combined_json_is_parseable() -> None:
     assert data["batch_review_result"]["schema_version"] == "batch-review-result.v1"
     assert data["llm"]["summary"]["failed_count"] == 1
     assert data["llm"]["summary"]["advisory_finding_count"] == 2
+    assert data["llm"]["quality_gate"]["enabled"] is False
+    assert data["llm"]["quality_gate"]["evaluation_status"] == "disabled"
     assert any(item["status"] == "failed" for item in data["llm"]["files"])
 
 
@@ -151,6 +155,8 @@ def test_combined_markdown_examples_contain_required_headings() -> None:
     assert "## LLM Review Summary" in single_report
     assert "## Quality Gate Behavior" in single_report
     assert "## Artifact Notes" in single_report
+    assert "| Explicit LLM Gate | disabled |" in single_report
+    assert "| LLM Gate Evaluation | disabled |" in single_report
     assert "# Batch Combined Content Review Report" in batch_report
     assert "## Artifact Boundary" in batch_report
     assert "## Deterministic Batch Summary" in batch_report
@@ -159,6 +165,8 @@ def test_combined_markdown_examples_contain_required_headings() -> None:
     assert "## LLM Findings by File" in batch_report
     assert "## Quality Gate Behavior" in batch_report
     assert "## Artifact Notes" in batch_report
+    assert "| Explicit LLM Gate | disabled |" in batch_report
+    assert "| LLM Gate Evaluation | disabled |" in batch_report
 
 
 def test_report_indexes_contain_manual_review_workflow() -> None:
@@ -184,6 +192,7 @@ def test_examples_readme_contains_artifact_map_and_boundaries() -> None:
     assert "batch-combined-result.json" in readme
     assert "advisory semantic review suggestions" in readme
     assert "Quality gate interpretation remains deterministic-only" in readme
+    assert "disabled or enabled `llm.quality_gate`" in readme
     assert "not persisted to a" in readme
     assert "review-state file or back into JSON sidecars" in readme
 

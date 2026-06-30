@@ -8,6 +8,35 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0087
+
+### Changed
+
+- Updated `docs/CLI.md` with an explicit LLM CLI behavior matrix covering
+  `--output`, `--llm-output`, `--combined-output`, `--fail-on`, and
+  `--llm-fail-on`, including aligned single-file / batch opt-in and exit-code
+  boundaries.
+- Updated `docs/CI.md`, `docs/ARCHITECTURE.md`, `docs/DATA_MODELS.md`, and
+  `docs/LLM_PROVIDER_USAGE.md` to clarify artifact boundaries, deterministic
+  gate vs explicit LLM gate ownership, and provider responsibility limits.
+- Refreshed
+  `examples/llm_review_artifacts/single-file/combined-report.md`,
+  `examples/llm_review_artifacts/batch/batch-combined-report.md`, and
+  `examples/llm_review_artifacts/README.md` so committed combined Markdown
+  examples match the current renderer contract for explicit LLM gate rows and
+  deterministic-only gate notes.
+- Expanded existing docs, example, and combined-output regression tests to
+  lock the release-readiness contract without changing runtime behavior.
+
+### Not Added
+
+- No change to deterministic review behavior, deterministic JSON schemas, raw
+  LLM sidecar schemas, or combined JSON envelope field semantics.
+- No change to `--output`, `--llm-output`, `--combined-output`, or
+  `--llm-fail-on` runtime meaning.
+- No new API, MCP surface, GUI, database, real LLM provider, or provider
+  interface change.
+
 ## TASK-0086
 
 ### Added

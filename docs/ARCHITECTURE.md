@@ -241,6 +241,9 @@ Current compatibility boundary:
   evaluation and reads LLM findings only
 - LLM findings remain advisory and do not enter deterministic findings,
   severity counts, rule counts, or deterministic `--fail-on` logic
+- provider selection and provider execution stay inside the optional LLM
+  review path; providers do not own deterministic `--fail-on`, explicit
+  `--llm-fail-on`, or combined-artifact policy
 
 Current deterministic rules:
 

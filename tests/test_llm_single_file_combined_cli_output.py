@@ -111,6 +111,8 @@ def test_single_file_review_combined_markdown_output_reuses_renderer(
     assert report.startswith("# Combined Content Review Report\n")
     assert "## Artifact Boundary" in report
     assert "| Status | succeeded |" in report
+    assert "| Explicit LLM Gate | disabled |" in report
+    assert "| LLM Gate Evaluation | disabled |" in report
     assert "| warning | llm.unsafe_medical_claim | llm | yes | no | 0.84 | 1:1 | Possible overclaim. | Use a softer claim. |" in report
     assert "## Deterministic Findings" in report
 

@@ -121,6 +121,8 @@ def test_batch_combined_markdown_output_reuses_renderer(
     assert "| LLM Provider | pydanticai |" in report
     assert "| LLM Succeeded | 3 |" in report
     assert "| LLM Failed | 0 |" in report
+    assert "| Explicit LLM Gate | disabled |" in report
+    assert "| LLM Gate Evaluation | disabled |" in report
     assert "| warning | llm.unsafe_medical_claim | llm | yes | no | 0.84 | 1:1 | Possible overclaim. | Use a softer claim. |" in report
 
 

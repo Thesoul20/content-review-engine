@@ -185,6 +185,19 @@ sidecar schemas, or deterministic counts.
 
 ## Recent Completion
 
+- TASK-0087 is complete.
+- Audited LLM mainline release readiness across CLI docs, CI docs,
+  architecture/data-model docs, provider-usage docs, committed artifact
+  examples, and targeted regression tests without changing runtime semantics.
+- Added a canonical LLM CLI behavior matrix for `--output`, `--llm-output`,
+  `--combined-output`, `--fail-on`, and `--llm-fail-on`, and documented the
+  shared single-file / batch opt-in boundary.
+- Refreshed committed combined Markdown examples so they now match the
+  current renderer contract for explicit LLM gate rows plus deterministic-only
+  quality-gate notes.
+- Expanded docs and tests to lock artifact-boundary wording, deterministic
+  gate vs explicit LLM gate wording, and provider-responsibility wording.
+
 - TASK-0086 is complete.
 - Added `src/content_review_engine/llm/quality_gate.py` with a separate
   explicit `LLMQualityGateResult` model plus single-file and batch threshold

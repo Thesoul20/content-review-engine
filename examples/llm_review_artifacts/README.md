@@ -89,8 +89,8 @@ those models. They are examples for browsing and review, not replacement
 schemas.
 The combined Markdown examples also show the current stable section contract
 for `Artifact Boundary`, deterministic summary/findings, LLM summary/findings,
-manual review workflow, deterministic-only `Quality Gate Behavior`, and
-`Artifact Notes`.
+manual review workflow, explicit LLM gate rows, deterministic-only
+`Quality Gate Behavior`, and `Artifact Notes`.
 
 ## Deterministic And LLM Boundary
 
@@ -105,6 +105,8 @@ after an LLM-enabled run.
 
 Quality gate interpretation remains deterministic-only even when LLM artifacts
 exist beside the deterministic output.
+The combined examples also show disabled or enabled `llm.quality_gate`
+metadata as a committed reference snapshot, not as a separate schema source.
 
 `--output`, `--llm-output`, and `--combined-output` remain separate output
 families:

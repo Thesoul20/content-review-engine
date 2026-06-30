@@ -136,6 +136,28 @@ Behavior:
 - raw single-file `LLMReviewResult` JSON sidecars are unchanged
 - raw batch `LLMSidecarResult` JSON sidecars are unchanged
 
+## Provider Responsibility Boundary
+
+Providers are responsible for LLM execution only.
+
+- provider construction, secret resolution, retries, pacing, and runtime
+  calls belong to the provider path
+- provider output parsing and validated semantic-review conversion stay on the
+  LLM adapter path
+- providers do not evaluate deterministic `--fail-on`
+- providers do not evaluate explicit `--llm-fail-on`
+- providers do not decide quality-gate ownership or CLI exit-code `1`
+- quality-gate policy stays in the CLI/core boundary and uses
+  `src/content_review_engine/core.quality_gate` for deterministic review plus
+  `src/content_review_engine/llm/quality_gate.py` for explicit LLM gating
+- combined envelopes and combined Markdown reports may record gate metadata
+  after provider execution, but that metadata is not a provider contract
+- provider metadata in `LLMReviewResult` or `LLMSidecarResult` remains
+  execution metadata only
+- provider responsibility stops before deterministic counts, deterministic
+  rule counts, deterministic `ReviewResult.findings`, and deterministic
+  `BatchReviewResult.summary`
+
 ## LLM semantic review prompt contract
 
 The repository now also includes an internal LLM semantic review prompt

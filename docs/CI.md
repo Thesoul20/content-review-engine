@@ -158,6 +158,8 @@ CI boundary for explicit LLM gating:
 - `--llm-fail-on` without `--enable-llm` is a CLI usage error
 - use explicit LLM gating only when you intentionally want LLM findings to
   participate in exit code `1`
+- provider selection or provider failure does not change which gate owns exit
+  code `1`; provider/runtime failures still return exit code `2`
 
 ## Customize Paths
 
@@ -238,6 +240,9 @@ CI boundary for providers:
 - default CI should not run real `pydanticai` provider calls
 - default CI should not require a real API key
 - use deterministic review for gating
+- provider configuration is only responsible for LLM execution and sidecar
+  production; it is not responsible for deterministic `--fail-on` or
+  explicit `--llm-fail-on` policy
 - if CI needs LLM-sidecar wiring coverage, use `--llm-provider mock`
 - if CI needs reusable LLM-sidecar wiring coverage, it can also use
   `--llm-config examples/llm/mock/llm-provider.yml`

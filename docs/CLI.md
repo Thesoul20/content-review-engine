@@ -101,6 +101,29 @@ Rules:
 - if both gates pass, exit code remains `0`
 - if LLM execution itself fails, the command still returns exit code `2`
 
+## LLM CLI Behavior Matrix
+
+This matrix is the canonical audit table for the current LLM-related CLI
+flags on both `review` and `batch`.
+
+| Flag | Requires `--enable-llm` | Auto-enables LLM | Single-file behavior | Batch behavior | Exit-code boundary |
+| --- | --- | --- | --- | --- | --- |
+| `--output` | no | no | writes canonical deterministic `ReviewResult` | writes canonical deterministic `BatchReviewResult` | only deterministic `--fail-on` can change exit code `1` |
+| `--llm-output` | yes | no | writes raw `LLMReviewResult` sidecar | writes raw `LLMSidecarResult` sidecar | sidecar writing alone does not change exit code `1` |
+| `--combined-output` | no | no | writes combined artifact with `llm.status = not_run` when LLM is disabled | writes combined artifact with per-file `status = not_run` when LLM is disabled | combined output alone does not change exit code `1` |
+| `--fail-on` | no | no | evaluates deterministic findings only | evaluates deterministic findings only | returns exit code `1` only for deterministic threshold matches |
+| `--llm-fail-on` | yes | no | evaluates LLM findings only after explicit LLM review | evaluates LLM findings only after explicit LLM review | returns CLI usage error without `--enable-llm`; otherwise can also return exit code `1` |
+| provider/runtime flags such as `--llm-provider` and `--llm-config` | yes | no | configure LLM execution only | configure LLM execution only | provider construction/runtime failures return exit code `2`, not quality-gate exit code `1` |
+
+Alignment rules:
+
+- `review` and `batch` share the same opt-in boundary for `--llm-output`,
+  `--combined-output`, and `--llm-fail-on`
+- `--combined-output` and `--llm-fail-on` never satisfy the
+  `--enable-llm` requirement by themselves
+- provider selection/config controls LLM execution only; it does not decide
+  deterministic `--fail-on` or explicit `--llm-fail-on`
+
 ## Combined Output Behavior Matrix
 
 This behavior matrix is the canonical CLI reference for combined output.

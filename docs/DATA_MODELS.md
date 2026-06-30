@@ -64,6 +64,8 @@ Compatibility rules:
 - explicit `llm.quality_gate` metadata in combined output is integration-only
   metadata and does not change deterministic JSON schemas or raw LLM sidecar
   schemas
+- provider or provider-config metadata in raw LLM sidecars remains execution
+  metadata only; quality-gate ownership stays outside provider models
 - combined Markdown report is a presentation artifact derived from the combined envelope
   and keeps the same artifact boundary
 

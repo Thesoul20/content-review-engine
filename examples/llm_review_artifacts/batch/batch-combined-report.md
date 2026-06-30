@@ -35,6 +35,13 @@
 | LLM Errors | 1 |
 | Advisory | yes |
 | Quality Gate Participation | no |
+| Explicit LLM Gate | disabled |
+| LLM Gate Threshold | - |
+| LLM Gate Status | passed |
+| LLM Gate Evaluation | disabled |
+| LLM Gate Matched Files | 0 |
+| LLM Gate Matched Findings | 0 |
+| LLM Gate Matched Severity Counts | info=0, warning=0, error=0, critical=0 |
 | Policy Note | LLM findings are advisory semantic review suggestions from the LLM layer. They do not participate in deterministic finding counts, fail-on, or quality gate. |
 
 ## Combined File Results
@@ -101,7 +108,8 @@ No deterministic findings.
 
 - Quality gate evaluation remains deterministic-only.
 - LLM advisory findings do not participate in severity counts, rule counts, fail-on, quality gate, or exit code.
-- Only deterministic findings can affect batch `--fail-on`, quality gate, or CLI exit code.
+- When `--llm-fail-on` is not set, LLM findings do not affect CLI exit code.
+- When `--llm-fail-on` is set, it is evaluated independently from deterministic `--fail-on` and can also trigger CLI exit code `1`.
 
 ## Artifact Notes
 

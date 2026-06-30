@@ -128,9 +128,14 @@ def test_usage_docs_exist_and_cover_required_provider_flags_and_boundaries() -> 
     assert "`--combined-output` does not enable LLM by itself" in content
     assert "`--llm-fail-on` does not enable LLM by itself" in content
     assert "Explicit LLM Quality Gate" in content
+    assert "Provider Responsibility Boundary" in content
     assert "LLMQualityGateResult" in content
     assert "evaluate_llm_quality_gate" in content
     assert "evaluate_batch_llm_quality_gate" in content
+    assert "Providers are responsible for LLM execution only." in content
+    assert "providers do not evaluate deterministic `--fail-on`" in content
+    assert "providers do not evaluate explicit `--llm-fail-on`" in content
+    assert "providers do not decide quality-gate ownership or CLI exit-code `1`" in content
     assert "`llm.status` is one of `not_run`, `skipped`, `succeeded`, or `failed`" in content
     assert "`llm.advisory` is always `true`" in content
     assert "`llm.quality_gate.enabled`" in content
@@ -234,6 +239,9 @@ def test_docs_and_fixtures_do_not_require_real_network_or_real_api_key() -> None
     assert "the combined Markdown renderer is pure" in usage_doc
     assert "provider execution reuses the shared prompt contract" in usage_doc
     assert "provider execution reuses `parse_llm_semantic_review_output()`" in usage_doc
+    assert "provider construction, secret resolution, retries, pacing, and runtime" in usage_doc
+    assert "quality-gate policy stays in the CLI/core boundary" in usage_doc
+    assert "provider metadata in `LLMReviewResult` or `LLMSidecarResult` remains" in usage_doc
     assert "Single-file `content-review review --enable-llm --llm-output ...` now writes" in usage_doc
     assert "raw `LLMReviewResult` JSON" in usage_doc
     assert "`--llm-report` writes a separate Markdown report rendered from the same" in usage_doc
