@@ -24,7 +24,7 @@ suppression comments, counts, and quality gates, see
 
 ```bash
 uv run content-review review <markdown_file> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--report-index <file>] [--combined-output <file>] [--combined-output-format json|markdown] [--fail-on info|warning|error|critical] [--enable-llm [--llm-output <file>] [--llm-report <file>] [--llm-config <path>] [--llm-provider mock|pydanticai|pydantic-ai-testmodel] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>] [--llm-timeout-seconds <seconds>] [--llm-retry-attempts <count>] [--llm-retry-backoff-seconds <seconds>] [--llm-min-request-interval-seconds <seconds>]]
-uv run content-review batch <input_dir> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--report-index <file>] [--recursive] [--pattern "*.md"] [--fail-on info|warning|error|critical] [--enable-llm [--llm-output <file>] [--llm-report <file>] [--llm-config <path>] [--llm-provider mock|pydanticai|pydantic-ai-testmodel] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>] [--llm-timeout-seconds <seconds>] [--llm-retry-attempts <count>] [--llm-retry-backoff-seconds <seconds>] [--llm-min-request-interval-seconds <seconds>]]
+uv run content-review batch <input_dir> --profile <profile_file> [--format text|json|markdown] [--output <file>] [--report-index <file>] [--combined-output <file>] [--combined-output-format json|markdown] [--recursive] [--pattern "*.md"] [--fail-on info|warning|error|critical] [--enable-llm [--llm-output <file>] [--llm-report <file>] [--llm-config <path>] [--llm-provider mock|pydanticai|pydantic-ai-testmodel] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>] [--llm-timeout-seconds <seconds>] [--llm-retry-attempts <count>] [--llm-retry-backoff-seconds <seconds>] [--llm-min-request-interval-seconds <seconds>]]
 uv run content-review llm-check [--provider mock|pydantic-ai-testmodel] [--llm-config <path>] [--llm-provider mock|pydanticai] [--llm-model <name>] [--llm-api-key-env <env>] [--llm-base-url <url>] [--llm-timeout-seconds <seconds>] [--llm-retry-attempts <count>] [--llm-retry-backoff-seconds <seconds>] [--llm-min-request-interval-seconds <seconds>] [--live|--runtime]
 uv run content-review profile validate <profile_file> [--format text|json]
 uv run content-review profile init --template <general-basic|general-publishing|health-content|marketing-copy|technical-blog|wechat-basic|wechat-article|wechat-strict> --output <profile_file> [--force]
@@ -44,9 +44,9 @@ The committed files under `examples/llm_review_artifacts/` are reference
 artifacts only. They do not change CLI behavior, enable LLM review, or
 replace the canonical deterministic JSON schemas.
 The package now also has an internal batch combined-result envelope builder,
-plus a separate internal batch combined Markdown renderer, but the batch CLI
-does not expose a combined-output flag and current batch default output
-remains unchanged.
+plus a separate internal batch combined Markdown renderer, and the batch CLI
+can now explicitly write them through `--combined-output` without changing
+current batch default output.
 
 ## Review Output Index
 
@@ -73,10 +73,10 @@ Current guarantees:
 - the repository now also has a package-level combined single-file output
   path behind explicit `--combined-output`, but it does not change any CLI
   default output
-- there is still no batch `--combined-output`; batch combined results remain
-  internal package helpers only
-- the internal batch combined Markdown renderer is not used by the batch CLI
-  and does not change existing deterministic batch Markdown output
+- batch `--combined-output` is also explicit opt-in and does not change
+  existing batch default output
+- batch combined Markdown output reuses the internal batch combined Markdown
+  renderer and does not change existing deterministic batch Markdown output
 - quality gate still reads deterministic findings only
 - when LLM output is present, the index marks it as `source = llm`,
   `advisory = yes`, and `quality gate participation = no`
@@ -236,6 +236,37 @@ Current behavior guarantees:
 - quality-gate evaluation still reads only deterministic findings
 - ordinary tests for this path use fake/stub reviewers and must not access the real network or require a real API key
 
+Batch `batch` now also supports an explicit combined output path:
+
+```bash
+uv run content-review batch articles/ --profile profile.yaml --combined-output batch.combined.md
+uv run content-review batch articles/ --profile profile.yaml --combined-output batch.combined.json --combined-output-format json
+uv run content-review batch articles/ --profile profile.yaml --enable-llm --llm-output batch.llm.json --combined-output batch.combined.md
+```
+
+Batch `batch` constraints:
+
+- `--combined-output` is explicit opt-in and does not enable LLM review by itself
+- `--combined-output-format` supports `markdown` and `json`, and defaults to `markdown`
+- `--combined-output` can be used without `--enable-llm`; in that case the
+  combined result records per-file `llm.status = not_run`
+- when batch LLM review partially fails and `--combined-output` is set, the
+  combined file still records succeeded findings and failed structured errors
+- when batch LLM review fully fails and `--combined-output` is set, the
+  combined file still records per-file failed statuses plus structured errors
+- combined Markdown output reuses
+  `render_batch_combined_markdown_report(...)`
+- combined JSON output reuses
+  `batch_combined_review_result_to_dict(...)` /
+  `batch_combined_review_result_to_json(...)`
+- `--output`, `--llm-output`, and `--combined-output` are independent and may
+  all be written in one batch run
+- omitting `--combined-output` leaves existing batch CLI behavior unchanged
+- combined output does not replace deterministic batch output or batch
+  `LLMSidecarResult` sidecars
+- quality gate and exit code still use deterministic review only; LLM batch
+  execution failure still returns exit code `2`
+
 Provider notes:
 
 - `mock` remains the default single-file sidecar behavior when no explicit
@@ -272,9 +303,11 @@ Batch CLI boundary:
   `--output`
 - `content-review batch --llm-output` still writes canonical
   `LLMSidecarResult`
-- no batch CLI flag writes `batch-combined-review-result.v1`
-- no batch CLI flag changes `--output`, `--llm-output`, or `--format`
-  semantics
+- `content-review batch --combined-output` can explicitly write
+  `batch-combined-review-result.v1` JSON or the paired combined Markdown
+  report
+- `--combined-output` does not change `--output`, `--llm-output`, or
+  `--format` semantics
 
 ## Experimental Batch LLM Sidecar Review
 

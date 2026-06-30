@@ -293,8 +293,8 @@ Current guarantees:
 
 - this envelope is integration-only and is not a replacement for
   `LLMSidecarResult`
-- this envelope is not exposed by the batch CLI
-- the batch CLI does not expose a combined-output flag
+- this envelope is not batch CLI default output
+- the batch CLI exposes it only through explicit opt-in `--combined-output`
 - this envelope reuses the existing deterministic batch serializer
 - this envelope reuses the existing batch `LLMSidecarResult` serializer
 - this envelope reuses the existing nested `LLMReviewResult` serializer
@@ -341,7 +341,7 @@ Current presentation rules:
 Current guarantees:
 
 - this combined Markdown report is also not CLI default output
-- the batch CLI still does not expose a combined-output flag
+- the batch CLI can explicitly write this report through `--combined-output`
 - the combined Markdown renderer is pure, does not read or write files, does
   not call the CLI, does not call a provider, does not read `.env`, does not
   read `os.environ`, and does not access the network
@@ -484,11 +484,52 @@ Current guarantees:
 - combined output does not replace deterministic JSON or deterministic
   Markdown output
 - quality gate still uses deterministic review only
-- batch `content-review batch` does not support combined output
+- batch `content-review batch` has its own explicit combined-output path and
+  keeps the same deterministic-only quality-gate boundary
 - default `pytest` or CI must continue using fake/stub reviewers and must not
   call a real provider
 - the CLI combined writer still does not read `examples/llm_review_artifacts/`
   as a runtime dependency
+
+## Batch combined CLI output
+
+Batch `content-review batch` now also supports an explicit combined output
+path:
+
+```bash
+uv run content-review batch articles/ --profile profile.yaml --combined-output batch.combined.md
+uv run content-review batch articles/ --profile profile.yaml --combined-output batch.combined.json --combined-output-format json
+uv run content-review batch articles/ --profile profile.yaml --enable-llm --llm-output batch.llm.json --combined-output batch.combined.md
+```
+
+Current guarantees:
+
+- `--combined-output` is explicit opt-in only
+- `--combined-output-format` supports `markdown` and `json`, and defaults to
+  `markdown`
+- `--combined-output` does not enable LLM review by itself
+- when batch LLM is not enabled, combined output records per-file
+  `llm.status = not_run`
+- when batch LLM partially fails and `--combined-output` is set, the combined
+  file still records succeeded findings and failed structured errors
+- when batch LLM fully fails and `--combined-output` is set, the combined
+  file still records per-file failed statuses plus structured errors
+- batch combined Markdown output reuses
+  `render_batch_combined_markdown_report(...)`
+- batch combined JSON output reuses
+  `batch_combined_review_result_to_dict(...)` /
+  `batch_combined_review_result_to_json(...)`
+- `--output`, `--llm-output`, and `--combined-output` can be used together
+- omitting `--combined-output` leaves existing batch CLI behavior unchanged
+- combined output does not replace raw `LLMSidecarResult` JSON sidecars
+- combined output does not replace deterministic JSON or deterministic
+  Markdown batch output
+- quality gate still uses deterministic review only
+- LLM findings remain advisory semantic review suggestions and do not
+  participate in deterministic `severity_counts`, `rule_counts`, `--fail-on`,
+  or exit code
+- batch LLM execution failures still return exit code `2` after writing the
+  requested combined output
 
 ## Single-file CLI LLM integration
 

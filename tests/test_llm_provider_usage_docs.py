@@ -216,7 +216,7 @@ def test_docs_and_fixtures_do_not_require_real_network_or_real_api_key() -> None
     assert "this envelope does not change deterministic `severity_counts`" in usage_doc
     assert "failed combined-file `llm_error` values are structured and sanitized" in usage_doc
     assert "files are ordered by deterministic `BatchReviewResult.results`" in usage_doc
-    assert "the batch CLI does not expose a combined-output flag" in usage_doc
+    assert "the batch CLI exposes it only through explicit opt-in `--combined-output`" in usage_doc
     assert "the report also adds batch-level LLM summary counts" in usage_doc
     assert "the combined Markdown renderer is pure" in usage_doc
     assert "provider execution reuses the shared prompt contract" in usage_doc
@@ -227,6 +227,10 @@ def test_docs_and_fixtures_do_not_require_real_network_or_real_api_key() -> None
     assert "`--combined-output` is explicit opt-in only" in usage_doc
     assert "`--combined-output-format` supports `markdown` and `json`" in usage_doc
     assert "`--report-index` can summarize deterministic output plus optional LLM output" in usage_doc
+    assert "Batch combined CLI output" in usage_doc
+    assert "when batch LLM is not enabled, combined output records per-file" in usage_doc
+    assert "batch combined Markdown output reuses" in usage_doc
+    assert "batch combined JSON output reuses" in usage_doc
     assert "quality gate still uses deterministic review only" in usage_doc
     assert "LLM findings are advisory semantic review suggestions" in usage_doc
     assert "committed artifact examples under" in usage_doc

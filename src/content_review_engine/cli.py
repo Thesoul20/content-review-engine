@@ -41,7 +41,9 @@ from content_review_engine.llm import (
     LLMProviderRetryExhaustedError,
     LLMProviderTimeoutError,
     build_llm_review_request,
+    build_batch_combined_review_result,
     build_single_file_combined_review_result,
+    batch_combined_review_result_to_json,
     llm_review_result_to_json,
     llm_sidecar_result_to_json,
     run_batch_llm_review,
@@ -57,6 +59,7 @@ from content_review_engine.llm import (
 )
 from content_review_engine.parser import read_markdown
 from content_review_engine.reports import (
+    render_batch_combined_markdown_report,
     render_batch_report_index,
     render_batch_markdown_report,
     render_llm_review_markdown,
@@ -412,6 +415,16 @@ def build_parser() -> argparse.ArgumentParser:
     batch_parser.add_argument(
         "--report-index",
         help="Write a Markdown batch review output index to a file.",
+    )
+    batch_parser.add_argument(
+        "--combined-output",
+        help="Write an explicit batch combined review result to a file.",
+    )
+    batch_parser.add_argument(
+        "--combined-output-format",
+        choices=["json", "markdown"],
+        default="markdown",
+        help="Output format for --combined-output.",
     )
     batch_parser.add_argument(
         "--recursive",
@@ -1000,6 +1013,32 @@ def _write_single_file_combined_output(
         ) from exc
 
 
+def _write_batch_combined_output(
+    *,
+    batch_result: BatchReviewResult,
+    output_path: str,
+    output_format: str,
+    batch_llm_result: LLMSidecarResult | None = None,
+    default_llm_status: str = "not_run",
+) -> None:
+    combined_result = build_batch_combined_review_result(
+        batch_review_result=batch_result,
+        batch_llm_result=batch_llm_result,
+        default_llm_status=default_llm_status,
+    )
+    combined_path = Path(output_path)
+    if output_format == "json":
+        combined_text = batch_combined_review_result_to_json(combined_result)
+    else:
+        combined_text = render_batch_combined_markdown_report(combined_result)
+    try:
+        combined_path.write_text(combined_text, encoding="utf-8")
+    except OSError as exc:
+        raise ValueError(
+            f"Failed to write combined review output: {combined_path}: {exc}"
+        ) from exc
+
+
 def _write_llm_sidecar_markdown_report(
     *,
     sidecar_result: LLMSidecarResult,
@@ -1199,6 +1238,14 @@ def _run_batch_command(args: argparse.Namespace) -> int:
                 sidecar_result=manifest_result,
                 output_path=args.llm_report,
             )
+    if args.combined_output is not None:
+        _write_batch_combined_output(
+            batch_result=batch_result,
+            output_path=args.combined_output,
+            output_format=args.combined_output_format,
+            batch_llm_result=manifest_result,
+            default_llm_status="not_run" if manifest_result is None else "skipped",
+        )
     if args.report_index is not None:
         _write_report_index(
             markdown_text=render_batch_report_index(

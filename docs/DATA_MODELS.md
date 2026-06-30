@@ -302,6 +302,9 @@ It is an integration envelope only:
   codes
 - this envelope can now also be rendered into a separate human-readable batch
   combined Markdown report without changing the schema itself
+- TASK-0082 now also allows the batch CLI adapter to write this envelope or
+  the paired combined Markdown report only when `--combined-output` is
+  explicitly requested
 
 | Field | Required | Description |
 |---|---|---|
@@ -328,6 +331,11 @@ Notes:
 - serializer reuses the existing deterministic batch serializer
 - serializer reuses the existing batch `LLMSidecarResult` serializer
 - serializer reuses the existing nested `LLMReviewResult` serializer
+- batch `--combined-output-format json` reuses
+  `batch_combined_review_result_to_dict(...)` /
+  `batch_combined_review_result_to_json(...)`
+- batch `--combined-output-format markdown` reuses
+  `render_batch_combined_markdown_report(...)`
 - extra sidecar-only files that are absent from deterministic batch results are
   ignored by the combined envelope builder
 - the paired renderer lives in
@@ -335,6 +343,8 @@ Notes:
 - that renderer is pure, returns Markdown text, reuses the deterministic batch
   report unchanged, and does not read files, write files, call providers, or
   read environment variables
+- omitting batch `--combined-output` leaves existing batch `--format`,
+  `--output`, and `--llm-output` behavior unchanged
 
 | Field | Required | Description |
 |---|---|---|

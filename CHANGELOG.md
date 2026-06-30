@@ -8,6 +8,43 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0082
+
+### Added
+
+- Added explicit batch CLI combined output support through
+  `content-review batch --combined-output <path>` and
+  `--combined-output-format {json,markdown}`.
+- Added `tests/test_llm_batch_combined_cli_output.py` for combined Markdown
+  output, combined JSON output, LLM-disabled `not_run`, partial failure,
+  all-failed structured error output, coexistence with `--output` and
+  `--llm-output`, unchanged quality-gate behavior, unchanged default
+  behavior, parser coverage, and invalid format coverage.
+
+### Changed
+
+- Updated `src/content_review_engine/cli.py` so batch combined JSON output
+  reuses `batch_combined_review_result_to_json(...)`, batch combined
+  Markdown output reuses `render_batch_combined_markdown_report(...)`, and
+  failed batch LLM runs can still write structured combined output before the
+  existing exit-code `2` path returns.
+- Updated `docs/CLI.md`, `docs/ARCHITECTURE.md`, `docs/DATA_MODELS.md`,
+  `docs/LLM_PROVIDER_USAGE.md`, and `PROJECT_STATE.md` to document the new
+  explicit batch combined CLI output path and its unchanged deterministic
+  boundaries.
+
+### Not Added
+
+- No `BatchCombinedReviewResult`, `BatchReviewResult`, or `ReviewResult`
+  schema change, no merge of LLM findings into deterministic findings, and no
+  deterministic runner or deterministic rule-engine change.
+- No change to existing batch `--format`, `--output`, or `--llm-output`
+  semantics, no change to existing deterministic batch Markdown output, and
+  no change to single-file combined-output behavior.
+- No quality-gate policy change, no sidecar schema change, no provider
+  contract change, no real network or real-provider requirement in tests, and
+  no runtime dependency on `examples/`.
+
 ## TASK-0081
 
 ### Added

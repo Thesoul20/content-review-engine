@@ -88,6 +88,11 @@ Single-file `content-review review` now also supports explicit opt-in
 `--combined-output` writing for that combined envelope in Markdown or JSON,
 while keeping deterministic stdout, `--output`, `--llm-output`, batch
 behavior, quality gates, and exit codes unchanged.
+Batch `content-review batch` now also supports explicit opt-in
+`--combined-output` writing for the existing batch combined envelope in
+Markdown or JSON, while keeping deterministic stdout, `--output`,
+`--llm-output`, default batch behavior, sidecar semantics, quality gates, and
+exit codes unchanged.
 
 ---
 
@@ -157,6 +162,23 @@ behavior, quality gates, and exit codes unchanged.
 - No active task is recorded in this file.
 
 ## Recent Completion
+
+- TASK-0082 is complete.
+- Updated `src/content_review_engine/cli.py` so batch
+  `content-review batch` now accepts explicit `--combined-output` and
+  `--combined-output-format {json,markdown}`, writes combined output only on
+  opt-in, reuses the existing batch combined builder/serializer and batch
+  combined Markdown renderer, preserves deterministic quality-gate behavior,
+  and records `not_run`, succeeded, partial-failure, and all-failed sidecar
+  semantics in the combined file without changing default output paths.
+- Added `tests/test_llm_batch_combined_cli_output.py` for combined Markdown
+  output, combined JSON output, LLM-disabled `not_run`, partial failure,
+  all-failed structured error output, coexistence with `--output` and
+  `--llm-output`, unchanged default behavior, unchanged quality gate, parser
+  coverage, and invalid combined-output format coverage.
+- Updated `docs/CLI.md`, `docs/ARCHITECTURE.md`, `docs/DATA_MODELS.md`,
+  `docs/LLM_PROVIDER_USAGE.md`, and `CHANGELOG.md` to document the explicit
+  batch combined CLI output path and its unchanged deterministic boundaries.
 
 - TASK-0081 is complete.
 - Added `src/content_review_engine/reports/batch_combined_markdown.py` with

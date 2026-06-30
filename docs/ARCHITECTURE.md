@@ -155,9 +155,10 @@ The single-file CLI adapter can now also explicitly write that combined
 envelope or combined Markdown report through `--combined-output`, while
 keeping the main deterministic output, batch command, and quality gate
 behavior unchanged.
-The batch CLI still does not expose a combined-output path. The batch
-combined-result helper plus the batch combined Markdown renderer remain
-package-level helpers only.
+The batch CLI adapter can now also explicitly write the batch combined
+envelope or batch combined Markdown report through `--combined-output`, while
+keeping default batch output, sidecar semantics, and quality-gate behavior
+unchanged.
 It now also includes committed reference artifacts under
 `examples/llm_review_artifacts/` that document the current presentation
 outputs for single-file and batch LLM review without becoming runtime
@@ -175,7 +176,7 @@ BatchCombinedReviewResult
   ↓
 batch combined Markdown renderer
   ↓
-future batch CLI output
+explicit batch CLI output
 ```
 
 Current deterministic rules:
@@ -354,8 +355,8 @@ human-readable Markdown
   CLI, and does not become the CLI default output path
 - the CLI may now explicitly opt into this renderer or the paired combined
   JSON serializer through `content-review review --combined-output ...`
-- `--combined-output` remains single-file only and does not change batch
-  behavior
+- the CLI may now also explicitly opt into the paired batch renderer or batch
+  combined JSON serializer through `content-review batch --combined-output ...`
 - the CLI can also optionally write a separate hybrid report index through
   `--report-index`
 - LLM presentation now also runs through a separate advisory policy helper in
@@ -937,7 +938,8 @@ Current LLM runner status:
 - `MockLLMReviewer` remains the deterministic test adapter for the runner
 - `PydanticAITestModelReviewer` remains a separate package-level provider
   test adapter and is not registered as a CLI-selectable provider
-- the runner is now wired only into the single-file CLI LLM sidecar flow
+- the runner is now wired into both the single-file and batch CLI LLM sidecar
+  flows
 - `src/content_review_engine/llm/errors.py` defines minimal future-facing LLM
   error types
 
@@ -945,7 +947,6 @@ This layer is still isolated:
 
 - no merge into the deterministic `ReviewResult`
 - no Markdown report integration
-- no batch review integration
 - no quality-gate integration
 - no API, MCP, or GUI integration
 - no merged output with the current canonical `ReviewResult`
