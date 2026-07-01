@@ -9,6 +9,7 @@ The same optional LLM path can now be reached through either:
 
 - the CLI
 - the stable Python API facade in `content_review_engine.api`
+- the MCP server wrapper in `content_review_engine.mcp_server`
 
 - Deterministic review remains the canonical `ReviewResult` and
   `BatchReviewResult` output.
@@ -199,6 +200,9 @@ Combined-output compatibility rules:
 - the Python API facade follows the same boundary: `enable_llm=False` means no
   provider call, `combined_output_path` does not enable LLM, and
   `llm_fail_on` does not enable LLM
+- the MCP server follows the same boundary because it calls the Python API
+  facade directly and does not add raw API key input or automatic `.env`
+  loading
 - committed combined artifacts in `examples/llm_review_artifacts/` are
   reference-only examples and do not become runtime dependencies
 

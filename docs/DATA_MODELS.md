@@ -22,6 +22,8 @@ builders plus JSON serialization lives in
 `src/content_review_engine/llm/combined_envelope.py`.
 The stable Python API facade model source of truth is
 `src/content_review_engine/api_models.py`.
+The MCP server returns JSON serialization of those same API workflow models
+and does not define a second result schema.
 
 Committed example artifacts now also live under
 `examples/llm_review_artifacts/`. Those files are documentation and test
@@ -76,6 +78,8 @@ Compatibility rules:
 The stable Python API facade adds wrapper workflow models around the existing
 deterministic and LLM result models.
 
+The MCP server reuses these wrapper models as its tool output contract.
+
 Source of truth:
 
 - `src/content_review_engine/api_models.py`
@@ -95,6 +99,9 @@ Compatibility rules:
 
 - the Python API wrapper models do not replace `ReviewResult`,
   `BatchReviewResult`, `LLMReviewResult`, or `LLMSidecarResult`
+- the MCP server returns JSON-compatible serialization of the same wrapper
+  models and does not introduce a separate deterministic, raw LLM, or
+  combined schema family
 - deterministic review output in the API still uses the canonical core models
 - optional raw LLM output in the API still uses the canonical LLM models
 - combined output in the API still uses the existing combined-envelope models

@@ -11,6 +11,9 @@ Import from:
 from content_review_engine.api import review_batch, review_file
 ```
 
+The local MCP server wrapper in `content_review_engine.mcp_server` calls these
+same entrypoints and does not bypass the API facade.
+
 ## Scope
 
 The Python API is a programmatic adapter over the same core workflow used by

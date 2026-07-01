@@ -8,6 +8,8 @@ For real-provider setup, manual verification fixtures, sidecar inspection, and
 runtime troubleshooting, see [docs/LLM_PROVIDER_USAGE.md](./LLM_PROVIDER_USAGE.md).
 For direct Python usage without shelling out through the CLI, see
 [docs/PYTHON_API.md](./PYTHON_API.md).
+For MCP tool usage over the same Python API facade, see
+[docs/MCP_SERVER.md](./MCP_SERVER.md).
 For one reference-only local real-provider smoke workflow with placeholder
 secrets and runnable example inputs, see
 [`examples/real_llm_usage/README.md`](../examples/real_llm_usage/README.md).

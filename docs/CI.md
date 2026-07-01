@@ -5,6 +5,8 @@ For the complete local setup flow before CI, see
 
 For explicit real-provider manual verification guidance, see
 [docs/LLM_PROVIDER_USAGE.md](./LLM_PROVIDER_USAGE.md).
+For MCP server setup and client examples over the same Python API facade, see
+[docs/MCP_SERVER.md](./MCP_SERVER.md).
 For a reference-only local real-provider smoke walkthrough that must stay out
 of default CI, see [`examples/real_llm_usage/README.md`](../examples/real_llm_usage/README.md).
 
@@ -21,6 +23,9 @@ reference.
 
 This document shows how to run `content-review` in CI without changing core
 review behavior.
+
+Default CI remains CLI- and Python-API-focused. The MCP server is covered by
+its own local tests and does not require a remote MCP client in default CI.
 
 The repository includes a copyable GitHub Actions example at:
 

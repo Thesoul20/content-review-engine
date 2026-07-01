@@ -123,6 +123,12 @@ receive structured deterministic / LLM / combined results, evaluate
 deterministic and explicit LLM quality gates, and optionally write the same
 deterministic / raw sidecar / combined artifacts without shelling out to the
 CLI or changing current CLI behavior.
+It now also includes a thin MCP server wrapper under
+`src/content_review_engine/mcp_server.py` plus a `content-review-mcp`
+console entrypoint, so MCP-capable agents can call stable single-file and
+batch review tools over the existing Python API facade without shelling out
+to the CLI, changing deterministic / raw LLM / combined result schemas, or
+changing current CLI / Python API behavior.
 
 ---
 
@@ -192,6 +198,21 @@ CLI or changing current CLI behavior.
 - No active task is recorded in this file.
 
 ## Recent Completion
+
+- TASK-0090 is complete.
+- Added `src/content_review_engine/mcp_server.py` with a thin FastMCP-based
+  server wrapper over `content_review_engine.api.review_file(...)` and
+  `content_review_engine.api.review_batch(...)`.
+- Added `content_review_file` and `content_review_batch` MCP tools with
+  deterministic-only defaults, optional LLM settings, optional artifact-path
+  writing, explicit combined-output support, JSON-compatible structured
+  results, and sanitized error propagation.
+- Added `docs/MCP_SERVER.md` and `examples/mcp_server/` with local startup,
+  tool-usage, and Codex / Claude configuration examples.
+- Added `tests/test_mcp_server.py` and `tests/test_mcp_server_docs.py` for
+  tool registration, deterministic parity with the Python API, optional LLM
+  coverage, artifact writing, docs consistency, no-auto-enable boundaries,
+  mock-only default LLM usage, and sanitized error coverage.
 
 - TASK-0089 is complete.
 - Added `src/content_review_engine/api.py`,

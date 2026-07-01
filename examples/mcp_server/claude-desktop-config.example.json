@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "content-review-engine": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "/ABSOLUTE/PATH/TO/content-review-engine",
+        "content-review-mcp"
+      ],
+      "env": {}
+    }
+  }
+}

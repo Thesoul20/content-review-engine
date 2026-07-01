@@ -8,6 +8,45 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0090
+
+### Added
+
+- Added `src/content_review_engine/mcp_server.py` with a thin FastMCP-based
+  MCP server wrapper over `content_review_engine.api.review_file(...)` and
+  `content_review_engine.api.review_batch(...)`.
+- Added a `content-review-mcp` console script entrypoint.
+- Added `content_review_file` and `content_review_batch` MCP tools with
+  deterministic-only defaults, optional LLM support, optional deterministic /
+  raw sidecar / combined artifact writing, explicit `fail_on` /
+  `llm_fail_on`, and JSON-compatible structured workflow results.
+- Added `docs/MCP_SERVER.md`,
+  `examples/mcp_server/README.md`,
+  `examples/mcp_server/codex-config.example.json`, and
+  `examples/mcp_server/claude-desktop-config.example.json`.
+- Added `tests/test_mcp_server.py` and `tests/test_mcp_server_docs.py`.
+
+### Changed
+
+- Updated `docs/ARCHITECTURE.md`, `docs/DATA_MODELS.md`,
+  `docs/PYTHON_API.md`, `docs/CLI.md`, `docs/CI.md`, and
+  `docs/LLM_PROVIDER_USAGE.md` to document the MCP wrapper boundary and its
+  reuse of the stable Python API facade.
+- Updated `PROJECT_STATE.md` to record the MCP server milestone and recent
+  completion details.
+- Updated `pyproject.toml` and `uv.lock` to add the `mcp` dependency and MCP
+  console script entrypoint.
+
+### Not Added
+
+- No REST API, web frontend, desktop client, database, queue, user system, or
+  new real LLM provider.
+- No subprocess-based MCP wrapper, no CLI behavior change, and no Python API
+  behavior change.
+- No change to deterministic schemas, raw LLM sidecar schemas, combined
+  schemas, or default deterministic-only quality-gate semantics.
+- No raw API key input and no automatic `.env` loading.
+
 ## TASK-0089
 
 ### Added
