@@ -20,6 +20,9 @@ This project follows a staged development process.
   LLM review, and artifact writing.
 - Added `tests/test_mcp_server_packaging.py` for MCP optional-dependency,
   console-script, module-entrypoint, and example JSON packaging coverage.
+- Added a stdio subprocess MCP smoke in `tests/test_mcp_server_packaging.py`
+  that performs initialize, tool discovery, and a real deterministic
+  `content_review_file` call through the MCP Python client SDK.
 
 ### Changed
 
@@ -39,6 +42,9 @@ This project follows a staged development process.
 - Updated MCP docs and example tests to validate JSON config files, JSON tool
   call examples, startup help paths, and packaging consistency without
   depending on a real MCP client or a real external LLM API.
+- Updated MCP docs to explicitly distinguish direct in-process tests from the
+  automated stdio subprocess smoke so “real MCP validation” includes protocol
+  handshake and tool invocation over the transport boundary.
 
 ### Not Added
 

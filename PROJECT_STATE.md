@@ -213,6 +213,9 @@ service deployment target.
 - Added local MCP startup validation coverage for console-script metadata,
   `--help`, module entrypoint help, lazy import behavior, JSON config
   examples, tool-call examples, docs consistency, and manual smoke guidance.
+- Added an automated stdio subprocess MCP smoke that performs initialize,
+  tool discovery, and a real deterministic tool call over the MCP transport,
+  so validation is not limited to direct in-process server invocation.
 - Updated `docs/MCP_SERVER.md` and `examples/mcp_server/` to clarify stdio as
   the default recommended transport, batch non-recursive defaults, no raw API
   key input, no automatic `.env` loading, real-provider content disclosure,

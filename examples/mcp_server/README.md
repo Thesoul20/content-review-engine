@@ -37,6 +37,12 @@ uv run python -m content_review_engine.mcp_server --help
 
 The default and recommended transport is `stdio`.
 
+Automated validation note:
+
+- the repository test suite also runs one stdio subprocess smoke through the
+  MCP Python client SDK so protocol initialize, tool discovery, and one real
+  tool call are exercised separately from direct in-process tests
+
 Transport boundary:
 
 - prefer `stdio` for Codex and Claude Desktop

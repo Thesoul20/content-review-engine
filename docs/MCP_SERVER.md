@@ -53,6 +53,9 @@ Current guarantees:
 - `--help` returns before the stdio server starts
 - normal server startup still blocks as expected because MCP stdio servers are
   long-lived subprocesses
+- the automated test suite also includes a stdio subprocess smoke that
+  performs MCP initialize, tool discovery, and a real tool call over the
+  JSON-RPC transport without depending on Codex or Claude Desktop
 
 ## Transport Boundary
 
@@ -258,6 +261,12 @@ Config example rules:
 Local manual smoke guidance lives in:
 
 - [`examples/mcp_server/manual-smoke-checklist.md`](../examples/mcp_server/manual-smoke-checklist.md)
+
+Automated coverage note:
+
+- repository tests now also include a stdio subprocess smoke over the MCP
+  Python client SDK, so startup, handshake, tool listing, and one real tool
+  invocation are validated separately from direct in-process server calls
 
 The checklist covers:
 
