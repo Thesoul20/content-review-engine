@@ -6,6 +6,8 @@ exit codes.
 
 For real-provider setup, manual verification fixtures, sidecar inspection, and
 runtime troubleshooting, see [docs/LLM_PROVIDER_USAGE.md](./LLM_PROVIDER_USAGE.md).
+For direct Python usage without shelling out through the CLI, see
+[docs/PYTHON_API.md](./PYTHON_API.md).
 For one reference-only local real-provider smoke workflow with placeholder
 secrets and runnable example inputs, see
 [`examples/real_llm_usage/README.md`](../examples/real_llm_usage/README.md).
@@ -55,6 +57,9 @@ runtime envelope entrypoint in
 `src/content_review_engine/llm/combined_envelope.py`, and combined Markdown
 writing through `src/content_review_engine/reports/combined.py`, without
 changing user-visible output.
+Both commands now also reuse the shared workflow helpers in
+`src/content_review_engine/workflows.py`, which are also used by the stable
+Python API facade documented in `docs/PYTHON_API.md`.
 
 ## Output Artifact Boundaries
 

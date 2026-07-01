@@ -33,12 +33,14 @@ Current phase only includes:
 ```text
 Python Core Package
 CLI
+Python API
 Docs
 Tasks
 Tests
 ```
 
-MCP, Skill, API, and frontend are planned but not implemented yet.
+MCP, Skill, backend API, and frontend are still planned but not implemented
+yet. A stable in-process Python API facade is now implemented.
 
 The current core package input layer includes:
 
@@ -90,6 +92,12 @@ content-review llm-check [LLM config flags]
 content-review profile validate <profile_file>
 content-review profile init --template <template_name> --output <profile_file>
 content-review profile list [--format text|json]
+```
+
+Current Python API facade:
+
+```text
+from content_review_engine.api import review_file, review_batch
 ```
 
 Current CLI flow:
@@ -177,6 +185,11 @@ The batch CLI adapter can now also explicitly write the batch combined
 envelope or batch combined Markdown report through `--combined-output`, while
 keeping default batch output, sidecar semantics, and quality-gate behavior
 unchanged.
+It now also includes shared workflow helpers under
+`src/content_review_engine/workflows.py` so the CLI and Python API facade can
+reuse the same deterministic review orchestration, optional LLM execution,
+artifact writing, combined-envelope building, and quality-gate evaluation
+without shelling out through the CLI.
 It now also includes committed reference artifacts under
 `examples/llm_review_artifacts/` that document the current presentation
 outputs for single-file and batch LLM review without becoming runtime
@@ -244,6 +257,10 @@ Current compatibility boundary:
 - provider selection and provider execution stay inside the optional LLM
   review path; providers do not own deterministic `--fail-on`, explicit
   `--llm-fail-on`, or combined-artifact policy
+- the Python API facade reuses the same workflow helpers and preserves the
+  same deterministic / raw sidecar / combined artifact boundary
+- the Python API facade is deterministic-only by default and does not
+  auto-enable LLM when combined-output or LLM gate options are present
 
 Current deterministic rules:
 

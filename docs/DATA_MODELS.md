@@ -20,6 +20,8 @@ The batch combined-review envelope helper and serializer live in
 The stable runtime entrypoint that dispatches single-file and batch combined
 builders plus JSON serialization lives in
 `src/content_review_engine/llm/combined_envelope.py`.
+The stable Python API facade model source of truth is
+`src/content_review_engine/api_models.py`.
 
 Committed example artifacts now also live under
 `examples/llm_review_artifacts/`. Those files are documentation and test
@@ -68,6 +70,38 @@ Compatibility rules:
   metadata only; quality-gate ownership stays outside provider models
 - combined Markdown report is a presentation artifact derived from the combined envelope
   and keeps the same artifact boundary
+
+## Python API Workflow Models
+
+The stable Python API facade adds wrapper workflow models around the existing
+deterministic and LLM result models.
+
+Source of truth:
+
+- `src/content_review_engine/api_models.py`
+
+Current wrapper models:
+
+| Model | Purpose | Canonical nested result models |
+| --- | --- | --- |
+| `ReviewFileOptions` | Single-file workflow inputs | references paths plus optional LLM/provider/output settings |
+| `ReviewBatchOptions` | Batch workflow inputs | references paths plus optional LLM/provider/output settings |
+| `ReviewFileWorkflowResult` | Stable single-file API return object | `ReviewResult`, optional `LLMReviewResult`, optional `SingleFileCombinedReviewResult`, gate metadata |
+| `ReviewBatchWorkflowResult` | Stable batch API return object | `BatchReviewResult`, optional `LLMSidecarResult`, optional `BatchCombinedReviewResult`, gate metadata |
+| `DeterministicQualityGateResult` | Stable deterministic gate metadata for API callers | derived from deterministic findings only |
+| `ReviewArtifactPaths` | Records optional written artifact paths | deterministic / raw sidecar / combined output paths |
+
+Compatibility rules:
+
+- the Python API wrapper models do not replace `ReviewResult`,
+  `BatchReviewResult`, `LLMReviewResult`, or `LLMSidecarResult`
+- deterministic review output in the API still uses the canonical core models
+- optional raw LLM output in the API still uses the canonical LLM models
+- combined output in the API still uses the existing combined-envelope models
+- deterministic quality-gate metadata is separate wrapper metadata and does
+  not change the deterministic result schema
+- LLM findings still never enter deterministic `findings`,
+  `severity_counts`, or `rule_counts`
 
 ---
 

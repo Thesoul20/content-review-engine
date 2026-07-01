@@ -4,6 +4,7 @@ import argparse
 import sys
 from pathlib import Path
 
+from content_review_engine.api_models import ReviewBatchOptions, ReviewFileOptions
 from content_review_engine.config import (
     get_profile_template_content,
     list_profile_template_names,
@@ -71,6 +72,7 @@ from content_review_engine.reports import (
 )
 from content_review_engine.review import review_document, review_markdown_directory
 from content_review_engine.rules import UnknownRuleError
+from content_review_engine.workflows import execute_review_batch, execute_review_file
 from pydantic import ValidationError
 
 def _parse_fail_on(value: str) -> str:
@@ -1133,190 +1135,107 @@ def _build_batch_llm_review_items(
 
 def _run_review_command(args: argparse.Namespace) -> int:
     _validate_review_llm_args(args)
-    llm_reviewer = _build_single_review_llm_reviewer(args) if args.enable_llm else None
-    markdown_text = read_markdown(args.markdown_file)
-    profile = load_profile(args.profile)
-    review_result = review_document(
-        markdown_text,
-        profile,
-        document_path=args.markdown_file,
-        profile_path=args.profile,
-    )
-    rendered_output = _render_output(
-        review_result,
-        output_format=args.format,
-        fail_on=args.fail_on,
-        llm_result=None,
-    )
-    output_exit_code = _write_or_print_output(rendered_output, args.output)
-    if output_exit_code != 0:
-        return output_exit_code
-    llm_result: LLMReviewResult | None = None
-    llm_status = "not_run"
-    llm_error: dict[str, object] | None = None
-    llm_quality_gate = evaluate_llm_quality_gate(None, args.llm_fail_on)
-    if args.enable_llm:
-        try:
-            llm_result = _run_llm_review(
-                markdown_text=markdown_text,
-                markdown_path=args.markdown_file,
-                profile_name=profile.name,
-                reviewer=llm_reviewer,
-            )
-            llm_status = "succeeded"
-            llm_quality_gate = evaluate_llm_quality_gate(llm_result, args.llm_fail_on)
-            if args.llm_output is not None:
-                _write_llm_review_result(
-                    review_result=llm_result,
-                    output_path=args.llm_output,
-                )
-            if args.llm_report is not None:
-                _write_llm_review_markdown_report(
-                    review_result=llm_result,
-                    output_path=args.llm_report,
-                    file_path=args.markdown_file,
-                )
-        except LLMReviewError as exc:
-            llm_status = "failed"
-            llm_quality_gate = evaluate_llm_quality_gate(
-                None,
-                args.llm_fail_on,
-                execution_failed=True,
-            )
-            llm_error = _build_single_file_combined_llm_error(
-                exc,
-                reviewer=llm_reviewer,
-                args=args,
-            )
-            if args.combined_output is not None:
-                _write_single_file_combined_output(
-                    review_result=review_result,
-                    output_path=args.combined_output,
-                    output_format=args.combined_output_format,
-                    llm_status=llm_status,
-                    llm_error=llm_error,
-                    llm_quality_gate=llm_quality_gate,
-                )
-            raise
-    elif args.combined_output is not None:
-        llm_status = "not_run"
-    if args.combined_output is not None and llm_status != "failed":
-        _write_single_file_combined_output(
-            review_result=review_result,
-            output_path=args.combined_output,
-            output_format=args.combined_output_format,
-            llm_result=llm_result,
-            llm_status=llm_status,
-            llm_error=llm_error,
-            llm_quality_gate=llm_quality_gate,
-        )
-    if args.report_index is not None:
-        _write_report_index(
-            markdown_text=render_single_file_report_index(
-                review_result,
-                deterministic_output_path=args.output,
-                deterministic_output_format=args.format,
-                report_index_path=args.report_index,
-                llm_enabled=args.enable_llm,
-                llm_result=llm_result,
-                llm_output_path=args.llm_output,
-                llm_report_path=args.llm_report,
+    result = execute_review_file(
+        ReviewFileOptions(
+            markdown_path=Path(args.markdown_file),
+            profile_path=Path(args.profile),
+            output_format=args.format,
+            output_path=Path(args.output) if args.output is not None else None,
+            fail_on=args.fail_on,
+            enable_llm=args.enable_llm,
+            llm_fail_on=args.llm_fail_on,
+            llm_output_path=(
+                Path(args.llm_output) if args.llm_output is not None else None
             ),
-            output_path=args.report_index,
-        )
-    deterministic_exit_code = _quality_gate_exit_code(
-        review_result.summary.severity_counts,
-        args.fail_on,
+            combined_output_path=(
+                Path(args.combined_output)
+                if args.combined_output is not None
+                else None
+            ),
+            combined_output_format=args.combined_output_format,
+            include_combined_result=args.combined_output is not None,
+            llm_report_path=(
+                Path(args.llm_report) if args.llm_report is not None else None
+            ),
+            report_index_path=(
+                Path(args.report_index) if args.report_index is not None else None
+            ),
+            llm_config_path=(
+                Path(args.llm_config) if args.llm_config is not None else None
+            ),
+            llm_provider=args.llm_provider,
+            llm_model=args.llm_model,
+            llm_api_key_env=args.llm_api_key_env,
+            llm_base_url=args.llm_base_url,
+            llm_timeout_seconds=args.llm_timeout_seconds,
+            llm_retry_attempts=args.llm_retry_attempts,
+            llm_retry_backoff_seconds=args.llm_retry_backoff_seconds,
+            llm_min_request_interval_seconds=args.llm_min_request_interval_seconds,
+        ),
+        emit_output=print,
+        reviewer_factory=create_llm_reviewer,
+        secret_resolver=resolve_llm_provider_secret,
     )
-    return _combine_quality_gate_exit_codes(deterministic_exit_code, llm_quality_gate)
+    if result.llm_status == "failed":
+        if result.llm_error is not None:
+            print(f"Error: {result.llm_error.message}", file=sys.stderr)
+        return 2
+    deterministic_exit_code = 1 if result.deterministic_quality_gate.failed else 0
+    return _combine_quality_gate_exit_codes(deterministic_exit_code, result.llm_quality_gate)
 
 
 def _run_batch_command(args: argparse.Namespace) -> int:
     _validate_batch_llm_args(args)
-    llm_reviewer = _build_batch_review_llm_reviewer(args) if args.enable_llm else None
-    llm_provider_metadata = (
-        _build_llm_sidecar_provider_metadata(args) if args.enable_llm else None
-    )
-    profile = load_profile(args.profile)
-    batch_result = review_markdown_directory(
-        Path(args.input_dir),
-        profile,
-        pattern=args.pattern,
-        recursive=args.recursive,
-        profile_path=args.profile,
-    )
-    rendered_output = _render_batch_output(
-        batch_result,
-        output_format=args.format,
-        fail_on=args.fail_on,
-    )
-    output_exit_code = _write_or_print_output(rendered_output, args.output)
-    if output_exit_code != 0:
-        return output_exit_code
-    manifest_result: LLMSidecarResult | None = None
-    llm_quality_gate = evaluate_batch_llm_quality_gate(None, args.llm_fail_on)
-    if args.enable_llm:
-        llm_provider, llm_provider_source = llm_provider_metadata
-        batch_items = _build_batch_llm_review_items(
-            batch_result=batch_result,
-            profile_name=profile.name,
-        )
-        manifest_result = run_batch_llm_review(
-            batch_items,
-            reviewer=llm_reviewer,
-            llm_provider=llm_provider,
-            llm_provider_source=llm_provider_source,
-            provider=getattr(llm_reviewer, "config", None).provider
-            if getattr(llm_reviewer, "config", None) is not None
-            else getattr(llm_reviewer, "provider", None),
-            model=getattr(llm_reviewer, "model", None),
-        )
-        if args.llm_output is not None:
-            _write_llm_sidecar(
-                sidecar_result=manifest_result,
-                output_path=args.llm_output,
-            )
-        if args.llm_report is not None:
-            _write_llm_sidecar_markdown_report(
-                sidecar_result=manifest_result,
-                output_path=args.llm_report,
-            )
-        llm_quality_gate = evaluate_batch_llm_quality_gate(
-            manifest_result,
-            args.llm_fail_on,
-        )
-    if args.combined_output is not None:
-        _write_batch_combined_output(
-            batch_result=batch_result,
-            output_path=args.combined_output,
-            output_format=args.combined_output_format,
-            batch_llm_result=manifest_result,
-            default_llm_status="not_run" if manifest_result is None else "skipped",
-            llm_quality_gate=llm_quality_gate,
-        )
-    if args.report_index is not None:
-        _write_report_index(
-            markdown_text=render_batch_report_index(
-                batch_result,
-                input_dir=args.input_dir,
-                profile_path=args.profile,
-                deterministic_output_path=args.output,
-                deterministic_output_format=args.format,
-                report_index_path=args.report_index,
-                llm_enabled=args.enable_llm,
-                llm_result=manifest_result,
-                llm_output_path=args.llm_output,
-                llm_report_path=args.llm_report,
+    result = execute_review_batch(
+        ReviewBatchOptions(
+            input_dir=Path(args.input_dir),
+            profile_path=Path(args.profile),
+            pattern=args.pattern,
+            recursive=args.recursive,
+            output_format=args.format,
+            output_path=Path(args.output) if args.output is not None else None,
+            fail_on=args.fail_on,
+            enable_llm=args.enable_llm,
+            llm_fail_on=args.llm_fail_on,
+            llm_output_path=(
+                Path(args.llm_output) if args.llm_output is not None else None
             ),
-            output_path=args.report_index,
-        )
-    if manifest_result is not None and manifest_result.summary.failed_count > 0:
-        return 2
-    deterministic_exit_code = _quality_gate_exit_code(
-        batch_result.summary.severity_counts,
-        args.fail_on,
+            combined_output_path=(
+                Path(args.combined_output)
+                if args.combined_output is not None
+                else None
+            ),
+            combined_output_format=args.combined_output_format,
+            include_combined_result=args.combined_output is not None,
+            llm_report_path=(
+                Path(args.llm_report) if args.llm_report is not None else None
+            ),
+            report_index_path=(
+                Path(args.report_index) if args.report_index is not None else None
+            ),
+            llm_config_path=(
+                Path(args.llm_config) if args.llm_config is not None else None
+            ),
+            llm_provider=args.llm_provider,
+            llm_model=args.llm_model,
+            llm_api_key_env=args.llm_api_key_env,
+            llm_base_url=args.llm_base_url,
+            llm_timeout_seconds=args.llm_timeout_seconds,
+            llm_retry_attempts=args.llm_retry_attempts,
+            llm_retry_backoff_seconds=args.llm_retry_backoff_seconds,
+            llm_min_request_interval_seconds=args.llm_min_request_interval_seconds,
+        ),
+        emit_output=print,
+        reviewer_factory=create_llm_reviewer,
+        secret_resolver=resolve_llm_provider_secret,
     )
-    return _combine_quality_gate_exit_codes(deterministic_exit_code, llm_quality_gate)
+    if (
+        result.llm_sidecar_result is not None
+        and result.llm_sidecar_result.summary.failed_count > 0
+    ):
+        return 2
+    deterministic_exit_code = 1 if result.deterministic_quality_gate.failed else 0
+    return _combine_quality_gate_exit_codes(deterministic_exit_code, result.llm_quality_gate)
 
 
 def _run_profile_validate_command(args: argparse.Namespace) -> int:

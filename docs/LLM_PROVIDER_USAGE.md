@@ -5,6 +5,11 @@
 This project supports an optional LLM sidecar review path that is separate from
 the deterministic review pipeline.
 
+The same optional LLM path can now be reached through either:
+
+- the CLI
+- the stable Python API facade in `content_review_engine.api`
+
 - Deterministic review remains the canonical `ReviewResult` and
   `BatchReviewResult` output.
 - Single-file `content-review review --enable-llm --llm-output ...` now writes
@@ -82,10 +87,12 @@ Minimum real-provider inputs usually required:
 Current non-support boundaries:
 
 - the CLI does not accept a raw API key argument
+- the Python API also does not accept a raw API key argument
 - the CLI does not read model name from a dedicated environment-variable
   contract
 - the CLI does not read provider config from the review profile YAML
 - the CLI does not auto-load `.env`
+- the Python API also does not auto-load `.env`
 - `llm-check --provider ...` is not the real-provider path; it is only for
   safe factory providers such as `mock` and `pydantic-ai-testmodel`
 
@@ -189,6 +196,9 @@ Combined-output compatibility rules:
   combined envelope through `src/content_review_engine/reports/combined.py`
 - combined Markdown dispatch now also reuses
   `src/content_review_engine/reports/combined.py`
+- the Python API facade follows the same boundary: `enable_llm=False` means no
+  provider call, `combined_output_path` does not enable LLM, and
+  `llm_fail_on` does not enable LLM
 - committed combined artifacts in `examples/llm_review_artifacts/` are
   reference-only examples and do not become runtime dependencies
 

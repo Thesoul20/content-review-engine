@@ -8,6 +8,42 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0089
+
+### Added
+
+- Added `src/content_review_engine/api.py` with stable `review_file(...)` and
+  `review_batch(...)` Python entrypoints.
+- Added `src/content_review_engine/api_models.py` with stable API options,
+  artifact-path, and workflow-result models, plus deterministic quality-gate
+  result metadata.
+- Added `src/content_review_engine/workflows.py` as the shared workflow helper
+  layer reused by the Python API and CLI.
+- Added `docs/PYTHON_API.md` and `examples/python_api_usage/` for programmatic
+  usage guidance and reference examples.
+- Added `tests/test_python_api.py` for deterministic API, optional LLM API,
+  output-contract, CLI/API consistency, and docs-boundary coverage.
+
+### Changed
+
+- Updated `src/content_review_engine/cli.py` so `review` and `batch` now reuse
+  the shared workflow helpers while preserving current CLI argument semantics,
+  deterministic output behavior, raw sidecar schemas, combined-output opt-in
+  behavior, and exit-code boundaries.
+- Updated `PROJECT_STATE.md`, `docs/ARCHITECTURE.md`,
+  `docs/DATA_MODELS.md`, `docs/CLI.md`, and
+  `docs/LLM_PROVIDER_USAGE.md` to document the stable Python API facade and
+  its reuse boundary with the CLI.
+
+### Not Added
+
+- No subprocess-based API wrapper, no MCP server, no REST API, and no GUI.
+- No change to deterministic `ReviewResult` / `BatchReviewResult` schemas, raw
+  `LLMReviewResult` / `LLMSidecarResult` schemas, combined-envelope schemas,
+  or default deterministic-only quality-gate semantics.
+- No raw API key argument, no automatic `.env` loading, and no new real LLM
+  provider implementation.
+
 ## TASK-0088
 
 ### Added

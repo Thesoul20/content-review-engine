@@ -115,6 +115,14 @@ It now also includes a separate explicit LLM quality-gate helper under
 exit-code `1` support for opt-in LLM gating without changing default
 deterministic quality-gate behavior, deterministic result schemas, raw LLM
 sidecar schemas, or deterministic counts.
+It now also includes a stable Python API facade under
+`src/content_review_engine/api.py` plus shared workflow helpers under
+`src/content_review_engine/workflows.py`, so Python callers can run single-file
+and batch review workflows directly, optionally enable the existing LLM path,
+receive structured deterministic / LLM / combined results, evaluate
+deterministic and explicit LLM quality gates, and optionally write the same
+deterministic / raw sidecar / combined artifacts without shelling out to the
+CLI or changing current CLI behavior.
 
 ---
 
@@ -184,6 +192,22 @@ sidecar schemas, or deterministic counts.
 - No active task is recorded in this file.
 
 ## Recent Completion
+
+- TASK-0089 is complete.
+- Added `src/content_review_engine/api.py`,
+  `src/content_review_engine/api_models.py`, and
+  `src/content_review_engine/workflows.py` as the stable Python API facade and
+  shared workflow orchestration layer for single-file and batch review.
+- Added `review_file(...)` and `review_batch(...)` entrypoints plus stable API
+  options / result models for deterministic results, optional raw LLM results,
+  optional combined-envelope results, and deterministic / explicit LLM
+  quality-gate metadata.
+- Updated `src/content_review_engine/cli.py` to reuse the shared workflow
+  helpers while preserving existing CLI flags, artifact boundaries, and exit
+  code behavior.
+- Added `docs/PYTHON_API.md` and `examples/python_api_usage/` and expanded
+  tests for API deterministic usage, optional LLM usage, artifact writing,
+  CLI/API path consistency, and API-docs boundary coverage.
 
 - TASK-0088 is complete.
 - Clarified the minimum real-provider usage contract for the existing
