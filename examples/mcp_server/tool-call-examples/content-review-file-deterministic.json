@@ -1,0 +1,6 @@
+{
+  "markdown_path": "tests/fixtures/markdown/forbidden_terms_article.md",
+  "profile_path": "tests/fixtures/profiles/default.yml",
+  "fail_on": "warning",
+  "include_combined_result": true
+}

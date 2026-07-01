@@ -203,6 +203,8 @@ Combined-output compatibility rules:
 - the MCP server follows the same boundary because it calls the Python API
   facade directly and does not add raw API key input or automatic `.env`
   loading
+- the MCP packaging surface remains optional and does not change base CLI or
+  Python API dependency requirements
 - committed combined artifacts in `examples/llm_review_artifacts/` are
   reference-only examples and do not become runtime dependencies
 

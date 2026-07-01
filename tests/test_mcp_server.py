@@ -10,7 +10,7 @@ from mcp.server.fastmcp.exceptions import ToolError
 
 from content_review_engine.api import review_batch, review_file
 from content_review_engine.llm import LLMProviderConfig, ValidatedLLMSemanticReviewOutput
-from content_review_engine.mcp_server import create_mcp_server
+from content_review_engine.mcp_server import build_parser, create_mcp_server, main
 
 
 class _SemanticReviewer:
@@ -96,6 +96,26 @@ def test_mcp_console_script_entrypoint_is_exposed() -> None:
 
     assert mcp_entrypoints, "content-review-mcp console script is missing"
     assert mcp_entrypoints[0].value == "content_review_engine.mcp_server:main"
+
+
+def test_mcp_parser_defaults_to_stdio() -> None:
+    args = build_parser().parse_args([])
+
+    assert args.transport == "stdio"
+
+
+def test_mcp_help_exits_before_loading_runtime(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        "content_review_engine.mcp_server._import_fastmcp",
+        lambda: pytest.fail("FastMCP import should not run for --help"),
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        main(["--help"])
+
+    assert exc_info.value.code == 0
 
 
 def test_mcp_single_file_deterministic_matches_python_api() -> None:

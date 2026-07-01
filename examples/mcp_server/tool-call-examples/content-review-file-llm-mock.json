@@ -1,0 +1,10 @@
+{
+  "markdown_path": "tests/fixtures/markdown/clean_article.md",
+  "profile_path": "tests/fixtures/profiles/default.yml",
+  "enable_llm": true,
+  "llm_provider_config": {
+    "provider": "mock"
+  },
+  "llm_fail_on": "warning",
+  "include_combined_result": true
+}

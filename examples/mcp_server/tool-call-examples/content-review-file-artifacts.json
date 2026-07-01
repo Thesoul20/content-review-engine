@@ -1,0 +1,8 @@
+{
+  "markdown_path": "tests/fixtures/markdown/clean_article.md",
+  "profile_path": "tests/fixtures/profiles/default.yml",
+  "output_format": "json",
+  "output_path": "/tmp/content-review-engine/review.json",
+  "combined_output_path": "/tmp/content-review-engine/review.combined.json",
+  "combined_output_format": "json"
+}

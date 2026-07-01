@@ -13,6 +13,8 @@ from content_review_engine.api import review_batch, review_file
 
 The local MCP server wrapper in `content_review_engine.mcp_server` calls these
 same entrypoints and does not bypass the API facade.
+That MCP wrapper is a separate optional packaging surface and remains a local
+adapter rather than a remote service layer.
 
 ## Scope
 
@@ -29,6 +31,7 @@ the CLI.
 - does not read `.env` automatically
 - does not accept raw API keys
 - does not shell out to the CLI
+- keeps the same boundary when called through the MCP wrapper
 
 Boundary rules:
 

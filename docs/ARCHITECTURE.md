@@ -106,6 +106,7 @@ Current MCP adapter:
 
 ```text
 uv run content-review-mcp
+uv run python -m content_review_engine.mcp_server
 content_review_file(...)
 content_review_batch(...)
 ```
@@ -202,8 +203,12 @@ artifact writing, combined-envelope building, and quality-gate evaluation
 without shelling out through the CLI.
 It now also includes a thin MCP adapter under
 `src/content_review_engine/mcp_server.py` so MCP clients can call the stable
-Python API facade through stdio or other supported MCP transports without
+Python API facade through stdio or other SDK-supported MCP transports without
 shelling out through the CLI or reimplementing workflow orchestration.
+That adapter is packaged as an optional MCP extra so the base CLI install does
+not require MCP runtime dependencies. The current recommended client transport
+is still local `stdio`, and non-stdio SDK transports are not documented as
+remote service or REST API product capabilities.
 It now also includes committed reference artifacts under
 `examples/llm_review_artifacts/` that document the current presentation
 outputs for single-file and batch LLM review without becoming runtime

@@ -2,8 +2,7 @@ from __future__ import annotations
 
 import argparse
 import re
-
-from mcp.server.fastmcp import FastMCP
+from typing import TYPE_CHECKING
 
 from content_review_engine.api import (
     CombinedOutputFormat,
@@ -14,6 +13,9 @@ from content_review_engine.api import (
     review_file,
 )
 from content_review_engine.llm import LLMProviderConfig
+
+if TYPE_CHECKING:
+    from mcp.server.fastmcp import FastMCP
 
 _DEFAULT_SERVER_NAME = "content-review-engine"
 _SECRET_PATTERNS = (
@@ -37,7 +39,20 @@ def _raise_sanitized_error(exc: Exception) -> None:
     raise ValueError(_sanitize_error_message(str(exc))) from None
 
 
-def create_mcp_server() -> FastMCP:
+def _import_fastmcp() -> type["FastMCP"]:
+    try:
+        from mcp.server.fastmcp import FastMCP
+    except ModuleNotFoundError as exc:
+        raise RuntimeError(
+            "MCP support is not installed. Install the 'mcp' extra, for "
+            "example: pip install 'content-review-engine[mcp]' or "
+            "uv sync --extra mcp."
+        ) from exc
+    return FastMCP
+
+
+def create_mcp_server() -> "FastMCP":
+    FastMCP = _import_fastmcp()
     mcp = FastMCP(
         _DEFAULT_SERVER_NAME,
         instructions=(

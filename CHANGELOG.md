@@ -8,6 +8,47 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0091
+
+### Added
+
+- Added `examples/mcp_server/manual-smoke-checklist.md` for local MCP client
+  startup, config, deterministic tool-call, optional mock LLM, artifact, and
+  sanitization checks.
+- Added `examples/mcp_server/tool-call-examples/` JSON payload examples for
+  deterministic single-file review, deterministic batch review, optional mock
+  LLM review, and artifact writing.
+- Added `tests/test_mcp_server_packaging.py` for MCP optional-dependency,
+  console-script, module-entrypoint, and example JSON packaging coverage.
+
+### Changed
+
+- Updated `src/content_review_engine/mcp_server.py` to lazily import the MCP
+  runtime so module import and `--help` do not fail before argument parsing,
+  and so missing MCP dependencies produce an explicit install hint instead of
+  a raw import traceback.
+- Updated `pyproject.toml` and `uv.lock` so `mcp[cli]` is now an optional
+  `mcp` extra rather than a mandatory base dependency, while development and
+  test environments still install MCP support.
+- Updated `docs/MCP_SERVER.md`, `examples/mcp_server/README.md`,
+  `docs/ARCHITECTURE.md`, `docs/CLI.md`, `docs/PYTHON_API.md`,
+  `docs/CI.md`, `docs/LLM_PROVIDER_USAGE.md`, and `PROJECT_STATE.md` to
+  document local stdio-first MCP usage, supported entrypoint verification,
+  transport boundaries, batch non-recursive defaults, no `.env` auto-load,
+  no raw API key input, and real-provider content disclosure.
+- Updated MCP docs and example tests to validate JSON config files, JSON tool
+  call examples, startup help paths, and packaging consistency without
+  depending on a real MCP client or a real external LLM API.
+
+### Not Added
+
+- No REST API, FastAPI service, remote deployment guide, auth system,
+  database, queue, or desktop app work.
+- No CLI flag changes, CLI output changes, CLI exit-code changes, Python API
+  signature changes, MCP tool name changes, or output schema changes.
+- No new real LLM provider, no raw API key input, and no automatic `.env`
+  loading.
+
 ## TASK-0090
 
 ### Added

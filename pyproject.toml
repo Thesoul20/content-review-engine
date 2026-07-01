@@ -8,6 +8,10 @@ dependencies = [
     "pydantic-ai-slim[openai]",
     "pydantic>=2.13.4",
     "pyyaml>=6.0.3",
+]
+
+[project.optional-dependencies]
+mcp = [
     "mcp[cli]>=1.27,<2",
 ]
 
@@ -17,6 +21,7 @@ content-review-mcp = "content_review_engine.mcp_server:main"
 
 [dependency-groups]
 dev = [
+    "mcp[cli]>=1.27,<2",
     "pytest>=9.1.1",
 ]
 

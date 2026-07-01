@@ -129,6 +129,11 @@ console entrypoint, so MCP-capable agents can call stable single-file and
 batch review tools over the existing Python API facade without shelling out
 to the CLI, changing deterministic / raw LLM / combined result schemas, or
 changing current CLI / Python API behavior.
+The MCP wrapper entrypoint is now also packaging-hardened as an optional
+dependency surface with documented local stdio-first startup, validated client
+config examples, JSON tool-call examples, help-path startup tests, and a
+manual smoke checklist, without turning the project into a REST API or remote
+service deployment target.
 
 ---
 
@@ -198,6 +203,20 @@ changing current CLI / Python API behavior.
 - No active task is recorded in this file.
 
 ## Recent Completion
+
+- TASK-0090 is complete.
+- TASK-0091 is complete.
+- Hardened MCP packaging so the base install does not require MCP runtime
+  dependencies while `content-review-mcp` and
+  `python -m content_review_engine.mcp_server` remain supported entrypoints
+  when the optional MCP extra is installed.
+- Added local MCP startup validation coverage for console-script metadata,
+  `--help`, module entrypoint help, lazy import behavior, JSON config
+  examples, tool-call examples, docs consistency, and manual smoke guidance.
+- Updated `docs/MCP_SERVER.md` and `examples/mcp_server/` to clarify stdio as
+  the default recommended transport, batch non-recursive defaults, no raw API
+  key input, no automatic `.env` loading, real-provider content disclosure,
+  and non-stdio transport boundaries.
 
 - TASK-0090 is complete.
 - Added `src/content_review_engine/mcp_server.py` with a thin FastMCP-based

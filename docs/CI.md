@@ -26,6 +26,8 @@ review behavior.
 
 Default CI remains CLI- and Python-API-focused. The MCP server is covered by
 its own local tests and does not require a remote MCP client in default CI.
+Default CI also does not need the optional MCP extra unless you intentionally
+want to run MCP-specific packaging or smoke checks in that environment.
 
 The repository includes a copyable GitHub Actions example at:
 

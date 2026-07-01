@@ -184,27 +184,36 @@ name = "content-review-engine"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
-    { name = "mcp", extra = ["cli"] },
     { name = "pydantic" },
     { name = "pydantic-ai-slim", extra = ["openai"] },
     { name = "pyyaml" },
 ]
 
+[package.optional-dependencies]
+mcp = [
+    { name = "mcp", extra = ["cli"] },
+]
+
 [package.dev-dependencies]
 dev = [
+    { name = "mcp", extra = ["cli"] },
     { name = "pytest" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "mcp", extras = ["cli"], specifier = ">=1.27,<2" },
+    { name = "mcp", extras = ["cli"], marker = "extra == 'mcp'", specifier = ">=1.27,<2" },
     { name = "pydantic", specifier = ">=2.13.4" },
     { name = "pydantic-ai-slim", extras = ["openai"] },
     { name = "pyyaml", specifier = ">=6.0.3" },
 ]
+provides-extras = ["mcp"]
 
 [package.metadata.requires-dev]
-dev = [{ name = "pytest", specifier = ">=9.1.1" }]
+dev = [
+    { name = "mcp", extras = ["cli"], specifier = ">=1.27,<2" },
+    { name = "pytest", specifier = ">=9.1.1" },
+]
 
 [[package]]
 name = "cryptography"

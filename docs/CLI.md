@@ -62,6 +62,8 @@ changing user-visible output.
 Both commands now also reuse the shared workflow helpers in
 `src/content_review_engine/workflows.py`, which are also used by the stable
 Python API facade documented in `docs/PYTHON_API.md`.
+The local MCP entrypoint is packaged separately as an optional extra so normal
+CLI installs are not forced to pull in MCP runtime dependencies.
 
 ## Output Artifact Boundaries
 

@@ -1,0 +1,7 @@
+{
+  "input_dir": "tests/fixtures/batch/articles",
+  "profile_path": "tests/fixtures/batch/profile.yml",
+  "pattern": "*.md",
+  "recursive": false,
+  "include_combined_result": true
+}
