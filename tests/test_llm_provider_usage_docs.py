@@ -9,6 +9,10 @@ from content_review_engine.parser import read_markdown
 
 USAGE_DOC_PATH = Path("docs/LLM_PROVIDER_USAGE.md")
 ENV_EXAMPLE_PATH = Path("examples/llm/pydanticai/.env.example")
+REAL_USAGE_README_PATH = Path("examples/real_llm_usage/README.md")
+REAL_USAGE_ENV_EXAMPLE_PATH = Path("examples/real_llm_usage/.env.example")
+REAL_USAGE_SINGLE_PATH = Path("examples/real_llm_usage/single-file-smoke.md")
+REAL_USAGE_BATCH_DIR = Path("examples/real_llm_usage/batch")
 PYDANTICAI_CONFIG_PATH = Path("examples/llm/pydanticai/llm-provider.yml")
 MOCK_CONFIG_PATH = Path("examples/llm/mock/llm-provider.yml")
 MANUAL_PROFILE_PATH = Path("examples/llm/pydanticai/manual-profile.yml")
@@ -32,6 +36,11 @@ def test_manual_verification_fixtures_exist_and_are_non_empty() -> None:
         BATCH_DIR / "article-a.md",
         BATCH_DIR / "article-b.md",
         ENV_EXAMPLE_PATH,
+        REAL_USAGE_README_PATH,
+        REAL_USAGE_ENV_EXAMPLE_PATH,
+        REAL_USAGE_SINGLE_PATH,
+        REAL_USAGE_BATCH_DIR / "article-a.md",
+        REAL_USAGE_BATCH_DIR / "article-b.md",
         PYDANTICAI_CONFIG_PATH,
         MOCK_CONFIG_PATH,
     )
@@ -43,10 +52,15 @@ def test_manual_verification_fixtures_exist_and_are_non_empty() -> None:
 
 def test_env_example_contains_only_placeholders() -> None:
     content = ENV_EXAMPLE_PATH.read_text(encoding="utf-8")
+    real_usage_content = REAL_USAGE_ENV_EXAMPLE_PATH.read_text(encoding="utf-8")
 
     assert "YOUR_OPENAI_API_KEY_HERE" in content
     assert "your-openai-compatible-endpoint.example" in content
     assert not _looks_like_real_api_key(content)
+    assert "YOUR_OPENAI_API_KEY_HERE" in real_usage_content
+    assert "your-openai-compatible-endpoint.example" in real_usage_content
+    assert "does not read .env automatically" in real_usage_content
+    assert not _looks_like_real_api_key(real_usage_content)
 
 
 def test_usage_docs_exist_and_cover_required_provider_flags_and_boundaries() -> None:
@@ -72,6 +86,12 @@ def test_usage_docs_exist_and_cover_required_provider_flags_and_boundaries() -> 
     assert "--llm-api-key-env" in content
     assert "--llm-base-url" in content
     assert "--llm-timeout-seconds" in content
+    assert "Real Provider Minimum Contract" in content
+    assert "Model Name Configuration" in content
+    assert "API Key And Secret Reference Configuration" in content
+    assert "Real Provider `llm-check`" in content
+    assert "Single-file Real Provider Smoke Review" in content
+    assert "Batch Real Provider Smoke Review" in content
     assert "secret resolver" in content
     assert "resolve_llm_provider_secret" in content
     assert "api_key_env is a secret reference" in content
@@ -136,6 +156,18 @@ def test_usage_docs_exist_and_cover_required_provider_flags_and_boundaries() -> 
     assert "providers do not evaluate deterministic `--fail-on`" in content
     assert "providers do not evaluate explicit `--llm-fail-on`" in content
     assert "providers do not decide quality-gate ownership or CLI exit-code `1`" in content
+    assert "an API key solves authentication only" in content
+    assert "an API key does not choose the model" in content
+    assert "the CLI does not auto-load `.env`" in content
+    assert "no dedicated model environment variable is read by the project" in content
+    assert "`llm-check --provider ...` is not the real-provider path" in content
+    assert "examples/real_llm_usage/README.md" in content
+    assert "examples/real_llm_usage/.env.example" in content
+    assert "profiles/examples/general-basic.yaml" in content
+    assert "examples/real_llm_usage/single-file-smoke.md" in content
+    assert "examples/real_llm_usage/batch" in content
+    assert "--combined-output /tmp/content-review-real-single.combined.md" in content
+    assert "--combined-output /tmp/content-review-real-batch.combined.json" in content
     assert "`llm.status` is one of `not_run`, `skipped`, `succeeded`, or `failed`" in content
     assert "`llm.advisory` is always `true`" in content
     assert "`llm.quality_gate.enabled`" in content
@@ -207,6 +239,7 @@ def test_manual_markdown_fixture_loads_with_current_reader() -> None:
 def test_docs_and_fixtures_do_not_require_real_network_or_real_api_key() -> None:
     usage_doc = USAGE_DOC_PATH.read_text(encoding="utf-8")
     env_example = ENV_EXAMPLE_PATH.read_text(encoding="utf-8")
+    real_usage_env_example = REAL_USAGE_ENV_EXAMPLE_PATH.read_text(encoding="utf-8")
 
     assert "replace-with-your-real-key" in usage_doc
     assert "mock`: safe for local tests and CI" in usage_doc
@@ -262,3 +295,21 @@ def test_docs_and_fixtures_do_not_require_real_network_or_real_api_key() -> None
     assert "Batch `--llm-output` writes one aggregate `LLMSidecarResult` JSON sidecar" in usage_doc
     assert "default `pytest` or CI" in usage_doc
     assert "YOUR_OPENAI_API_KEY_HERE" in env_example
+    assert "YOUR_OPENAI_API_KEY_HERE" in real_usage_env_example
+
+
+def test_real_usage_readme_documents_current_supported_paths_only() -> None:
+    content = REAL_USAGE_README_PATH.read_text(encoding="utf-8")
+
+    assert "real review provider: `pydanticai`" in content
+    assert "safe local test providers: `mock`, `pydantic-ai-testmodel`" in content
+    assert "--llm-provider pydanticai" in content
+    assert "--llm-model openai:gpt-4o-mini" in content
+    assert "--llm-api-key-env OPENAI_API_KEY" in content
+    assert "--combined-output" in content
+    assert "--llm-fail-on error" in content
+    assert "does not read `.env` automatically" in content
+    assert "not auto-enable LLM" in content
+    assert "raw API key values in CLI arguments" in content
+    assert "provider config inside review profile YAML" in content
+    assert not _looks_like_real_api_key(content)

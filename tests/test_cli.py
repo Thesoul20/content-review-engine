@@ -1124,6 +1124,36 @@ def test_cli_review_pydanticai_requires_model_when_selected_explicitly(
     assert not (tmp_path / "review.llm.json").exists()
 
 
+def test_cli_batch_pydanticai_requires_model_when_selected_explicitly(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = main(
+        [
+            "batch",
+            "tests/fixtures/batch/articles",
+            "--profile",
+            "tests/fixtures/batch/profile.yml",
+            "--recursive",
+            "--enable-llm",
+            "--llm-provider",
+            "pydanticai",
+            "--llm-output",
+            str(tmp_path / "batch.llm.json"),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert captured.out == ""
+    assert (
+        "Error: LLM provider 'pydanticai' requires --llm-model or llm-config model."
+        in captured.err
+    )
+    assert not (tmp_path / "batch.llm.json").exists()
+
+
 def test_cli_review_mock_provider_still_works_without_llm_model(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
@@ -4188,6 +4218,32 @@ def test_cli_llm_check_pydanticai_missing_api_key_env_returns_error(
     assert (
         "Error: LLM provider secret reference is missing: "
         "api_key_env is required for secret resolution."
+        in captured.err
+    )
+
+
+def test_cli_llm_check_pydanticai_missing_model_returns_error(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "super-secret-value")
+
+    exit_code = main(
+        [
+            "llm-check",
+            "--llm-provider",
+            "pydanticai",
+            "--llm-api-key-env",
+            "OPENAI_API_KEY",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert captured.out == ""
+    assert (
+        "Error: LLM provider 'pydanticai' requires model to be configured."
         in captured.err
     )
 

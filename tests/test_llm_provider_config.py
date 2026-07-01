@@ -117,6 +117,22 @@ def test_validate_llm_provider_config_does_not_resolve_secret_value(
     assert config.api_key_env == "OPENAI_API_KEY"
 
 
+def test_validate_llm_provider_config_preserves_model_name_and_base_url() -> None:
+    config = validate_llm_provider_config(
+        LLMProviderConfig(
+            provider="pydanticai",
+            model="openai:gpt-4o-mini",
+            api_key_env="OPENAI_API_KEY",
+            base_url="https://example.invalid/v1",
+        )
+    )
+
+    assert config.provider == "pydanticai"
+    assert config.model == "openai:gpt-4o-mini"
+    assert config.api_key_env == "OPENAI_API_KEY"
+    assert config.base_url == "https://example.invalid/v1"
+
+
 def test_reserved_real_provider_list_is_stable() -> None:
     assert LLM_RESERVED_REAL_PROVIDER_NAMES == (
         "openai",

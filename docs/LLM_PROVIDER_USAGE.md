@@ -51,6 +51,105 @@ the deterministic review pipeline.
   `examples/llm_review_artifacts/` for single-file output, batch output,
   partial failure, advisory policy, manual review checklist output, and report
   index interpretation.
+- The repository now also includes
+  `examples/real_llm_usage/README.md` plus
+  `examples/real_llm_usage/.env.example` as a reference-only local manual
+  smoke path for real-provider verification without committing real secrets.
+
+## Real Provider Minimum Contract
+
+Current real-provider runtime support is intentionally narrow.
+
+Supported today:
+
+- real runtime provider name: `pydanticai`
+- safe local test providers: `mock`, `pydantic-ai-testmodel`
+- model configuration via `--llm-model <name>` or `model:` in
+  `--llm-config`
+- API key secret reference via `--llm-api-key-env <ENV_NAME>` or
+  `api_key_env:` in `--llm-config`
+- optional base URL via `--llm-base-url <url>` or `base_url:` in
+  `--llm-config`
+
+Minimum real-provider inputs usually required:
+
+- provider
+- model name
+- API key
+- optional base URL / endpoint
+- optional retry, timeout, and pacing settings
+
+Current non-support boundaries:
+
+- the CLI does not accept a raw API key argument
+- the CLI does not read model name from a dedicated environment-variable
+  contract
+- the CLI does not read provider config from the review profile YAML
+- the CLI does not auto-load `.env`
+- `llm-check --provider ...` is not the real-provider path; it is only for
+  safe factory providers such as `mock` and `pydantic-ai-testmodel`
+
+Important boundary:
+
+- an API key solves authentication only
+- an API key does not choose the model
+- `pydanticai` still requires model selection through `--llm-model` or
+  `llm-config`
+
+## Model Name Configuration
+
+Current supported ways to configure the real-provider model name:
+
+- CLI flag: `--llm-model openai:gpt-4o-mini`
+- provider config file field: `model: openai:gpt-4o-mini`
+
+Current unsupported ways:
+
+- no dedicated model environment variable is read by the project
+- no model field exists in review profile YAML
+- no default real-provider model is inferred from the API key
+
+If `pydanticai` is selected without a configured model:
+
+- single-file `review` fails with
+  `LLM provider 'pydanticai' requires --llm-model or llm-config model.`
+- batch `batch` fails with the same boundary
+- `llm-check` fails before live runtime with
+  `LLM provider 'pydanticai' requires model to be configured.`
+
+## API Key And Secret Reference Configuration
+
+Current supported ways to point the project at a real-provider API key:
+
+- CLI flag: `--llm-api-key-env OPENAI_API_KEY`
+- provider config file field: `api_key_env: OPENAI_API_KEY`
+
+Current unsupported ways:
+
+- raw plaintext secret in CLI arguments
+- raw plaintext secret in committed example YAML
+- automatic `.env` loading by the project
+- secret lookup from review profile YAML
+
+Secret resolver behavior:
+
+- `resolve_llm_provider_secret(config, env=None)` reads only the configured
+  environment-variable name
+- missing `api_key_env` fails immediately
+- unset environment variables fail immediately
+- empty environment variables fail immediately
+- non-empty placeholder text is not specially recognized by the resolver; it
+  can pass local preflight and then still fail later during real provider auth
+- rendered smoke-check output shows only `API key env: ...` plus
+  `API key: <redacted>`
+
+Use placeholder templates only:
+
+- `examples/llm/pydanticai/.env.example`
+- `examples/real_llm_usage/.env.example`
+
+Those files are for local reference only. They do not make the CLI load
+`.env`, and they must never contain a real secret.
 
 ## Deterministic, Sidecar, And Combined Boundaries
 
@@ -136,6 +235,13 @@ Behavior:
 - raw single-file `LLMReviewResult` JSON sidecars are unchanged
 - raw batch `LLMSidecarResult` JSON sidecars are unchanged
 
+Real-provider gate reminder:
+
+- `--combined-output` still does not enable LLM by itself
+- `--llm-fail-on` still does not enable LLM by itself
+- real-provider findings remain outside deterministic `--fail-on` unless you
+  explicitly opt into `--llm-fail-on`
+
 ## Provider Responsibility Boundary
 
 Providers are responsible for LLM execution only.
@@ -157,6 +263,126 @@ Providers are responsible for LLM execution only.
 - provider responsibility stops before deterministic counts, deterministic
   rule counts, deterministic `ReviewResult.findings`, and deterministic
   `BatchReviewResult.summary`
+
+## Real Provider `llm-check`
+
+Use `llm-check` as the smallest local verification step before running
+`review` or `batch` with a real provider.
+
+Real-provider command shapes:
+
+```bash
+uv run content-review llm-check --llm-config examples/llm/pydanticai/llm-provider.yml
+uv run content-review llm-check --llm-provider pydanticai --llm-model openai:gpt-4o-mini --llm-api-key-env OPENAI_API_KEY
+uv run content-review llm-check --llm-provider pydanticai --llm-model openai:gpt-4o-mini --llm-api-key-env OPENAI_API_KEY --llm-base-url https://your-openai-compatible-endpoint.example/v1 --live
+```
+
+Meaning:
+
+- default `llm-check` performs config merge, secret preflight, and local
+  construction only
+- `--live` is the explicit opt-in runtime smoke call
+- `--runtime` remains an alias for `--live`
+- model name must still be configured explicitly
+- API key must still be configured explicitly as an environment-variable
+  reference
+
+Common failure causes:
+
+- missing model name
+- missing `api_key_env`
+- unset API key environment variable
+- empty API key environment variable
+- unsupported provider name
+- reserved but not implemented provider name
+- live runtime auth, timeout, rate-limit, network, or endpoint failures
+
+Why this is local-only:
+
+- real-provider smoke checks can consume tokens and require live credentials
+- default `pytest` and default CI must not depend on them
+- keep them as manual local verification only
+
+## Single-file Real Provider Smoke Review
+
+Use the committed local input example in `examples/real_llm_usage/`.
+
+Direct CLI path:
+
+```bash
+uv run content-review review \
+  examples/real_llm_usage/single-file-smoke.md \
+  --profile profiles/examples/general-basic.yaml \
+  --enable-llm \
+  --llm-provider pydanticai \
+  --llm-model openai:gpt-4o-mini \
+  --llm-api-key-env OPENAI_API_KEY \
+  --llm-output /tmp/content-review-real-single.llm.json \
+  --combined-output /tmp/content-review-real-single.combined.md
+```
+
+Config-file path:
+
+```bash
+uv run content-review review \
+  examples/real_llm_usage/single-file-smoke.md \
+  --profile profiles/examples/general-basic.yaml \
+  --enable-llm \
+  --llm-config examples/llm/pydanticai/llm-provider.yml \
+  --llm-output /tmp/content-review-real-single.llm.json \
+  --combined-output /tmp/content-review-real-single.combined.md
+```
+
+What this verifies:
+
+- deterministic output remains separate
+- `--llm-output` writes raw `LLMReviewResult`
+- `--combined-output` remains explicit opt-in
+- `--combined-output` does not auto-enable LLM
+- explicit `--llm-fail-on`, if added, is still separate from deterministic
+  `--fail-on`
+
+## Batch Real Provider Smoke Review
+
+Use the committed local batch input examples in `examples/real_llm_usage/batch/`.
+
+Direct CLI path:
+
+```bash
+uv run content-review batch \
+  examples/real_llm_usage/batch \
+  --profile profiles/examples/general-basic.yaml \
+  --recursive \
+  --enable-llm \
+  --llm-provider pydanticai \
+  --llm-model openai:gpt-4o-mini \
+  --llm-api-key-env OPENAI_API_KEY \
+  --llm-output /tmp/content-review-real-batch.llm.json \
+  --combined-output /tmp/content-review-real-batch.combined.json \
+  --combined-output-format json
+```
+
+Config-file path:
+
+```bash
+uv run content-review batch \
+  examples/real_llm_usage/batch \
+  --profile profiles/examples/general-basic.yaml \
+  --recursive \
+  --enable-llm \
+  --llm-config examples/llm/pydanticai/llm-provider.yml \
+  --llm-output /tmp/content-review-real-batch.llm.json \
+  --combined-output /tmp/content-review-real-batch.combined.json \
+  --combined-output-format json
+```
+
+What this verifies:
+
+- batch raw sidecar remains `LLMSidecarResult`
+- batch combined output remains explicit opt-in
+- batch `--combined-output` does not auto-enable LLM
+- batch `--llm-fail-on` does not auto-enable LLM
+- deterministic batch gate and explicit LLM gate remain separate
 
 ## LLM semantic review prompt contract
 

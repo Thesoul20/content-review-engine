@@ -6,6 +6,9 @@ exit codes.
 
 For real-provider setup, manual verification fixtures, sidecar inspection, and
 runtime troubleshooting, see [docs/LLM_PROVIDER_USAGE.md](./LLM_PROVIDER_USAGE.md).
+For one reference-only local real-provider smoke workflow with placeholder
+secrets and runnable example inputs, see
+[`examples/real_llm_usage/README.md`](../examples/real_llm_usage/README.md).
 
 For a committed runnable demo workspace using the current CLI contract, see
 [`examples/demo/README.md`](../examples/demo/README.md).
@@ -227,6 +230,15 @@ uv run content-review llm-check --llm-config examples/llm/pydanticai/llm-provide
 uv run content-review llm-check --llm-config examples/llm/pydanticai/llm-provider.yml --live
 uv run content-review llm-check --llm-provider pydanticai --llm-model openai:gpt-4o-mini --llm-api-key-env OPENAI_API_KEY --live
 ```
+
+Real-provider boundary:
+
+- `--provider` is only for safe factory providers such as `mock` and
+  `pydantic-ai-testmodel`
+- real-provider smoke checks use `--llm-provider pydanticai` or
+  `--llm-config`
+- real-provider `pydanticai` requires both model configuration and an API key
+  environment-variable reference
 
 Behavior:
 

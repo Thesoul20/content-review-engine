@@ -107,6 +107,20 @@ def test_resolve_llm_provider_secret_rejects_empty_environment_variable() -> Non
     )
 
 
+def test_resolve_llm_provider_secret_accepts_non_empty_placeholder_literal() -> None:
+    config = load_llm_provider_config(
+        provider="pydanticai",
+        api_key_env="CONTENT_REVIEW_TEST_LLM_API_KEY",
+    )
+
+    secret = resolve_llm_provider_secret(
+        config,
+        env={"CONTENT_REVIEW_TEST_LLM_API_KEY": "YOUR_OPENAI_API_KEY_HERE"},
+    )
+
+    assert secret == "YOUR_OPENAI_API_KEY_HERE"
+
+
 def test_resolve_llm_provider_secret_does_not_read_dotenv(
     tmp_path,
     monkeypatch: pytest.MonkeyPatch,
@@ -163,4 +177,3 @@ def test_resolve_llm_api_key_returns_redacted_secret_model() -> None:
 def test_secret_redaction_helper_returns_constant_redaction() -> None:
     assert redact_secret_value("test-secret-value") == REDACTED_SECRET_TEXT
     assert redact_secret_value("another-secret") == REDACTED_SECRET_TEXT
-

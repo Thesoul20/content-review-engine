@@ -8,6 +8,42 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0088
+
+### Added
+
+- Added `examples/real_llm_usage/README.md`,
+  `examples/real_llm_usage/.env.example`,
+  `examples/real_llm_usage/single-file-smoke.md`, and
+  `examples/real_llm_usage/batch/` as reference-only local smoke fixtures for
+  real-provider manual verification without committed secrets.
+
+### Changed
+
+- Updated `docs/LLM_PROVIDER_USAGE.md` to document the current minimum
+  real-provider contract for `pydanticai`, including model-name
+  configuration, API-key secret references, unsupported configuration modes,
+  `llm-check` usage, single-file review usage, batch review usage, and
+  unchanged artifact/gate boundaries.
+- Updated `docs/CLI.md` and `docs/CI.md` to cross-reference the new local
+  real-provider smoke examples and clarify that `llm-check --provider` is for
+  safe test providers while real-provider smoke uses `--llm-provider` or
+  `--llm-config`.
+- Updated `src/content_review_engine/llm/smoke_check.py` so `pydanticai`
+  smoke checks now fail early with a stable missing-model error instead of
+  deferring that problem to later construction/runtime steps.
+- Expanded provider-config, secret-resolver, smoke-check, CLI, and provider
+  usage docs tests to lock the real-provider configuration contract and the
+  no-secret-in-repo boundary.
+
+### Not Added
+
+- No new real provider implementation, no provider interface change, and no
+  default CI or test dependency on live LLM APIs.
+- No change to deterministic output semantics, raw sidecar schemas,
+  combined-output semantics, deterministic-only default gating, or explicit
+  `--llm-fail-on` opt-in behavior.
+
 ## TASK-0087
 
 ### Changed

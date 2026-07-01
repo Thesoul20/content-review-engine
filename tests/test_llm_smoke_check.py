@@ -7,6 +7,7 @@ import pytest
 from content_review_engine.llm import (
     EmptyLLMProviderSecretEnvironmentVariableError,
     LLMProviderConfig,
+    LLMProviderConfigError,
     LLMProviderRuntimeError,
     LLMReviewResult,
     MissingLLMProviderSecretEnvironmentVariableError,
@@ -289,6 +290,19 @@ def test_run_llm_smoke_check_pydanticai_rejects_missing_api_key_env() -> None:
         )
 
     assert "api_key_env is required for secret resolution." in str(exc_info.value)
+
+
+def test_run_llm_smoke_check_pydanticai_rejects_missing_model_before_secret_resolution() -> None:
+    with pytest.raises(LLMProviderConfigError) as exc_info:
+        run_llm_smoke_check(
+            LLMProviderConfig(
+                provider="pydanticai",
+                api_key_env="OPENAI_API_KEY",
+            ),
+            env={"OPENAI_API_KEY": "test-secret-value"},
+        )
+
+    assert str(exc_info.value) == "LLM provider 'pydanticai' requires model to be configured."
 
 
 def test_run_llm_smoke_check_pydanticai_rejects_unset_env_var() -> None:

@@ -5,6 +5,8 @@ For the complete local setup flow before CI, see
 
 For explicit real-provider manual verification guidance, see
 [docs/LLM_PROVIDER_USAGE.md](./LLM_PROVIDER_USAGE.md).
+For a reference-only local real-provider smoke walkthrough that must stay out
+of default CI, see [`examples/real_llm_usage/README.md`](../examples/real_llm_usage/README.md).
 
 For committed example CI-style review artifacts that show deterministic output,
 LLM sidecars, advisory Markdown reports, report indexes, manual review

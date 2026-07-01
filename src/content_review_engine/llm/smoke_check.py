@@ -5,6 +5,7 @@ from collections.abc import Mapping
 from typing import Literal
 
 from content_review_engine.llm.config import LLMProviderConfig
+from content_review_engine.llm.errors import LLMProviderConfigError
 from content_review_engine.llm.factory import create_llm_reviewer
 from content_review_engine.llm.models import LLMReviewRequest
 from content_review_engine.llm.secrets import (
@@ -53,6 +54,12 @@ def run_llm_smoke_check(
     env: Mapping[str, str] | None = None,
 ) -> LLMSmokeCheckResult:
     provider_name = config.provider
+    if config.provider == "pydanticai" and (
+        config.model is None or config.model.strip() == ""
+    ):
+        raise LLMProviderConfigError(
+            "LLM provider 'pydanticai' requires model to be configured."
+        )
     secret_value: str | None = None
     secret_status: LLMSmokeCheckSecretStatus = "not_required"
     api_key_env: str | None = None

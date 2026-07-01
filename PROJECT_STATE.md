@@ -185,6 +185,20 @@ sidecar schemas, or deterministic counts.
 
 ## Recent Completion
 
+- TASK-0088 is complete.
+- Clarified the minimum real-provider usage contract for the existing
+  `pydanticai` path across docs, examples, smoke-check guidance, and tests,
+  without changing deterministic output, raw sidecar schemas, combined-output
+  semantics, or default CI behavior.
+- Added a reference-only `examples/real_llm_usage/` directory with placeholder
+  `.env.example`, single-file input, and batch inputs for local manual smoke
+  verification only.
+- Added and refreshed tests for real-provider model-name requirements,
+  missing-model smoke-check failure, secret-resolver non-leakage, placeholder
+  secret behavior, and docs/example consistency around `llm-check`,
+  `--enable-llm`, `--llm-output`, `--combined-output`, and
+  `--llm-fail-on`.
+
 - TASK-0087 is complete.
 - Audited LLM mainline release readiness across CLI docs, CI docs,
   architecture/data-model docs, provider-usage docs, committed artifact
