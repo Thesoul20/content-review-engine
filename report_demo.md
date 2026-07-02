@@ -203,6 +203,73 @@ uv run content-review-mcp
 uv run python -m content_review_engine.mcp_server
 ```
 
+### 用新加入文章Agent 上下文管理（公众号优化稿）测试当前审计效果
+
+如果你要直接拿新加入的这篇文章做单文件测试，推荐先用
+`profiles/examples/wechat-article.yaml`，因为它除了基础规则，还包含更贴近公众号场景的
+`regex_rules`。
+
+先校验 profile：
+
+```bash
+uv run content-review profile validate profiles/examples/wechat-article.yaml
+```
+
+最短测试命令：
+
+```bash
+uv run content-review review \
+  'Agent 上下文管理（公众号优化稿）.md' \
+  --profile profiles/examples/wechat-article.yaml
+```
+
+看结构化 JSON 输出：
+
+```bash
+uv run content-review review \
+  'Agent 上下文管理（公众号优化稿）.md' \
+  --profile profiles/examples/wechat-article.yaml \
+  --format json
+```
+
+生成可读性更好的 Markdown 报告：
+
+```bash
+uv run content-review review \
+  'Agent 上下文管理（公众号优化稿）.md' \
+  --profile profiles/examples/wechat-article.yaml \
+  --format markdown \
+  --output /tmp/agent-context-review.md
+```
+
+如果你想对比更严格但规则面不同的模板，也可以再跑一次：
+
+```bash
+uv run content-review review \
+  'Agent 上下文管理（公众号优化稿）.md' \
+  --profile profiles/examples/wechat-strict.yaml
+```
+
+如果你还想顺手看本地 mock LLM 的辅助层产物：
+
+```bash
+uv run content-review review \
+  'Agent 上下文管理（公众号优化稿）.md' \
+  --profile profiles/examples/wechat-article.yaml \
+  --enable-llm \
+  --llm-provider mock \
+  --llm-output /tmp/agent-context.llm.json \
+  --llm-report /tmp/agent-context.llm.md \
+  --combined-output /tmp/agent-context.combined.md \
+  --combined-output-format markdown
+```
+
+说明：
+
+- deterministic 输出仍然是主审计结果。
+- `mock` LLM 只适合看产物格式和接线路径，不代表真实语义审计能力。
+- 这篇文章的结果会明显受所选 profile 影响。
+
 ## 5. 推荐查看顺序
 
 1. 先看 CLI 的 deterministic 报告：
