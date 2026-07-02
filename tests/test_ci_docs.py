@@ -1,6 +1,35 @@
 from pathlib import Path
 
 
+def test_active_github_actions_workflow_exists_and_contains_core_steps() -> None:
+    workflow_path = Path(".github/workflows/ci.yml")
+
+    assert workflow_path.exists()
+
+    content = workflow_path.read_text(encoding="utf-8")
+
+    assert "uv sync --extra mcp --group dev" in content
+    assert "uv run pytest" in content
+    assert "uv run content-review --help" in content
+    assert "uv run content-review-mcp --help" in content
+    assert "examples/demo/profiles/wechat-demo.yaml" in content
+
+
+def test_strict_github_actions_workflow_exists_and_checks_for_artifact_drift() -> None:
+    workflow_path = Path(".github/workflows/ci-strict.yml")
+
+    assert workflow_path.exists()
+
+    content = workflow_path.read_text(encoding="utf-8")
+
+    assert "uv sync --extra mcp --group dev" in content
+    assert "uv run pytest" in content
+    assert "uv build" in content
+    assert "dist/*.whl" in content
+    assert "uv run python examples/demo/run_demo.py" in content
+    assert "git diff --exit-code" in content
+
+
 def test_github_actions_example_exists_and_contains_key_commands() -> None:
     workflow_path = Path("docs/examples/github-actions/content-review.yml")
 
@@ -22,6 +51,8 @@ def test_ci_docs_exist_and_explain_exit_codes_and_limits() -> None:
     content = ci_doc_path.read_text(encoding="utf-8")
 
     assert "docs/examples/github-actions/content-review.yml" in content
+    assert ".github/workflows/ci.yml" in content
+    assert ".github/workflows/ci-strict.yml" in content
     assert "content-review profile validate" in content
     assert "content-review batch" in content
     assert "--fail-on error" in content

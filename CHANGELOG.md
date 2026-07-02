@@ -8,6 +8,29 @@ This project follows a staged development process.
 
 ## Unreleased
 
+### Added
+
+- Added a real GitHub Actions workflow at `.github/workflows/ci.yml` for the
+  repository's default CI path.
+- Added a stricter GitHub Actions workflow at
+  `.github/workflows/ci-strict.yml` for committed demo replay and artifact
+  drift detection, plus package build/install smoke.
+
+### Changed
+
+- Updated `docs/CI.md` to distinguish the active repository workflow from the
+  smaller copyable example under
+  `docs/examples/github-actions/content-review.yml`.
+- Updated `tests/test_ci_docs.py` to cover the active CI workflow file and its
+  core commands, plus the stricter workflow and its drift checks.
+- Updated `PROJECT_STATE.md` to record the active CI workflow and its current
+  no-real-provider automation boundary, plus the stricter replay-and-diff CI
+  path.
+- Refined the standard workflow to stay lightweight for pull requests and
+  mainline pushes, and refined the stricter workflow to run on mainline/manual
+  triggers with package build/install smoke plus committed demo drift
+  enforcement.
+
 ## TASK-0092
 
 ### Added

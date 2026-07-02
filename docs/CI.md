@@ -33,8 +33,32 @@ The repository includes a copyable GitHub Actions example at:
 
 `docs/examples/github-actions/content-review.yml`
 
-The example is documentation only. It is not an active workflow in this
-repository.
+The repository now also includes an active GitHub Actions workflow at:
+
+`.github/workflows/ci.yml`
+
+It also includes a stricter validation workflow at:
+
+`.github/workflows/ci-strict.yml`
+
+Current intent:
+
+- `.github/workflows/ci.yml` is the repository's real default CI workflow
+- `.github/workflows/ci-strict.yml` is a stricter repository workflow that
+  also checks replayed demo artifacts for drift against committed files
+- `docs/examples/github-actions/content-review.yml` remains a smaller copyable
+  example for downstream repositories that only want the content-review gate
+  itself
+
+Current split:
+
+- Standard CI:
+  fast repository health checks for tests, CLI/MCP help paths, profile
+  validation, and CLI smoke review on pull requests and mainline pushes
+- Strict CI:
+  mainline-push and manual-only validation that adds package build/install
+  smoke, in-place demo replay, and `git diff --exit-code` checks so committed
+  artifacts must stay reproducible
 
 ## GitHub Actions Example
 

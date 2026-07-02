@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+      - main
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-and-smoke:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install project and dev dependencies
+        run: uv sync --extra mcp --group dev
+
+      - name: Run test suite
+        run: uv run pytest
+
+      - name: Verify CLI entrypoints
+        run: |
+          uv run content-review --help
+          uv run content-review-mcp --help
+
+      - name: Validate built-in and demo profiles
+        run: |
+          uv run content-review profile validate profiles/examples/wechat-article.yaml
+          uv run content-review profile validate examples/demo/profiles/wechat-demo.yaml
+          uv run content-review profile validate examples/demo/profiles/technical-demo.yaml
+
+      - name: Run CLI review smoke checks
+        run: |
+          uv run content-review review \
+            examples/demo/articles/wechat-demo.md \
+            --profile examples/demo/profiles/wechat-demo.yaml
+          uv run content-review batch \
+            examples/demo/articles \
+            --profile examples/demo/profiles/technical-demo.yaml \
+            --pattern 'technical-*.md'

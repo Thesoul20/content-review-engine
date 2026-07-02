@@ -1,0 +1,73 @@
+name: CI Strict
+
+on:
+  push:
+    branches:
+      - master
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: ci-strict-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  strict-validation:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install project and dev dependencies
+        run: uv sync --extra mcp --group dev
+
+      - name: Run full test suite
+        run: uv run pytest
+
+      - name: Verify CLI and MCP help entrypoints
+        run: |
+          uv run content-review --help
+          uv run content-review-mcp --help
+          uv run python -m content_review_engine.mcp_server --help
+
+      - name: Validate built-in and demo profiles
+        run: |
+          uv run content-review profile validate profiles/examples/general-basic.yaml
+          uv run content-review profile validate profiles/examples/wechat-article.yaml
+          uv run content-review profile validate profiles/examples/wechat-strict.yaml
+          uv run content-review profile validate examples/demo/profiles/wechat-demo.yaml
+          uv run content-review profile validate examples/demo/profiles/technical-demo.yaml
+
+      - name: Run deterministic CLI review smoke checks
+        run: |
+          uv run content-review review \
+            examples/demo/articles/wechat-demo.md \
+            --profile examples/demo/profiles/wechat-demo.yaml
+          uv run content-review batch \
+            examples/demo/articles \
+            --profile examples/demo/profiles/technical-demo.yaml \
+            --pattern 'technical-*.md'
+
+      - name: Build distribution artifacts
+        run: uv build
+
+      - name: Verify package installation from built wheel
+        run: |
+          python -m venv /tmp/content-review-engine-wheel-smoke
+          /tmp/content-review-engine-wheel-smoke/bin/pip install dist/*.whl
+          /tmp/content-review-engine-wheel-smoke/bin/content-review --help
+
+      - name: Replay committed demo artifacts in-place
+        run: uv run python examples/demo/run_demo.py
+
+      - name: Fail on committed artifact drift
+        run: git diff --exit-code -- examples/demo README.md README.en.md report_demo.md docs

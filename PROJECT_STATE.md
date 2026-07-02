@@ -139,6 +139,16 @@ The repository now also includes a unified end-to-end demo workspace under
 Python API, and MCP artifacts using local demo inputs plus the mock LLM path,
 so the current adapter surface can be demonstrated from one entrypoint
 without real provider secrets or network access.
+The repository now also includes a real GitHub Actions CI workflow under
+`.github/workflows/ci.yml` that installs the project plus dev/MCP extras, runs
+`pytest`, validates key built-in and demo profiles, performs CLI help/review
+smoke checks, and replays the unified demo into a temporary output directory
+without requiring a real API key or networked LLM provider access.
+It now also includes a second stricter GitHub Actions workflow under
+`.github/workflows/ci-strict.yml` that builds installable package artifacts,
+replays the committed unified demo artifacts in place, and fails on
+`git diff` drift, so reproducibility of the committed demo workspace is
+enforced separately from the faster standard CI.
 
 ---
 
@@ -203,6 +213,12 @@ without real provider secrets or network access.
 - The repository also includes a unified replayable demo artifact workspace
   under `examples/demo/artifacts/` that captures current CLI, Python API, and
   MCP outputs from one local runner using the mock LLM path.
+- The repository now includes an active GitHub Actions CI workflow for tests,
+  CLI/MCP help-path validation, profile validation, CLI smoke review, and
+  unified demo replay.
+- The repository now also includes a stricter GitHub Actions CI workflow for
+  mainline/manual package build-install smoke, committed demo replay, and
+  artifact-drift enforcement.
 
 ---
 
