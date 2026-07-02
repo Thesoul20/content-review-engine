@@ -198,6 +198,7 @@ exit-code behavior.
 
 ## Examples
 
+- `examples/demo/README.md`
 - `examples/python_api_usage/README.md`
 - `examples/python_api_usage/single_file_review.py`
 - `examples/python_api_usage/batch_review.py`

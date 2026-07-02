@@ -134,6 +134,11 @@ dependency surface with documented local stdio-first startup, validated client
 config examples, JSON tool-call examples, help-path startup tests, and a
 manual smoke checklist, without turning the project into a REST API or remote
 service deployment target.
+The repository now also includes a unified end-to-end demo workspace under
+`examples/demo/` with one replay script that regenerates committed CLI,
+Python API, and MCP artifacts using local demo inputs plus the mock LLM path,
+so the current adapter surface can be demonstrated from one entrypoint
+without real provider secrets or network access.
 
 ---
 
@@ -195,6 +200,9 @@ service deployment target.
   that shows Markdown input, demo profiles, single-file review, batch review,
   Markdown report output, JSON output, inline suppression, and quality-gate
   behavior using the current CLI and report pipeline.
+- The repository also includes a unified replayable demo artifact workspace
+  under `examples/demo/artifacts/` that captures current CLI, Python API, and
+  MCP outputs from one local runner using the mock LLM path.
 
 ---
 
@@ -206,6 +214,15 @@ service deployment target.
 
 - TASK-0090 is complete.
 - TASK-0091 is complete.
+- TASK-0092 is complete.
+- Reworked `examples/demo/` into the main end-to-end demo entrypoint with a
+  committed artifact tree grouped by CLI, Python API, and MCP outputs.
+- Added `examples/demo/run_demo.py` so one local command validates the demo
+  profiles, regenerates deterministic and mock-LLM artifacts, and performs a
+  real MCP stdio initialize / list-tools / tool-call flow.
+- Updated `README.md`, `docs/QUICKSTART.md`, `docs/CLI.md`,
+  `docs/PYTHON_API.md`, and `docs/MCP_SERVER.md` so the unified demo is the
+  easiest documented way to inspect the full current project surface.
 - Hardened MCP packaging so the base install does not require MCP runtime
   dependencies while `content-review-mcp` and
   `python -m content_review_engine.mcp_server` remain supported entrypoints

@@ -14,7 +14,8 @@ For one reference-only local real-provider smoke workflow with placeholder
 secrets and runnable example inputs, see
 [`examples/real_llm_usage/README.md`](../examples/real_llm_usage/README.md).
 
-For a committed runnable demo workspace using the current CLI contract, see
+For the main end-to-end demo workspace, including committed CLI artifacts plus
+matching Python API and MCP snapshots, see
 [`examples/demo/README.md`](../examples/demo/README.md).
 
 For committed single-file and batch LLM artifact examples that show

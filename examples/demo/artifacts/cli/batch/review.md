@@ -1,11 +1,12 @@
-# Content Review Report
+# Batch Content Review Report
 
 ## Summary
 
 | Field | Value |
 | --- | --- |
-| File | `examples/demo/articles/technical-demo.md` |
-| Profile | `examples/demo/profiles/technical-demo.yaml` |
+| Files Discovered | 1 |
+| Files Reviewed | 1 |
+| Files With Findings | 1 |
 | Total Findings | 6 |
 | Quality Gate | Failed |
 | Fail On | `warning` |
@@ -30,7 +31,17 @@
 | unresolved_draft_marker | 1 |
 | unresolved_example | 1 |
 
-## Findings
+## Files With Findings
+
+| File | Findings | Highest Severity |
+| --- | ---: | --- |
+| `examples/demo/articles/technical-demo.md` | 6 | warning |
+
+## Findings by File
+
+### `examples/demo/articles/technical-demo.md`
+
+#### Findings
 
 | Severity | Rule | Line | Column | Message | Suggestion |
 | --- | --- | ---: | ---: | --- | --- |
@@ -41,7 +52,7 @@
 | warning | unresolved_draft_marker | 9 | 1 | Resolve draft markers before publishing the technical post. | Replace the marker with completed guidance or remove it. |
 | info | unresolved_example | 11 | 1 | This draft still references an unfinished example or benchmark. | Add the missing example, screenshot, or benchmark details. |
 
-## Detailed Findings
+#### Detailed Findings
 
 ### absolute_claims
 

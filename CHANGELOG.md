@@ -8,6 +8,37 @@ This project follows a staged development process.
 
 ## Unreleased
 
+## TASK-0092
+
+### Added
+
+- Added `tasks/TASK-0092-unify-end-to-end-demo-workspace.md`.
+- Added `examples/demo/run_demo.py` as one local replay entrypoint that
+  validates demo profiles, regenerates CLI artifacts, regenerates Python API
+  artifacts, and performs a real MCP stdio initialize / list-tools /
+  tool-call flow.
+- Added `examples/demo/artifacts/` with committed CLI, Python API, and MCP
+  demo snapshots.
+
+### Changed
+
+- Reworked `examples/demo/README.md` into the main end-to-end demo guide for
+  the repository, with one setup path, one replay command, and one artifact
+  map.
+- Updated `README.md`, `docs/QUICKSTART.md`, `docs/CLI.md`,
+  `docs/PYTHON_API.md`, `docs/MCP_SERVER.md`, and `PROJECT_STATE.md` to point
+  to the unified demo entrypoint.
+- Replaced the older demo-project regression coverage with unified demo
+  workspace tests that cover committed artifacts, the replay runner, and MCP
+  snapshots.
+
+### Not Added
+
+- No change to deterministic rules, review schemas, CLI flag semantics,
+  Python API signatures, MCP tool names, or default quality-gate behavior.
+- No real-provider dependency in the default demo flow, no raw API key input,
+  and no network requirement.
+
 ## TASK-0091
 
 ### Added

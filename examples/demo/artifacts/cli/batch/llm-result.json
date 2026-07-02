@@ -1,0 +1,23 @@
+{
+  "schema_version": "llm-sidecar-result.v2",
+  "llm_provider": "mock",
+  "llm_provider_source": "explicit",
+  "summary": {
+    "file_count": 1,
+    "succeeded_count": 1,
+    "failed_count": 0,
+    "skipped_count": 0,
+    "finding_count": 0
+  },
+  "files": [
+    {
+      "path": "examples/demo/articles/technical-demo.md",
+      "status": "success",
+      "finding_count": 0,
+      "review": {
+        "schema_version": "llm-review-result.v1",
+        "findings": []
+      }
+    }
+  ]
+}

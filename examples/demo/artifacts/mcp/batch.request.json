@@ -1,0 +1,6 @@
+{
+  "input_dir": "examples/demo/articles",
+  "profile_path": "examples/demo/profiles/technical-demo.yaml",
+  "pattern": "technical-*.md",
+  "include_combined_result": true
+}

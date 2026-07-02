@@ -1,0 +1,10 @@
+{
+  "markdown_path": "examples/demo/articles/wechat-demo.md",
+  "profile_path": "examples/demo/profiles/wechat-demo.yaml",
+  "enable_llm": true,
+  "llm_provider_config": {
+    "provider": "mock"
+  },
+  "llm_fail_on": "warning",
+  "include_combined_result": true
+}

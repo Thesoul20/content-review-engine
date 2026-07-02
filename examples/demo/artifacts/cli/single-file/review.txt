@@ -1,0 +1,73 @@
+Review completed.
+
+Findings: 6
+
+[warning] absolute_claims: 发现可能存在绝对化表述：唯一选择
+Suggestion: 建议改为更审慎的表述，例如“较强”“表现较好”“在特定条件下有效”，或补充支撑该结论的证据。
+Line: 5
+Column: 14
+Matched: 唯一选择
+Context: ...用一篇短文说明它适合哪些场景。
+
+这套方法几乎成了很多团队的唯一选择，我们也把它写成了一个方便转发的模板。
+
+如果你正在赶项目，...
+
+[warning] markdown_links_images: 链接目标仍是占位符。
+Line: 11
+Column: 6
+Matched: [下载链接](TODO)
+Context: ...收藏这份清单，不看后悔。
+
+配图位置：待补图。
+
+领取清单：[下载链接](TODO)
+
+术语说明：唯一标识符用于数据库主键。 <!-- cont...
+
+[info] engagement_bait: This phrase may read as engagement bait.
+Suggestion: Prefer a clearer and more direct headline or transition.
+Line: 1
+Column: 3
+Matched: 速看
+Context: # 速看：协作提效清单
+
+最近我们整理了一份团队协作清单，想先用一篇...
+
+[warning] exaggerated_claims: Avoid absolute or exaggerated wording in public-facing drafts.
+Suggestion: Use narrower wording and add evidence where needed.
+Line: 5
+Column: 14
+Matched: 唯一
+Context: ...用一篇短文说明它适合哪些场景。
+
+这套方法几乎成了很多团队的唯一选择，我们也把它写成了一个方便转发的模板。
+
+如果你正在赶项...
+
+[info] engagement_bait: This phrase may read as engagement bait.
+Suggestion: Prefer a clearer and more direct headline or transition.
+Line: 7
+Column: 22
+Matched: 不看后悔
+Context: ...便转发的模板。
+
+如果你正在赶项目，可以先赶紧收藏这份清单，不看后悔。
+
+配图位置：待补图。
+
+领取清单：[下载链接](TODO...
+
+[warning] article_placeholder: Remove unfinished article placeholders before publishing.
+Suggestion: Replace the placeholder with final article content.
+Line: 9
+Column: 6
+Matched: 待补图
+Context: ...正在赶项目，可以先赶紧收藏这份清单，不看后悔。
+
+配图位置：待补图。
+
+领取清单：[下载链接](TODO)
+
+术语说明：唯一标...
+

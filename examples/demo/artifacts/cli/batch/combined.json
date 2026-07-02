@@ -1,0 +1,212 @@
+{
+  "schema_version": "batch-combined-review-result.v1",
+  "batch_review_result": {
+    "schema_version": "batch-review-result.v1",
+    "summary": {
+      "file_count": 1,
+      "reviewed_count": 1,
+      "finding_count": 6,
+      "files_with_findings": 1,
+      "severity_counts": {
+        "info": 1,
+        "warning": 5,
+        "error": 0,
+        "critical": 0
+      }
+    },
+    "results": [
+      {
+        "schema_version": "review-result.v1",
+        "summary": {
+          "finding_count": 6,
+          "severity_counts": {
+            "info": 1,
+            "warning": 5,
+            "error": 0,
+            "critical": 0
+          }
+        },
+        "findings": [
+          {
+            "rule_id": "absolute_claims",
+            "severity": "warning",
+            "message": "发现可能存在绝对化表述：完全兼容",
+            "matched_term": "完全兼容",
+            "suggestion": "建议改为更审慎的表述，例如“较强”“表现较好”“在特定条件下有效”，或补充支撑该结论的证据。",
+            "matched_text": "完全兼容",
+            "location": {
+              "start_line": 5,
+              "start_column": 10,
+              "end_line": 5,
+              "end_column": 14,
+              "start_offset": 45,
+              "end_offset": 49,
+              "matched_text": "完全兼容",
+              "context": "...这篇记录用于整理命令行发布前的检查项。\n\n当前方案在旧环境里完全兼容，而且零风险。\n\n缓存层在高峰期永远不会产生延迟抖动。\n\nT..."
+            }
+          },
+          {
+            "rule_id": "absolute_claims",
+            "severity": "warning",
+            "message": "发现可能存在绝对化表述：零风险",
+            "matched_term": "零风险",
+            "suggestion": "建议改为更审慎的表述，例如“较强”“表现较好”“在特定条件下有效”，或补充支撑该结论的证据。",
+            "matched_text": "零风险",
+            "location": {
+              "start_line": 5,
+              "start_column": 17,
+              "end_line": 5,
+              "end_column": 20,
+              "start_offset": 52,
+              "end_offset": 55,
+              "matched_text": "零风险",
+              "context": "...理命令行发布前的检查项。\n\n当前方案在旧环境里完全兼容，而且零风险。\n\n缓存层在高峰期永远不会产生延迟抖动。\n\nTODO: 补..."
+            }
+          },
+          {
+            "rule_id": "markdown_links_images",
+            "severity": "warning",
+            "message": "链接目标仍是占位符。",
+            "matched_term": "placeholder_link_target",
+            "matched_text": "[迁移步骤](#)",
+            "location": {
+              "start_line": 13,
+              "start_column": 6,
+              "end_line": 13,
+              "end_column": 15,
+              "start_offset": 123,
+              "end_offset": 132,
+              "matched_text": "[迁移步骤](#)",
+              "context": "...s 终端截图。\n\n示例待补：补上回滚命令输出。\n\n参考链接：[迁移步骤](#)\n\nFIXME: 这个草稿标记专门用于 suppressio..."
+            }
+          },
+          {
+            "rule_id": "absolute_technical_claim",
+            "severity": "warning",
+            "message": "This technical claim may be too absolute for a general blog post.",
+            "matched_term": "永远不会|绝不会|100% 兼容|没有任何性能损耗",
+            "suggestion": "Qualify the claim and describe scope, tradeoffs, or test conditions.",
+            "matched_text": "永远不会",
+            "location": {
+              "start_line": 7,
+              "start_column": 8,
+              "end_line": 7,
+              "end_column": 12,
+              "start_offset": 65,
+              "end_offset": 69,
+              "matched_text": "永远不会",
+              "context": "...\n当前方案在旧环境里完全兼容，而且零风险。\n\n缓存层在高峰期永远不会产生延迟抖动。\n\nTODO: 补上 Windows 终端截图..."
+            }
+          },
+          {
+            "rule_id": "unresolved_draft_marker",
+            "severity": "warning",
+            "message": "Resolve draft markers before publishing the technical post.",
+            "matched_term": "TODO|FIXME|待验证",
+            "suggestion": "Replace the marker with completed guidance or remove it.",
+            "matched_text": "TODO",
+            "location": {
+              "start_line": 9,
+              "start_column": 1,
+              "end_line": 9,
+              "end_column": 5,
+              "start_offset": 78,
+              "end_offset": 82,
+              "matched_text": "TODO",
+              "context": "...容，而且零风险。\n\n缓存层在高峰期永远不会产生延迟抖动。\n\nTODO: 补上 Windows 终端截图。\n\n示例待补：补上回滚命..."
+            }
+          },
+          {
+            "rule_id": "unresolved_example",
+            "severity": "info",
+            "message": "This draft still references an unfinished example or benchmark.",
+            "matched_term": "示例待补|截图待补|benchmark 待补|基准待补",
+            "suggestion": "Add the missing example, screenshot, or benchmark details.",
+            "matched_text": "示例待补",
+            "location": {
+              "start_line": 11,
+              "start_column": 1,
+              "end_line": 11,
+              "end_column": 5,
+              "start_offset": 102,
+              "end_offset": 106,
+              "matched_text": "示例待补",
+              "context": "...迟抖动。\n\nTODO: 补上 Windows 终端截图。\n\n示例待补：补上回滚命令输出。\n\n参考链接：[迁移步骤](#)\n\nFI..."
+            }
+          }
+        ],
+        "document": {
+          "path": "examples/demo/articles/technical-demo.md"
+        },
+        "profile": {
+          "name": "technical-demo",
+          "path": "examples/demo/profiles/technical-demo.yaml"
+        }
+      }
+    ]
+  },
+  "llm": {
+    "advisory": true,
+    "summary": {
+      "total_files": 1,
+      "succeeded_count": 1,
+      "failed_count": 0,
+      "skipped_count": 0,
+      "not_run_count": 0,
+      "advisory_finding_count": 0,
+      "files_with_advisory_findings": 0,
+      "error_count": 0
+    },
+    "quality_gate": {
+      "enabled": true,
+      "fail_on": "warning",
+      "failed": false,
+      "evaluation_status": "evaluated",
+      "matched_finding_count": 0,
+      "matched_severity_counts": {
+        "info": 0,
+        "warning": 0,
+        "error": 0,
+        "critical": 0
+      },
+      "matched_file_count": 0,
+      "matched_files": []
+    },
+    "result": {
+      "schema_version": "llm-sidecar-result.v2",
+      "llm_provider": "mock",
+      "llm_provider_source": "explicit",
+      "summary": {
+        "file_count": 1,
+        "succeeded_count": 1,
+        "failed_count": 0,
+        "skipped_count": 0,
+        "finding_count": 0
+      },
+      "files": [
+        {
+          "path": "examples/demo/articles/technical-demo.md",
+          "status": "success",
+          "finding_count": 0,
+          "review": {
+            "schema_version": "llm-review-result.v1",
+            "findings": []
+          }
+        }
+      ]
+    },
+    "files": [
+      {
+        "file": "examples/demo/articles/technical-demo.md",
+        "status": "succeeded",
+        "advisory": true,
+        "error": null,
+        "result": {
+          "schema_version": "llm-review-result.v1",
+          "findings": []
+        },
+        "finding_candidates": []
+      }
+    ]
+  }
+}

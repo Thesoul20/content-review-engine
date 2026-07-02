@@ -27,8 +27,8 @@ content-review batch
 This repository already includes sample Markdown files and built-in example
 profiles, so you can follow the commands below directly from the project root.
 
-If you want a self-contained walkthrough with committed demo articles, demo
-profiles, and demo reports, see
+If you want the main end-to-end local demo with one replay command that
+regenerates CLI, Python API, and MCP artifacts, see
 [`examples/demo/README.md`](../examples/demo/README.md).
 
 ## 1. Install Dependencies
@@ -185,8 +185,9 @@ uv run content-review batch examples/batch/articles --profile profiles/my-wechat
 Demo report examples:
 
 ```bash
-uv run content-review review examples/demo/articles/wechat-demo.md --profile examples/demo/profiles/wechat-demo.yaml --format markdown --output examples/demo/reports/wechat-demo-report.md --fail-on warning
-uv run content-review review examples/demo/articles/technical-demo.md --profile examples/demo/profiles/technical-demo.yaml --format markdown --output examples/demo/reports/technical-demo-report.md --fail-on warning
+uv run python examples/demo/run_demo.py
+sed -n '1,80p' examples/demo/artifacts/cli/single-file/review.md
+sed -n '1,80p' examples/demo/artifacts/cli/batch/review.md
 ```
 
 When the quality gate fails with exit code `1`, the Markdown report is still

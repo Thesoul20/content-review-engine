@@ -1,0 +1,156 @@
+{
+  "schema_version": "single-file-combined-review-result.v1",
+  "review_result": {
+    "schema_version": "review-result.v1",
+    "summary": {
+      "finding_count": 6,
+      "severity_counts": {
+        "info": 2,
+        "warning": 4,
+        "error": 0,
+        "critical": 0
+      }
+    },
+    "findings": [
+      {
+        "rule_id": "absolute_claims",
+        "severity": "warning",
+        "message": "发现可能存在绝对化表述：唯一选择",
+        "matched_term": "唯一选择",
+        "suggestion": "建议改为更审慎的表述，例如“较强”“表现较好”“在特定条件下有效”，或补充支撑该结论的证据。",
+        "matched_text": "唯一选择",
+        "location": {
+          "start_line": 5,
+          "start_column": 14,
+          "end_line": 5,
+          "end_column": 18,
+          "start_offset": 61,
+          "end_offset": 65,
+          "matched_text": "唯一选择",
+          "context": "...用一篇短文说明它适合哪些场景。\n\n这套方法几乎成了很多团队的唯一选择，我们也把它写成了一个方便转发的模板。\n\n如果你正在赶项目，..."
+        }
+      },
+      {
+        "rule_id": "markdown_links_images",
+        "severity": "warning",
+        "message": "链接目标仍是占位符。",
+        "matched_term": "placeholder_link_target",
+        "matched_text": "[下载链接](TODO)",
+        "location": {
+          "start_line": 11,
+          "start_column": 6,
+          "end_line": 11,
+          "end_column": 18,
+          "start_offset": 130,
+          "end_offset": 142,
+          "matched_text": "[下载链接](TODO)",
+          "context": "...收藏这份清单，不看后悔。\n\n配图位置：待补图。\n\n领取清单：[下载链接](TODO)\n\n术语说明：唯一标识符用于数据库主键。 <!-- cont..."
+        }
+      },
+      {
+        "rule_id": "engagement_bait",
+        "severity": "info",
+        "message": "This phrase may read as engagement bait.",
+        "matched_term": "速看|不看后悔",
+        "suggestion": "Prefer a clearer and more direct headline or transition.",
+        "matched_text": "速看",
+        "location": {
+          "start_line": 1,
+          "start_column": 3,
+          "end_line": 1,
+          "end_column": 5,
+          "start_offset": 2,
+          "end_offset": 4,
+          "matched_text": "速看",
+          "context": "# 速看：协作提效清单\n\n最近我们整理了一份团队协作清单，想先用一篇..."
+        }
+      },
+      {
+        "rule_id": "exaggerated_claims",
+        "severity": "warning",
+        "message": "Avoid absolute or exaggerated wording in public-facing drafts.",
+        "matched_term": "唯一|第一|最强|100%",
+        "suggestion": "Use narrower wording and add evidence where needed.",
+        "matched_text": "唯一",
+        "location": {
+          "start_line": 5,
+          "start_column": 14,
+          "end_line": 5,
+          "end_column": 16,
+          "start_offset": 61,
+          "end_offset": 63,
+          "matched_text": "唯一",
+          "context": "...用一篇短文说明它适合哪些场景。\n\n这套方法几乎成了很多团队的唯一选择，我们也把它写成了一个方便转发的模板。\n\n如果你正在赶项..."
+        }
+      },
+      {
+        "rule_id": "engagement_bait",
+        "severity": "info",
+        "message": "This phrase may read as engagement bait.",
+        "matched_term": "速看|不看后悔",
+        "suggestion": "Prefer a clearer and more direct headline or transition.",
+        "matched_text": "不看后悔",
+        "location": {
+          "start_line": 7,
+          "start_column": 22,
+          "end_line": 7,
+          "end_column": 26,
+          "start_offset": 107,
+          "end_offset": 111,
+          "matched_text": "不看后悔",
+          "context": "...便转发的模板。\n\n如果你正在赶项目，可以先赶紧收藏这份清单，不看后悔。\n\n配图位置：待补图。\n\n领取清单：[下载链接](TODO..."
+        }
+      },
+      {
+        "rule_id": "article_placeholder",
+        "severity": "warning",
+        "message": "Remove unfinished article placeholders before publishing.",
+        "matched_term": "待补图|待补链接|这里补充",
+        "suggestion": "Replace the placeholder with final article content.",
+        "matched_text": "待补图",
+        "location": {
+          "start_line": 9,
+          "start_column": 6,
+          "end_line": 9,
+          "end_column": 9,
+          "start_offset": 119,
+          "end_offset": 122,
+          "matched_text": "待补图",
+          "context": "...正在赶项目，可以先赶紧收藏这份清单，不看后悔。\n\n配图位置：待补图。\n\n领取清单：[下载链接](TODO)\n\n术语说明：唯一标..."
+        }
+      }
+    ],
+    "document": {
+      "path": "examples/demo/articles/wechat-demo.md"
+    },
+    "profile": {
+      "name": "wechat-demo",
+      "path": "examples/demo/profiles/wechat-demo.yaml"
+    }
+  },
+  "llm": {
+    "status": "succeeded",
+    "advisory": true,
+    "error": null,
+    "result": {
+      "schema_version": "llm-review-result.v1",
+      "findings": []
+    },
+    "finding_candidates": [],
+    "quality_gate": {
+      "enabled": true,
+      "fail_on": "warning",
+      "failed": false,
+      "evaluation_status": "evaluated",
+      "matched_finding_count": 0,
+      "matched_severity_counts": {
+        "info": 0,
+        "warning": 0,
+        "error": 0,
+        "critical": 0
+      },
+      "matched_file_count": 0,
+      "matched_files": []
+    }
+  }
+}

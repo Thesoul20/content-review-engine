@@ -1,100 +1,158 @@
-# End-to-End Demo
+# Unified End-to-End Demo
 
-This demo shows the current CLI workflow from Markdown input to structured
-review output.
+This directory is the main end-to-end demo entrypoint for the repository.
+
+It shows the current project surface through one local replay flow:
+
+- deterministic CLI review
+- optional mock-LLM CLI review
+- combined and report-index artifacts
+- Python API workflow usage
+- local MCP stdio usage
+
+The default demo is fully local. It does not require a real API key, `.env`
+loading, or network access.
+
+## Setup
+
+From the repository root:
+
+```bash
+uv sync --extra mcp
+```
+
+The MCP extra is included here because the unified demo also regenerates MCP
+request and response snapshots.
+
+## Replay The Demo
+
+Regenerate the committed demo artifacts:
+
+```bash
+uv run python examples/demo/run_demo.py
+```
+
+Write the same artifact set to a different directory:
+
+```bash
+uv run python examples/demo/run_demo.py --output-root /tmp/content-review-demo
+```
+
+The replay command validates the demo profiles, runs CLI review commands, runs
+the Python API facade directly, starts the local MCP stdio server, performs
+initialize and tool calls through the MCP client SDK, and then writes one
+artifact tree.
 
 ## Demo Layout
 
 ```text
 examples/demo/
   README.md
+  run_demo.py
   articles/
     technical-demo.md
     wechat-demo.md
   profiles/
     technical-demo.yaml
     wechat-demo.yaml
-  reports/
-    technical-demo-report.md
-    wechat-demo-report.md
+  artifacts/
+    cli/
+    api/
+    mcp/
 ```
 
-## Validate The Demo Profiles
+## Artifact Map
 
-```bash
-uv run content-review profile validate examples/demo/profiles/wechat-demo.yaml
-uv run content-review profile validate examples/demo/profiles/technical-demo.yaml
-```
+### `artifacts/cli/`
 
-## Review One Markdown File
+- `single-file/review.txt`: stdout from deterministic single-file review.
+- `single-file/review.json`: canonical deterministic `ReviewResult`.
+- `single-file/review.md`: deterministic Markdown report written by the CLI.
+- `single-file/llm-result.json`: raw mock-LLM sidecar.
+- `single-file/llm-report.md`: advisory LLM Markdown report.
+- `single-file/combined.json`: single-file combined envelope in JSON.
+- `single-file/combined.md`: single-file combined Markdown report.
+- `single-file/report-index.md`: navigation-oriented report index.
+- `batch/*`: the same artifact families for `content-review batch`.
 
-WeChat-oriented article demo:
+### `artifacts/api/`
 
-```bash
-uv run content-review review examples/demo/articles/wechat-demo.md --profile examples/demo/profiles/wechat-demo.yaml
-```
+- `single-file.workflow.json`: serialized `ReviewFileWorkflowResult`.
+- `single-file.review.json`: deterministic API output file.
+- `single-file.llm.json`: raw LLM sidecar written through the API facade.
+- `single-file.combined.json`: combined API artifact.
+- `batch.workflow.json`: serialized `ReviewBatchWorkflowResult`.
+- `batch.review.json`, `batch.llm.json`, `batch.combined.json`: batch
+  artifact outputs written through the same API facade.
 
-Technical blog demo:
+### `artifacts/mcp/`
 
-```bash
-uv run content-review review examples/demo/articles/technical-demo.md --profile examples/demo/profiles/technical-demo.yaml
-```
+- `initialize.json`: MCP initialize handshake summary.
+- `tools.json`: tool-name snapshot from `list_tools`.
+- `single-file.request.json`: request payload passed to `content_review_file`.
+- `single-file.response.json`: structured JSON response returned by the MCP tool.
+- `batch.request.json`: request payload passed to `content_review_batch`.
+- `batch.response.json`: structured JSON response returned by the MCP tool.
 
-## Generate Markdown Reports
+## Walkthrough
 
-These commands reproduce the committed demo reports:
+### 1. Review The Demo Inputs
 
-```bash
-uv run content-review review examples/demo/articles/wechat-demo.md --profile examples/demo/profiles/wechat-demo.yaml --format markdown --output examples/demo/reports/wechat-demo-report.md --fail-on warning
-uv run content-review review examples/demo/articles/technical-demo.md --profile examples/demo/profiles/technical-demo.yaml --format markdown --output examples/demo/reports/technical-demo-report.md --fail-on warning
-```
+- `articles/wechat-demo.md` is the public-facing article example.
+- `articles/technical-demo.md` is the technical-post example.
+- `profiles/wechat-demo.yaml` and `profiles/technical-demo.yaml` are stable
+  demo profiles built from current deterministic rules plus `regex_rules`.
 
-The quality gate is expected to fail for both commands because the demo
-articles intentionally include findings at `warning` or above. The CLI still
-writes the Markdown report before returning exit code `1`.
+### 2. Inspect The CLI Artifacts
 
-## Generate JSON Output
+Start with:
 
-```bash
-uv run content-review review examples/demo/articles/wechat-demo.md --profile examples/demo/profiles/wechat-demo.yaml --format json
-uv run content-review review examples/demo/articles/technical-demo.md --profile examples/demo/profiles/technical-demo.yaml --format json
-```
+- `artifacts/cli/single-file/review.txt`
+- `artifacts/cli/single-file/review.json`
+- `artifacts/cli/single-file/review.md`
 
-## Run Batch Review
+Then inspect:
 
-Use the directory-based `batch` command when you want the same profile to
-review a set of matching demo files:
+- `artifacts/cli/single-file/llm-result.json`
+- `artifacts/cli/single-file/combined.json`
+- `artifacts/cli/single-file/combined.md`
+- `artifacts/cli/single-file/report-index.md`
 
-```bash
-uv run content-review batch examples/demo/articles --profile examples/demo/profiles/wechat-demo.yaml --pattern "wechat-*.md" --fail-on warning
-uv run content-review batch examples/demo/articles --profile examples/demo/profiles/technical-demo.yaml --pattern "technical-*.md" --fail-on warning --format markdown --output examples/demo/reports/technical-demo-batch-report.md
-```
+Repeat the same pattern under `artifacts/cli/batch/`.
 
-The second command demonstrates batch report output. It reviews the directory,
-discovers files by pattern, and applies the same quality gate semantics as
-single-file review.
+### 3. Inspect The Python API Artifacts
 
-## Inline Suppression
+Read:
 
-`examples/demo/articles/wechat-demo.md` suppresses a regex finding on the same
-line:
+- `artifacts/api/single-file.workflow.json`
+- `artifacts/api/batch.workflow.json`
 
-```markdown
-术语说明：唯一标识符用于数据库主键。 <!-- content-review-disable-line exaggerated_claims -->
-```
+These files show the stable wrapper models returned by
+`content_review_engine.api.review_file(...)` and
+`content_review_engine.api.review_batch(...)`, including deterministic gate
+metadata, optional LLM metadata, combined results, and artifact paths.
 
-`examples/demo/articles/technical-demo.md` suppresses a draft-marker regex
-finding on the same line:
+### 4. Inspect The MCP Artifacts
 
-```markdown
-FIXME: 这个草稿标记专门用于 suppression 演示。 <!-- content-review-disable-line unresolved_draft_marker -->
-```
+Read:
 
-Suppressed findings do not appear in text output, JSON output, Markdown
-reports, batch summaries, or quality-gate counts.
+- `artifacts/mcp/initialize.json`
+- `artifacts/mcp/tools.json`
+- `artifacts/mcp/single-file.request.json`
+- `artifacts/mcp/single-file.response.json`
+- `artifacts/mcp/batch.request.json`
+- `artifacts/mcp/batch.response.json`
 
-## Notes
+These files show the MCP transport boundary. The requests are flat JSON
+arguments, and the responses are structured serialization of the same Python
+API workflow models used by the in-process facade.
 
-- The demo uses only current deterministic rules and profile-configured
-  `regex_rules`.
-- The demo profiles are conservative examples, not compliance guarantees.
+## Boundary Notes
+
+- The demo uses only the current local adapters and the current core package.
+- Deterministic output remains the canonical review layer.
+- The mock LLM path is explicit opt-in and remains advisory.
+- Combined output stays separate from deterministic output.
+- The MCP server remains a thin local wrapper over the Python API facade.
+- The demo does not claim legal, medical, advertising, regulatory, or
+  platform compliance.

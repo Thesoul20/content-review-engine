@@ -258,6 +258,10 @@ Config example rules:
 
 ## Manual Smoke Checklist
 
+For one unified local demo that also captures MCP initialize, tool discovery,
+tool requests, and tool responses alongside CLI and Python API artifacts, see
+[`examples/demo/README.md`](../examples/demo/README.md).
+
 Local manual smoke guidance lives in:
 
 - [`examples/mcp_server/manual-smoke-checklist.md`](../examples/mcp_server/manual-smoke-checklist.md)
