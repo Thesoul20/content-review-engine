@@ -1,6 +1,24 @@
 from pathlib import Path
 
 
+def test_local_ci_scripts_exist_and_contain_expected_commands() -> None:
+    standard = Path("scripts/ci.sh")
+    strict = Path("scripts/ci-strict.sh")
+
+    assert standard.exists()
+    assert strict.exists()
+
+    standard_content = standard.read_text(encoding="utf-8")
+    strict_content = strict.read_text(encoding="utf-8")
+
+    assert "uv sync --extra mcp --group dev" in standard_content
+    assert "uv run pytest" in standard_content
+    assert "content-review-mcp --help" in standard_content
+    assert "scripts/ci.sh" in strict_content
+    assert "uv build" in strict_content
+    assert "git diff --exit-code" in strict_content
+
+
 def test_active_github_actions_workflow_exists_and_contains_core_steps() -> None:
     workflow_path = Path(".github/workflows/ci.yml")
 
@@ -53,6 +71,8 @@ def test_ci_docs_exist_and_explain_exit_codes_and_limits() -> None:
     assert "docs/examples/github-actions/content-review.yml" in content
     assert ".github/workflows/ci.yml" in content
     assert ".github/workflows/ci-strict.yml" in content
+    assert "scripts/ci.sh" in content
+    assert "scripts/ci-strict.sh" in content
     assert "content-review profile validate" in content
     assert "content-review batch" in content
     assert "--fail-on error" in content

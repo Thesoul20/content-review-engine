@@ -118,6 +118,32 @@ uv run content-review batch \
 For the complete first-run workflow, see
 [docs/QUICKSTART.md](docs/QUICKSTART.md).
 
+## Local Validation Entrypoints
+
+In addition to the GitHub Actions workflows, the repository also provides
+matching local validation scripts:
+
+```bash
+scripts/ci.sh
+scripts/ci-strict.sh
+```
+
+Recommended usage:
+
+- `scripts/ci.sh`
+  for everyday development and pre-PR regression checks
+- `scripts/ci-strict.sh`
+  for demo artifact changes, documentation-contract changes, and pre-release
+  validation
+
+Relationship to the GitHub workflows:
+
+- `scripts/ci.sh` is the local equivalent of the standard CI path
+- `scripts/ci-strict.sh` is the local equivalent of the strict CI path
+
+The strict script performs an in-place demo replay plus `git diff --exit-code`,
+so it is best run from a relatively clean working tree.
+
 ## What The Project Reviews
 
 Current deterministic checks include:
@@ -338,6 +364,13 @@ Run tests:
 
 ```bash
 uv run pytest
+```
+
+Local CI entrypoints:
+
+```bash
+scripts/ci.sh
+scripts/ci-strict.sh
 ```
 
 Project workflow context lives in:

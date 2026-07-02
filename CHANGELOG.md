@@ -15,6 +15,8 @@ This project follows a staged development process.
 - Added a stricter GitHub Actions workflow at
   `.github/workflows/ci-strict.yml` for committed demo replay and artifact
   drift detection, plus package build/install smoke.
+- Added local `scripts/ci.sh` and `scripts/ci-strict.sh` entrypoints so the
+  repository's standard and strict CI paths can also be run locally.
 
 ### Changed
 
@@ -30,6 +32,9 @@ This project follows a staged development process.
   mainline pushes, and refined the stricter workflow to run on mainline/manual
   triggers with package build/install smoke plus committed demo drift
   enforcement.
+- Updated `README.md`, `README.en.md`, and `docs/CI.md` to document the local
+  CI script entrypoints, their intended usage, and their mapping to the GitHub
+  workflows.
 
 ## TASK-0092
 

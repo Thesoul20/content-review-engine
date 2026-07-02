@@ -111,6 +111,29 @@ uv run content-review batch \
 
 更完整的首次使用流程见 [docs/QUICKSTART.md](docs/QUICKSTART.md)。
 
+## 本地检查入口
+
+除了 GitHub Actions 里的两条 workflow，仓库也提供了对应的本地检查脚本：
+
+```bash
+scripts/ci.sh
+scripts/ci-strict.sh
+```
+
+使用建议：
+
+- `scripts/ci.sh`
+  用于日常开发和提 PR 前的快速回归
+- `scripts/ci-strict.sh`
+  用于修改 demo 产物、文档契约、发布前检查时的严格校验
+
+两者与 GitHub workflow 的关系：
+
+- `scripts/ci.sh` 对应标准 CI 的本地等价入口
+- `scripts/ci-strict.sh` 对应严格 CI 的本地等价入口
+
+严格脚本会执行 in-place demo replay 和 `git diff --exit-code`，因此更适合在相对干净的工作区中运行。
+
 ## 项目当前能审计什么
 
 当前 deterministic 审计主要覆盖：
@@ -130,6 +153,9 @@ profile 还可以进一步控制：
 - 自定义 regex 规则
 
 内置 profile 模板位于 [profiles/examples](profiles/examples)。
+
+规则 ID、严重级别、抑制注释和质量门限行为的 canonical 参考文档见
+[docs/RULES.md](docs/RULES.md)。
 
 ## 输出模型
 
@@ -327,6 +353,13 @@ uv sync --extra mcp --group dev
 
 ```bash
 uv run pytest
+```
+
+本地 CI 入口：
+
+```bash
+scripts/ci.sh
+scripts/ci-strict.sh
 ```
 
 项目开发上下文见：

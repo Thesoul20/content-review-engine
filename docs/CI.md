@@ -60,6 +60,33 @@ Current split:
   smoke, in-place demo replay, and `git diff --exit-code` checks so committed
   artifacts must stay reproducible
 
+## Local CI Equivalents
+
+The repository also provides matching local scripts under `scripts/`:
+
+- `scripts/ci.sh`
+- `scripts/ci-strict.sh`
+
+Recommended usage:
+
+- run `scripts/ci.sh` during normal development and before opening a pull
+  request
+- run `scripts/ci-strict.sh` before release-like changes, after modifying demo
+  artifacts, or when you want to reproduce the stricter mainline gate locally
+
+Current mapping:
+
+- `.github/workflows/ci.yml` ↔ `scripts/ci.sh`
+- `.github/workflows/ci-strict.yml` ↔ `scripts/ci-strict.sh`
+
+Current boundary:
+
+- the local scripts are plain shell entrypoints, not a second workflow system
+- they exist so contributors can reproduce CI logic locally without relying on
+  GitHub Actions or a workflow emulator
+- `scripts/ci-strict.sh` runs in-place demo replay and `git diff --exit-code`,
+  so it works best in a relatively clean worktree
+
 ## GitHub Actions Example
 
 ```yaml

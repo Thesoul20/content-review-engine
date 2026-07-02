@@ -149,6 +149,9 @@ It now also includes a second stricter GitHub Actions workflow under
 replays the committed unified demo artifacts in place, and fails on
 `git diff` drift, so reproducibility of the committed demo workspace is
 enforced separately from the faster standard CI.
+It now also includes local shell-script equivalents under `scripts/ci.sh` and
+`scripts/ci-strict.sh`, so contributors can reproduce the standard and strict
+CI paths without relying on GitHub Actions runners.
 
 ---
 
@@ -219,6 +222,9 @@ enforced separately from the faster standard CI.
 - The repository now also includes a stricter GitHub Actions CI workflow for
   mainline/manual package build-install smoke, committed demo replay, and
   artifact-drift enforcement.
+- The repository now also includes local `scripts/ci.sh` and
+  `scripts/ci-strict.sh` entrypoints that mirror the repository's standard and
+  strict CI paths.
 
 ---
 
